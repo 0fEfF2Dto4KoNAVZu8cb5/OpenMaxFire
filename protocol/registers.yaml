@@ -1,0 +1,58 @@
+firmware:
+  image: Bixby_0271_080315.hex
+  mcu: PIC16F877A
+  protocol: ascii_hex
+
+serial:
+  baud_candidate: 38400
+  data_bits: 8
+  parity: none
+  stop_bits: 1
+  confidence: high_if_fosc_20mhz
+
+commands:
+  read:
+    format: "CR{register:02X}"
+  write:
+    format: "CW{register:02X}{value:02X}"
+  response_terminator: 0x0A
+
+registers:
+  CR00: {kind: constant, value: 0x00, confidence: confirmed}
+  CR01: {kind: ram, source: "bank1:0x53", meaning: unknown, confidence: confirmed_source}
+  CR02:
+    kind: packed_bits
+    meaning: physical_and_mux_inputs
+    confidence: confirmed_structure
+    bits:
+      0: {source: RD3_MUX_0, meaning: unknown}
+      1: {source: RD3_MUX_1, meaning: unknown}
+      2: {source: RD3_MUX_2, meaning: unknown}
+      3: {source: mux_internal_state, meaning: unknown}
+      4: {source: RD0, meaning: unknown_physical_input}
+      5: {source: RD1, meaning: unknown_physical_input}
+      6: {source: RD4, meaning: unknown_physical_input}
+      7: {source: RE1, meaning: unknown_physical_input}
+  CR03:
+    kind: packed_bits
+    bits:
+      0: {source: RB1, meaning: output_state}
+      1: {source: RB5, meaning: output_state}
+      2: {source: "RAM_0x56.bit5", meaning: unknown}
+      3: {source: "RAM_0x56.bit7", meaning: unknown}
+  CR04: {kind: ram, source: "0x22", meaning: unknown}
+  CR05: {kind: ram, source: "0x34", meaning: unknown}
+  CR06:
+    kind: packed_bits
+    bits:
+      0: {source: "RAM_0x2D.bit0", meaning: unknown}
+      1: {source: "RAM_0x2D.bit1", meaning: unknown}
+      2: {source: RB4, meaning: unknown_physical_input}
+  CR07: {kind: derived, source: "RAM_0x44/0x45", meaning: unknown}
+  CR08: {kind: constant, value: 0x07}
+  CR09: {kind: ram, source: "0x2E", meaning: unknown}
+  CR0A: {kind: ram, source: "0x2F", meaning: unknown}
+  CR0B: {kind: constant, value: 0x02}
+  CR0C: {kind: constant, value: 0x71}
+  CR0D: {kind: constant, value: 0x00}
+  CR0E: {kind: constant, value: 0x00}
