@@ -1,0 +1,26 @@
+{
+  "2.70": {
+    "package": "BixCheck_080206.zip",
+    "executable_member": "BixCheck_080206.exe",
+    "executable_sha256": "12dd738a10f72f18a672aeec6ec5e1456ff478103ca84fc154c4f73594aac3d6",
+    "filename": "Bixby_0270_070206.hex",
+    "marker_offset": 359601,
+    "encoded_start": 274928,
+    "encoded_end": 359600,
+    "encoded_bytes": 84672,
+    "decoded_bytes": 42336,
+    "decoded_sha256": "c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca"
+  },
+  "2.71": {
+    "package": "BixCheck_080315.zip",
+    "executable_member": "BixCheck_080315.exe",
+    "executable_sha256": "b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792",
+    "filename": "Bixby_0271_080315.hex",
+    "marker_offset": 361945,
+    "encoded_start": 276464,
+    "encoded_end": 361944,
+    "encoded_bytes": 85480,
+    "decoded_bytes": 42740,
+    "decoded_sha256": "dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b"
+  }
+}

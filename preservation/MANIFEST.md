@@ -37,6 +37,9 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 | Path | SHA-256 | Relationship |
 | --- | --- | --- |
 | `../reverse-engineering/firmware/2.71/extracted/Bixby_0271_080315.hex` | `dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b` | Extracted from the BixCheck 5.5.01 embedded resource |
+| `../reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex` | `c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca` | Deterministically extracted from the BixCheck 5.5.00 executable |
+| `../reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex` | `90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b` | Exact copy of the 2.06 vendor-package member |
+| `../reverse-engineering/firmware/2.06/extracted/Bixby_02060021_PICkit.hex` | `2adb6dca20a0318662aa73d96b700d5f83a76b36779596fa0e9db8a26db357d4` | Exact copy of the 2.06 vendor-package member |
 | `../reverse-engineering/firmware/2.71/bundles/Bixby_0271_080315_DISASSEMBLED.tar.gz` | `98fbbb0246c36177a298a1a745646fe9b6e23ab34c6ad77fb85f458d870b262f` | User-generated gpdasm/disassembly bundle |
 | `../reverse-engineering/firmware/2.71/bundles/bixby_hex_analysis_20260820_133700.tar.gz` | `ad62f89980abeacef987648b5cc8ef17d8e0f8f741850fe03d61a7daad1a80b1` | First Debian HEX inspection bundle |
 | `project-snapshots/openmaxfire-v0.1.zip` | `22d009a51d2baaa16ea7230088cd120bdaf7f1545c02ab347a6e580d1b641720` | Earlier generated project foundation, preserved before reorganization |

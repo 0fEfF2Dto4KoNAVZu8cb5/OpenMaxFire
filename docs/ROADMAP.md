@@ -4,7 +4,10 @@
 
 - [x] Preserve recovered vendor ZIP packages and standalone BixCheck 5.5.01 executable.
 - [x] Preserve the BixCheck 5.x manual and release notes.
-- [x] Preserve extracted 2.71 firmware, raw analysis bundle, disassembly, and annotated copy.
+- [x] Extract and checksum all 2.06, 2.70, and 2.71 firmware delivery images.
+- [x] Preserve the earlier 2.71 analysis bundle and independent gpdasm disassembly.
+- [x] Add a dependency-free Intel HEX parser/PIC14 disassembler and deterministic analysis for all images.
+- [x] Map cross-version protocol anchors, constant CR responses, UART changes, and the 2.06 bootloader/EEPROM delta.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
 - [x] Preserve the prior OpenMaxFire v0.1 snapshot.
 - [ ] Publish a public preservation copy to Archive.org after reviewing redistribution and privacy.
@@ -56,8 +59,8 @@
 
 ## Phase 6 - firmware servicing
 
-- [ ] Identify the Downloader boot protocol.
-- [ ] Distinguish Downloader and PICkit firmware formats.
+- [ ] Decode the Downloader/PICkit serial boot protocol (its code region and reset entry are now mapped).
+- [x] Distinguish Downloader and PICkit firmware layouts and preserve their exact word-level delta.
 - [ ] Implement firmware identity and compatibility checks.
 - [ ] Add interrupted-transfer recovery and post-flash calibration guidance.
 - [ ] Do not flash a production controller until recovery has been proven on spare hardware.

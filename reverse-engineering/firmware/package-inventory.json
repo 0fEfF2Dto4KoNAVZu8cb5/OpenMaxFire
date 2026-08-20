@@ -1,0 +1,43 @@
+{
+  "BixCheck_080206.zip": [
+    {
+      "path": "BixCheck_080206.exe",
+      "size": 462052,
+      "sha256": "12dd738a10f72f18a672aeec6ec5e1456ff478103ca84fc154c4f73594aac3d6"
+    }
+  ],
+  "BixCheck_080315.zip": [
+    {
+      "path": "BixCheck_080315.exe",
+      "size": 464650,
+      "sha256": "b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792"
+    }
+  ],
+  "Bixby110_115_02060021_and_manual.zip": [
+    {
+      "path": "Bixby_02060021_Downloader.hex",
+      "size": 42831,
+      "sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b"
+    },
+    {
+      "path": "Bixby_02060021_PICkit.hex",
+      "size": 47596,
+      "sha256": "2adb6dca20a0318662aa73d96b700d5f83a76b36779596fa0e9db8a26db357d4"
+    },
+    {
+      "path": "BixCheck_5021.exe",
+      "size": 441552,
+      "sha256": "0f51f1b9ffe12011928c7821ecc07db92b2bf98a1d82e5fcf605d464316d52d4"
+    },
+    {
+      "path": "2023480-A.pdf",
+      "size": 1729968,
+      "sha256": "0e8918ed62ae34d0984957ba466f3cee0adb07c69539a5348f305ba0f2c40739"
+    },
+    {
+      "path": "Bixby_02060021_Notes.txt",
+      "size": 6515,
+      "sha256": "c0086fadd9ea2c11f3ae671c6c4062580a5e59b949e4dd08a2835650d2a3d49c"
+    }
+  ]
+}

@@ -1,6 +1,21 @@
-# Firmware 2.71 CR register map
+# Firmware CR register map
 
-This map comes from the PIC16F877A disassembly, not a live stove. RAM names remain provisional and gpdasm's banked register comments must be checked against STATUS bank bits.
+The detailed map below comes from the 2.71 PIC16F877A disassembly, not a live stove. The same CR00-CR0E dispatch structure exists in 2.06 and 2.70. RAM names remain provisional and banked register names must be checked against STATUS bank bits.
+
+## Cross-version constants
+
+| Read | 2.06 | 2.70 | 2.71 |
+| --- | ---: | ---: | ---: |
+| `CR00` | `0x00` | `0x00` | `0x00` |
+| `CR08` | `0x05` | `0x07` | `0x07` |
+| `CR0B` | `0x02` | `0x02` | `0x02` |
+| `CR0C` | `0x06` | `0x70` | `0x71` |
+| `CR0D` | `0x00` | `0x00` | `0x00` |
+| `CR0E` | `0x21` | `0x02` | `0x00` |
+
+CR0B/CR0C are strongly identified as firmware version bytes. CR08 is probably a data-format/database generation because it moves from 05 to 07 with the preserved software generations, but that name remains unconfirmed. CR0E read behavior changes even though BixCheck 5.5.01 uses writes to 0x0E for remote-button actions. See the [full firmware comparison](../reverse-engineering/firmware-comparison.md).
+
+## 2.71 detailed handlers
 
 | Request | Static return/source | Interpretation |
 | --- | --- | --- |

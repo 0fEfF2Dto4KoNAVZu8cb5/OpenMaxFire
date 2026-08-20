@@ -4,20 +4,22 @@ OpenMaxFire is a preservation and reverse-engineering project for the discontinu
 
 ## Current status
 
-The repository contains the recovered vendor packages, BixCheck 5.x manual, BixCheck 5.5.00/5.5.01 binaries, 2.06 and 2.71 firmware, the complete 2.71 disassembly, photographs, provenance records, and the first protocol library.
+The repository contains the recovered vendor packages, BixCheck 5.x manual, all preserved 2.06/2.70/2.71 firmware images, portable and annotated disassemblies, cross-version analysis, photographs, provenance records, and the first protocol library.
 
 Confirmed by static evidence:
 
-- Stove firmware 2.71 targets a PIC16F877A.
+- All four preserved firmware images target a PIC16F877A and pass Intel HEX checksum validation.
 - The controller recognizes ASCII register commands `CRXX` and `CWXXYY`.
 - Responses use ASCII hexadecimal and end with LF (`0x0A`).
 - BixCheck maps remote OFF/ON/UP/DOWN to `CW0E11`, `CW0E12`, `CW0E14`, and `CW0E18`.
+- CR0B/CR0C expose firmware `2.06`, `2.70`, or `2.71` as constant bytes.
+- Firmware 2.06 loads UART divisor `0x40`; 2.70/2.71 load `0x20`.
 - The recovered stove is serial 5215; its owner identifies it as a MaxFire 115.
 
 Not yet confirmed on physical hardware:
 
 - J3 pinout and electrical levels.
-- Baud rate. Firmware register values imply about 38.4 kbaud at a 20 MHz oscillator; an earlier prototype assumed 19.2 kbaud.
+- Oscillator frequency and therefore the absolute baud rate. At 20 MHz, the observed divisors correspond to nominal 19,200 for 2.06 and 38,400 for 2.70/2.71.
 - Response framing beyond the LF terminator and acknowledgement semantics.
 - Which exposed input bit is the firebox door switch.
 - Any remote command on the actual stove.
@@ -59,7 +61,7 @@ Live I/O is intentionally gated and requires an explicit port, baud rate, and ac
 - `tools/` - reproducible Debian analysis helpers
 - `tests/` - offline protocol tests
 
-Start with [the research status](docs/STATUS.md), [the project roadmap](docs/ROADMAP.md), and [the preservation manifest](preservation/MANIFEST.md).
+Start with [the research status](docs/STATUS.md), [the firmware comparison](docs/reverse-engineering/firmware-comparison.md), [the project roadmap](docs/ROADMAP.md), and [the preservation manifest](preservation/MANIFEST.md).
 
 ## Licensing
 

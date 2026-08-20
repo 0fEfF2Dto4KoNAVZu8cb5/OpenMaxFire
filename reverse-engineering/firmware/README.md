@@ -1,0 +1,46 @@
+# Firmware research archive
+
+This tree contains deterministic extractions and static analysis for every preserved Bixby stove-firmware generation. The three source packages are never modified; extracted images and all analysis outputs are derived copies.
+
+## Image index
+
+| Generation | Delivery image | Bytes | Program words | Program range | Config | SHA-256 |
+| --- | --- | ---: | ---: | --- | --- | --- |
+| 2.06 | Downloader | 42,831 | 7,599 | `0x0000-0x1E26`, sparse | `0x3F76` | `90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b` |
+| 2.06 | PICkit | 47,596 | 8,192 | `0x0000-0x1FFF` | `0x3F32` | `2adb6dca20a0318662aa73d96b700d5f83a76b36779596fa0e9db8a26db357d4` |
+| 2.70 | Embedded | 42,336 | 7,681 | `0x0000-0x1E3E`, sparse | `0x3F72` | `c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca` |
+| 2.71 | Embedded | 42,740 | 7,755 | `0x0000-0x1E5E`, sparse | `0x3F72` | `dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b` |
+
+All four images identify the target as `PIC16F877A`. “Program words” excludes user-ID, configuration, and EEPROM spaces.
+
+## Source-package relationships
+
+- `Bixby110_115_02060021_and_manual.zip` contains the two 2.06 HEX files directly. The vendor notes distinguish the Downloader and external-PICkit workflows.
+- `BixCheck_080206.zip` contains `BixCheck_080206.exe`; the executable embeds `Bixby_0270_070206.hex` as an ASCII-hex-encoded Intel HEX file.
+- `BixCheck_080315.zip` contains `BixCheck_080315.exe` and embeds 2.71 by the same method. A clean regeneration exactly matches the previously recovered 2.71 file.
+
+Exact executable offsets and hashes are in `extraction-metadata.json`. Every ZIP member is indexed in `package-inventory.json`.
+
+## Generated artifacts
+
+Each image has:
+
+- its exact extracted Intel HEX source;
+- a JSON summary with hashes, record counts, memory layout, and decode statistics;
+- CSV memory ranges and decoded program words;
+- a sparse-aware program binary, padded with `0xFF` only between mapped program addresses;
+- portable raw and annotated PIC14 assembly listings.
+
+The earlier gpdasm-based 2.71 bundle is retained as independent prior work. The portable decoder was checked against it and produced zero mnemonic/word mismatches over all 7,755 mapped 2.71 program words.
+
+## Regeneration
+
+From the repository root:
+
+```bash
+python3 tools/firmware_pipeline.py project --repo-root .
+```
+
+The pipeline uses only Python's standard library, verifies every Intel HEX checksum, rejects conflicting/partial words, and emits deterministic outputs. It does not contain any device-write or serial communication path.
+
+See [the comparative report](../../docs/reverse-engineering/firmware-comparison.md) for findings and cautions.

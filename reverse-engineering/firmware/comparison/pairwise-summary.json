@@ -1,0 +1,62 @@
+[
+  {
+    "left": "2.06-downloader",
+    "right": "2.06-pickit",
+    "common_program_addresses": 7599,
+    "same_words_at_same_address": 7595,
+    "different_words_at_same_address": 4,
+    "left_only_program_words": 0,
+    "right_only_program_words": 593,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.06-downloader",
+    "right": "2.70-embedded",
+    "common_program_addresses": 7596,
+    "same_words_at_same_address": 302,
+    "different_words_at_same_address": 7294,
+    "left_only_program_words": 3,
+    "right_only_program_words": 85,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.06-downloader",
+    "right": "2.71-embedded",
+    "common_program_addresses": 7596,
+    "same_words_at_same_address": 228,
+    "different_words_at_same_address": 7368,
+    "left_only_program_words": 3,
+    "right_only_program_words": 159,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.06-pickit",
+    "right": "2.70-embedded",
+    "common_program_addresses": 7681,
+    "same_words_at_same_address": 298,
+    "different_words_at_same_address": 7383,
+    "left_only_program_words": 511,
+    "right_only_program_words": 0,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.06-pickit",
+    "right": "2.71-embedded",
+    "common_program_addresses": 7755,
+    "same_words_at_same_address": 230,
+    "different_words_at_same_address": 7525,
+    "left_only_program_words": 437,
+    "right_only_program_words": 0,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.70-embedded",
+    "right": "2.71-embedded",
+    "common_program_addresses": 7681,
+    "same_words_at_same_address": 2626,
+    "different_words_at_same_address": 5055,
+    "left_only_program_words": 0,
+    "right_only_program_words": 74,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  }
+]

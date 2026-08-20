@@ -34,28 +34,30 @@ BixCheck's `Bixby110RCButtonData` table and remote-button handlers produce write
 
 These are statically confirmed for BixCheck 5.5.01. They have not been sent to a stove.
 
-## UART configuration and baud conflict
+## UART configuration by firmware generation
 
-Firmware 2.71 initializes:
+All three generations use asynchronous transmit/receive settings `TXSTA=0x26` (`BRGH=1`) and `RCSTA=0x90`. The baud-rate generator changes:
 
-- `SPBRG = 0x20`
-- `TXSTA = 0x26` (asynchronous transmitter enabled, `BRGH=1`)
-- `RCSTA = 0x90` (serial port and continuous receive enabled)
+| Firmware | SPBRG | At 20 MHz | At 10 MHz |
+| --- | ---: | ---: | ---: |
+| 2.06 | `0x40` | 19,231 baud | 9,615 baud |
+| 2.70 | `0x20` | 37,879 baud | 18,939 baud |
+| 2.71 | `0x20` | 37,879 baud | 18,939 baud |
 
 For a PIC16F877A asynchronous high-speed UART:
 
 `baud = Fosc / (16 * (SPBRG + 1))`
 
-At a 20 MHz oscillator this is about 37,879 baud, the normal error-tolerant setting for 38,400 baud. At 10 MHz it is about 18,939 baud, the corresponding setting for 19,200 baud. The actual oscillator must therefore be confirmed before treating either rate as authoritative.
+At 20 MHz these are the normal error-tolerant settings for 19,200 and 38,400 baud. At 10 MHz they correspond to 9,600 and 19,200. The actual oscillator must therefore be confirmed before treating any absolute rate as authoritative, and the PC software generation should be matched to the controller firmware during passive capture.
 
-The original v0.1 prototype defaulted to 19,200 baud. That value is now treated as an unresolved historical assumption, not a verified fact.
+The original v0.1 prototype defaulted to 19,200 baud. Static evidence now shows that this is plausible for 2.06 at 20 MHz or 2.70/2.71 at 10 MHz, but it is not universal.
 
 ## First live-test sequence
 
 1. Confirm pinout and voltage levels using protected measurements.
 2. Confirm oscillator marking/frequency.
 3. Passively capture BixCheck traffic if possible.
-4. With the stove safely off, send only `CR00` at 38,400 or the rate supported by the confirmed oscillator.
+4. With the stove safely off, send only `CR00` at the rate supported by the confirmed oscillator and installed firmware generation.
 5. Record every byte and timing detail.
 6. Read CR00-CR0E and correlate physical inputs.
 7. Do not issue `CW` requests until read-only behavior and response verification are stable.
