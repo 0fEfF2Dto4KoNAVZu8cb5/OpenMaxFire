@@ -14,8 +14,15 @@ This report compares the three preserved generations at PIC16F877A word level. R
    oscillator and intended rates of 9,600 for 2.06 and 19,200 for 2.70/2.71.
    The physical oscillator must still be measured.
 6. The 2.06 PICkit image is a superset-style complete programming image: it redirects reset to a serial bootloader/service region and includes 256 EEPROM defaults. The 2.06 Downloader image is the main application payload.
-7. The experimental PIC emulator executes the real receive/parser/formatter
-   path: every application image returns `CR0000` plus LF for `CR00`.
+7. The experimental PIC emulator executes every CR00-CR0E receive, dispatch,
+   handler, and formatter path: all 45 complete without error. Its formatter
+   emits lowercase A-F nibbles in responses.
+8. Bank-aware dynamic dependencies are structurally stable across releases.
+   GPIO/ADC differentials identify RD1 as door, RD4 as ash drawer, RB4 as
+   thermostat, AN3 as fan pot, and AN4 as feed pot after cross-referencing
+   BixCheck Checkout masks.
+9. A-unit reads use the PIC16F877A internal data EEPROM. All 768 AR00-ARFF
+   cross-version probes match checksum-valid synthetic format-05/07 fixtures.
 
 ## Protocol-anchor matrix
 
@@ -49,12 +56,12 @@ This report compares the three preserved generations at PIC16F877A word level. R
 
 Compiled routines move between releases, so a word at the same numerical address is not necessarily the same logical function. `pairwise-summary.json` records exact same-address counts for reproducibility, but semantic conclusions above are based on instruction sequences, dispatch tables, literal checks, and surrounding control flow—not percentage similarity alone.
 
-## Useful next static work
+## Useful next work
 
-- Assign RAM symbols by tracking STATUS bank state through each protocol handler.
 - Resolve remaining erase/program acknowledgement semantics in the PICkit-only
   bootloader region; `EA`/`EB`, block framing, and completion are mapped.
-- Compare CR02/CR03/CR06 bit construction across releases for hardware-revision clues.
-- Correlate preserved 2.06 EEPROM defaults with the now-decoded BixCheck A-unit
-  field boundaries.
+- Resolve the RD3 external-multiplexer selector/return relationship and the
+  provisional fuel-select slot.
+- Continue assigning CR04-CR07 engineering semantics from their traced RAM
+  producers, not just their read handlers.
 - Match write-register handler paths across all versions before considering any live write.

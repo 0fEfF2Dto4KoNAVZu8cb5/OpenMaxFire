@@ -1,0 +1,8 @@
+signal,protocol_source,encoding,pic_source,evidence,confidence
+front-panel buttons,CR01,"none=00, ON=02, OFF=01, UP=04, DOWN=08",RAM 0x53; no direct GPIO read in CR01 handler,BixCheck AnalyzeInteractiveResult plus firmware handler trace,high for encoding; physical transport unresolved
+firebox door,CR02 bit 5,"open=1, closed=0",RD1,BixCheck checkout mask cross-referenced to firmware/GPIO trace,high offline mapping; not live-validated
+ash drawer,CR02 bit 6,"open=1, closed=0",RD4,BixCheck checkout mask cross-referenced to firmware/GPIO trace,high offline mapping; not live-validated
+thermostat,CR06 bit 2,open/closed are opposite states,RB4,BixCheck checkout mask cross-referenced to firmware/GPIO trace,high pin/bit mapping; polarity awaits live validation
+fuel-select switch,candidate CR02 bit 2,two opposite states,"multiplexed RD3 sampling path, slot 2 candidate",unreachable BixCheck result handlers plus firmware mux trace,provisional; reachable 5.5 tests are not machine-checked
+fan potentiometer,CR09,"low<=03, detent=79..86, high>FB in BixCheck checkout",AN3,BixCheck thresholds plus synthetic ADC differential,high register mapping; ADC channel depends on modeled result
+feed potentiometer,CR0A,"low<=03, detent=79..86, high>FB in BixCheck checkout",AN4,BixCheck thresholds plus synthetic ADC differential,high register mapping; ADC channel depends on modeled result

@@ -47,7 +47,11 @@ Recovered type behavior:
 | A23 | 13 | spare/reserved range |
 
 The stove uses calibration data only when checksum and data-format values
-match. Identity strings and calibration must be backed up before any write.
+match. Firmware-emulator events confirm that A-unit reads traverse the
+PIC16F877A's internal 256-byte data EEPROM registers, not an external I²C
+EEPROM. All 256 addresses execute normally in each application generation
+against a synthetic fixture. Identity strings and calibration must be backed
+up before any write.
 
 ## Fuel-table map
 

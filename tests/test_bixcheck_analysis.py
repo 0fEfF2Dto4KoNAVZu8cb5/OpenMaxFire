@@ -14,7 +14,22 @@ from tools.analyze_bixcheck import (
 )
 from tools.virtual_serial_lab import RequestStreamParser, VirtualStove
 from openmaxfire.protocol import ProtocolError
-from tools.pic14_emulator import probe_image
+from tools.firmware_pipeline import CR_HANDLER_MATRIX, parse_ihex
+from tools.pic14_emulator import (
+    PIC16F877A,
+    RESPONSE_FORMATTERS,
+    SFR_ADCON0,
+    SFR_ADCON1,
+    SFR_ADRESH,
+    SFR_ADRESL,
+    SFR_PORTD,
+    SFR_PORTE,
+    SFR_TRISD,
+    calculate_fixture_checksum,
+    execute_request,
+    probe_image,
+    synthetic_controller_eeprom,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -98,6 +113,26 @@ class VirtualSerialLabTests(unittest.TestCase):
 
 
 class FirmwareEmulationTests(unittest.TestCase):
+    @staticmethod
+    def firmware_cpu(version: str = "2.71") -> PIC16F877A:
+        filenames = {
+            "2.06": "2.06/extracted/Bixby_02060021_Downloader.hex",
+            "2.70": "2.70/extracted/Bixby_0270_070206.hex",
+            "2.71": "2.71/extracted/Bixby_0271_080315.hex",
+        }
+        data_format = 5 if version == "2.06" else 7
+        image = parse_ihex(
+            (
+                REPO_ROOT
+                / "reverse-engineering"
+                / "firmware"
+                / filenames[version]
+            ).read_bytes()
+        )
+        return PIC16F877A(
+            image, data_eeprom=synthetic_controller_eeprom(data_format)
+        )
+
     def test_real_271_firmware_executes_cr00_path(self):
         summary, _trace, _events = probe_image(
             REPO_ROOT
@@ -133,3 +168,69 @@ class FirmwareEmulationTests(unittest.TestCase):
         self.assertIsNone(summary["error"])
         self.assertEqual(summary["tx_hex"], "EB")
         self.assertEqual(summary["steps_executed"], 43)
+
+    def test_gpio_input_levels_are_separate_from_output_latch(self):
+        cpu = self.firmware_cpu()
+        cpu.ram[SFR_TRISD] = 0x01
+        cpu.ram[SFR_PORTD] = 0xFE
+        cpu.set_gpio_bit("PORTD", 0, True)
+        self.assertEqual(cpu.read_file(SFR_PORTD), 0xFF)
+        cpu.write_file(SFR_PORTD, 0x00)
+        self.assertEqual(cpu.ram[SFR_PORTD], 0x00)
+        self.assertEqual(cpu.read_file(SFR_PORTD), 0x01)
+
+    def test_adc_model_samples_selected_channel_in_both_formats(self):
+        cpu = self.firmware_cpu()
+        cpu.set_adc_input(3, 0x2AB)
+        cpu.ram[SFR_ADCON1] = 0x80
+        cpu.write_file(SFR_ADCON0, (3 << 3) | 0x05)
+        self.assertEqual(cpu.ram[SFR_ADRESH], 0x02)
+        self.assertEqual(cpu.ram[SFR_ADRESL], 0xAB)
+        self.assertFalse(cpu.ram[SFR_ADCON0] & 0x04)
+        cpu.ram[SFR_ADCON1] = 0x00
+        cpu.write_file(SFR_ADCON0, (3 << 3) | 0x05)
+        self.assertEqual(cpu.ram[SFR_ADRESH], 0xAA)
+        self.assertEqual(cpu.ram[SFR_ADRESL], 0xC0)
+
+    def test_cr02_handler_trace_captures_ports_and_gpio_effect(self):
+        cpu = self.firmware_cpu()
+        cpu.run(10_000)
+        cpu.set_gpio_bit("PORTD", 1, True)
+        result = execute_request(
+            cpu,
+            b"CR02",
+            step_limit=100_000,
+            handler_pc=CR_HANDLER_MATRIX["2.71"][2],
+            formatter_pc=RESPONSE_FORMATTERS["2.71"],
+        )
+        self.assertIsNone(result.error)
+        self.assertTrue(result.handler_seen)
+        self.assertTrue(result.formatter_seen)
+        self.assertEqual(result.response, b"CR0220\n")
+        read_addresses = {
+            item.address for item in result.accesses if item.action == "read"
+        }
+        self.assertIn(SFR_PORTD, read_addresses)
+        self.assertIn(SFR_PORTE, read_addresses)
+
+    def test_synthetic_internal_eeprom_executes_a_unit_read(self):
+        fixture = synthetic_controller_eeprom(7)
+        self.assertEqual(calculate_fixture_checksum(7, fixture), int.from_bytes(fixture[:2], "big"))
+        cpu = self.firmware_cpu()
+        cpu.run(10_000)
+        result = execute_request(cpu, b"AR03", step_limit=100_000)
+        self.assertIsNone(result.error)
+        self.assertEqual(result.response, b"AR0345\n")
+        self.assertTrue(
+            any(
+                event.kind == "eeprom_read" and event.detail == "EEPROM[0x03]"
+                for event in result.events
+            )
+        )
+
+    def test_real_formatter_uses_lowercase_address_hex(self):
+        cpu = self.firmware_cpu()
+        cpu.run(10_000)
+        result = execute_request(cpu, b"CR0A", step_limit=100_000)
+        self.assertIsNone(result.error)
+        self.assertEqual(result.response, b"CR0a00\n")

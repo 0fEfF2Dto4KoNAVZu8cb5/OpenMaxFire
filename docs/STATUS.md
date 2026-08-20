@@ -29,7 +29,9 @@ OpenMaxFire separates evidence into four levels:
 | Configuration | Record layout, A-unit ranges, lean-burn transforms, and checksum decoded | All BixCheck EXEs |
 | Checkout | 45 reachable tests; identical dormant 46th plate-motor record | Tables plus UI/dispatcher flow |
 | Downloader | `CW0FC4` reset; `EA`/`EB` identify; `E3` blocks; `ED` completion | All EXEs / emulator identify probe |
-| Emulator | Real 2.06/2.70/2.71 code emits `CR0000`+LF for `CR00`; PICkit code emits `EB` for `EA` | Experimental PIC14 harness |
+| Emulator | All 45 CR reads and all 768 A-unit EEPROM reads complete through real 2.06/2.70/2.71 code; PICkit code emits `EB` for `EA` | Experimental PIC14 harness |
+| Offline inputs | Door=CR02.5/RD1; drawer=CR02.6/RD4; thermostat=CR06.2/RB4; fan pot=CR09/AN3; feed pot=CR0A/AN4 | BixCheck masks plus firmware GPIO/ADC traces |
+| A-unit storage | Firmware reads A00-AFF through PIC16F877A internal data EEPROM registers | Emulator events and bank-aware handler trace |
 | J3/cable | Black four-pin connector location; factory cable P/N 2013324 | Vendor notes/manual |
 
 ## Important unresolved items
@@ -40,9 +42,10 @@ OpenMaxFire separates evidence into four levels:
 | Oscillator | 10 MHz is strongly inferred, not physically checked | Read marking/frequency |
 | Live framing | Software/emulator grammar is established; no electrical capture | Passive capture, then `CR00` only |
 | M/I families | Outer dispatch known; payload semantics unresolved | Deeper data-flow analysis or controlled capture |
-| Door input | Candidates are CR02 bits 4-7 and CR06 bit 2 | Cold/off polling while toggling one switch |
+| Input wiring | Offline pin/bit assignments are strong; serial 5215 wiring and polarity remain untested | Cold/off polling while toggling one switch |
+| Fuel select | CR02 bit 2 / RD3 mux slot is provisional; reachable 5.5 Checkout paths do not machine-check it | Selection-aware mux model or cold/off correlation |
 | Telemetry conversions | Indexes/widths mapped; several numeric formulas unresolved | Trace display conversions, then correlate safely |
-| EEPROM semantics | Addresses/types/checksum mapped; many calibration meanings rely on labels | Static handler work, then read-only backup |
+| EEPROM semantics | Internal storage, addresses/types/checksum, and read path mapped; many calibration meanings rely on labels | Read-only live backup, then field correlation |
 | Checkout thresholds | Direct actions mapped; some result criteria/state bits unresolved | Continue `Analyze*Result()` reconstruction |
 | Downloader | Framing/identify mapped; erase/program acknowledgements and recovery unproven | Isolated emulation, then sacrificial bench controller only |
 

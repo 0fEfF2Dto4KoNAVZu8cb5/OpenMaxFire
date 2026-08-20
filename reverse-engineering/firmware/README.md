@@ -33,8 +33,11 @@ Each image has:
 
 `emulation/` contains experimental execution evidence from
 `tools/pic14_emulator.py`: per-image summaries, UART/peripheral events, and
-recent instruction traces. It dynamically corroborates `CR00`→`CR0000`+LF for
-2.06/2.70/2.71 and the PICkit loader's reset-time `EA`→`EB` identify pair.
+recent instruction traces. Its `deep/` subtree contains the exhaustive 45-read
+CR matrix, handler RAM/SFR dependencies, watchpoints, GPIO/ADC differentials,
+and 768 verified synthetic internal-EEPROM reads. It also corroborates the
+PICkit loader's reset-time `EA`→`EB` identify pair. See the
+[deep-pass report](../../docs/reverse-engineering/emulator-deep-pass.md).
 
 The earlier gpdasm-based 2.71 bundle is retained as independent prior work. The portable decoder was checked against it and produced zero mnemonic/word mismatches over all 7,755 mapped 2.71 program words.
 

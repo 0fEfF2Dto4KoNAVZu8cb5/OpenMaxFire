@@ -12,7 +12,7 @@
     "limitations": [
       "Peripheral timing is synthetic and is not cycle-accurate.",
       "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
-      "Analog inputs, external switches, motors, watchdog, and electrical behavior are not modeled.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
       "A successful software trace does not establish hardware safety or live compatibility."
     ],
     "probe_ascii": "CR00",
@@ -123,7 +123,7 @@
     "limitations": [
       "Peripheral timing is synthetic and is not cycle-accurate.",
       "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
-      "Analog inputs, external switches, motors, watchdog, and electrical behavior are not modeled.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
       "A successful software trace does not establish hardware safety or live compatibility."
     ],
     "probe_ascii": "\\xEA",
@@ -234,7 +234,7 @@
     "limitations": [
       "Peripheral timing is synthetic and is not cycle-accurate.",
       "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
-      "Analog inputs, external switches, motors, watchdog, and electrical behavior are not modeled.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
       "A successful software trace does not establish hardware safety or live compatibility."
     ],
     "probe_ascii": "CR00",
@@ -345,7 +345,7 @@
     "limitations": [
       "Peripheral timing is synthetic and is not cycle-accurate.",
       "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
-      "Analog inputs, external switches, motors, watchdog, and electrical behavior are not modeled.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
       "A successful software trace does not establish hardware safety or live compatibility."
     ],
     "probe_ascii": "CR00",

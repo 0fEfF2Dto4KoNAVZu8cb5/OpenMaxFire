@@ -1,8 +1,9 @@
 # J3 protocol working specification
 
 Status: statically reconstructed from all three BixCheck executables and all
-three application-firmware generations; the `CR00` exchange is corroborated in
-offline PIC emulation. Nothing has yet been validated on serial 5215's J3 port.
+three application-firmware generations; every `CR00`-`CR0E` exchange and every
+`AR00`-`ARFF` read is corroborated in offline PIC emulation. Nothing has yet
+been validated on serial 5215's J3 port.
 
 ## Physical interface
 
@@ -69,7 +70,10 @@ BixCheck's `scanio()` removes CR and LF and then dispatches:
 Incoming hex accepts upper- or lowercase. Leading control bytes `01`, `02`, or
 `03` are stripped and the remainder is re-dispatched. `async::read_string()`
 accepts either CR or LF as the line terminator. Firmware transmit paths
-explicitly emit LF.
+explicitly emit LF. The real firmware formatter emits lowercase letters for
+hexadecimal nibbles A-F: for example, uppercase request `CR0A` returns
+`CR0a00` plus LF in the synthetic baseline. Clients must parse response hex
+case-insensitively.
 
 For an addressed response, BixCheck stores bytes 4-5 as the value at the
 address in bytes 2-3. It does not meaningfully validate byte 1; OpenMaxFire
@@ -80,8 +84,10 @@ while waiting for a non-telemetry result. This proves that unsolicited telemetry
 can be interleaved with request/response traffic.
 
 The experimental emulator executes the real 2.06, 2.70, and 2.71 code from
-reset. Each image responds to `CR00` with the bytes `CR0000 0A`, confirming one
-complete request/parser/handler/formatter path offline.
+reset. All 45 CR reads reach their expected handler and shared formatter, and
+all 768 A-unit reads return the injected internal-EEPROM fixture byte. This
+confirms the read parser/dispatch/formatter paths offline; it does not establish
+electrical compatibility.
 
 ## Remote front-panel actions
 
@@ -115,7 +121,8 @@ APIs. See [the downloader analysis](../reverse-engineering/bixcheck-downloader-p
    do not guess with writes.
 6. Send only `CR00`, capture exact bytes/timing, and require `CR0000` plus CR/LF.
 7. Read CR08 and CR0B-CR0E to identify data format and firmware.
-8. Only after stable read-only behavior, map CR02/CR06 by toggling one safe
-   switch at a time while the appliance is cold and off.
+8. Only after stable read-only behavior, validate the offline mappings
+   (door=CR02.5/RD1, drawer=CR02.6/RD4, thermostat=CR06.2/RB4) by toggling one
+   safe switch at a time while the appliance is cold and off.
 
 No `CW` request belongs in the first live session.

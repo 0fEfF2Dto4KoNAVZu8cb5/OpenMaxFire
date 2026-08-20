@@ -1,0 +1,62 @@
+{
+  "a_unit_read_mismatches": 0,
+  "a_unit_reads_executed": 768,
+  "adc_effect_records": 24,
+  "adc_register_sources": {
+    "CR09": [
+      "AN3"
+    ],
+    "CR0A": [
+      "AN4"
+    ]
+  },
+  "adc_scenarios": 96,
+  "boot_steps": 250000,
+  "cr_commands_executed": 45,
+  "cr_errors": 0,
+  "cr_formatters_reached": 45,
+  "cr_handlers_reached": 45,
+  "firmware_versions": [
+    "2.06",
+    "2.70",
+    "2.71"
+  ],
+  "fixture_metadata": [
+    {
+      "checksum": "0x643D",
+      "checksum_endpoint": "0x9A",
+      "checksum_storage": "64 3D",
+      "data_format": 5,
+      "model": "OPENMAXFIRE-LAB",
+      "production_date": "01012000",
+      "serial": "EMU00001"
+    },
+    {
+      "checksum": "0x9AF4",
+      "checksum_endpoint": "0xFF",
+      "checksum_storage": "9A F4",
+      "data_format": 7,
+      "model": "OPENMAXFIRE-LAB",
+      "production_date": "01012000",
+      "serial": "EMU00001"
+    }
+  ],
+  "generated_by": "tools/pic14_emulator.py project",
+  "gpio_effect_records": 18,
+  "gpio_input_scenarios": 51,
+  "handler_access_records": 424,
+  "handler_net_change_records": 215,
+  "handler_read_dependencies": 104,
+  "limitations": [
+    "GPIO and ADC stimuli are synthetic logical values, not electrical models.",
+    "The RD3 multiplexer is represented only as a pin level; external selection-aware hardware is not modeled.",
+    "Signal names come from cross-referencing BixCheck masks with firmware data flow and remain unvalidated on serial 5215.",
+    "The EEPROM fixture is conspicuously synthetic and contains no owner or stove calibration data.",
+    "No write request is issued by this deep pass."
+  ],
+  "probe_step_limit": 500000,
+  "schema": 1,
+  "status": "experimental offline emulation",
+  "synthetic_settle_steps": 50000,
+  "watchpoint_records": 197
+}

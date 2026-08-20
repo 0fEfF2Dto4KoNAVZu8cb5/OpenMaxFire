@@ -23,7 +23,7 @@
 - Annotated the reset vector, UART setup, ASCII-hex decoder, read/write parser, CR register handlers, and response terminator.
 - Identified UART register values `SPBRG=0x20`, `TXSTA=0x26`, and `RCSTA=0x90`.
 - Mapped CR00-CR0E static handlers and narrowed door-switch candidates to CR02/CR06 input bits.
-- Created this structured GitHub archive and documented the 19.2/38.4 kbaud conflict.
+- Created this structured GitHub archive and documented the initial baud/divisor ambiguity.
 - Completed a reproducible deep reverse-engineering pass over BixCheck 5.0.21,
   5.5.00, and 5.5.01 using retained MinGW COFF symbols, focused disassembly,
   decoded tables, call graphs, and normalized function comparison.
@@ -41,3 +41,16 @@
 - Built an experimental PIC16F877A execution harness. The real 2.06, 2.70, and
   2.71 images responded to `CR00` with `CR0000` plus LF; the PICkit loader
   responded to reset-time `EA` with `EB`.
+- Extended the emulator across every CR00-CR0E handler in all three application
+  generations. All 45 handlers and formatters completed, with exact RAM/SFR
+  read dependencies, instruction watchpoints, and net-change exports.
+- Discovered that the real response formatter uses lowercase hexadecimal
+  letters (`CR0A` returns `CR0a...`) even though host requests are uppercase.
+- Added separate GPIO latch/input modeling and cross-referenced BixCheck's
+  result masks: firebox door=CR02.5/RD1, ash drawer=CR02.6/RD4, and
+  thermostat=CR06.2/RB4. CR02.2 remains a provisional fuel-select mux slot.
+- Added reset-time ten-bit ADC replay and identified fan potentiometer=CR09/AN3
+  and feed potentiometer=CR0A/AN4 across all three generations.
+- Corrected A-unit storage to the PIC16F877A internal data EEPROM path, built
+  checksum-valid synthetic format-05/07 fixtures, and verified all 768
+  AR00-ARFF reads byte-for-byte.

@@ -68,10 +68,10 @@ table uses these direct serial actions (numbers are the manual/display numbers):
 
 | Test(s) | Direct action |
 | --- | --- |
-| 04-08 front-panel buttons | Read `CR00` and analyze button bits/state |
+| 04-08 front-panel buttons | Read `CR01`; none/ON/OFF/UP/DOWN are `00/02/01/04/08` |
 | 09 LEDs on | `CW04FF` |
 | 10 LEDs off | `CW0400` |
-| 11-14 door/drawer switch states | No direct write; observe controller state |
+| 11-14 door/drawer switch states | Read `CR02`; door is bit 5/RD1, drawer bit 6/RD4 |
 | 15 plate motor on | `CW0500` |
 | 16-17 plate motor off/burn position | No direct write; wait/observe |
 | 18 air pump on | `CW0600` |
@@ -82,7 +82,17 @@ table uses these direct serial actions (numbers are the manual/display numbers):
 | 23 convection level 4 | `CW0804` / `CW0864` |
 | 24 convection fan off | `CW0800` |
 | 25 thermometer | Read `CR04` |
-| 26-37 remaining inputs | No direct actuation; observe operator/input state |
+| 26-28 fan potentiometer | Read `CR09` (AN3) |
+| 29-31 feed potentiometer | Read `CR0A` (AN4) |
+| 33-34 thermostat | Read `CR06` bit 2 (RB4) |
+| 32, 35-37 remaining inputs | No direct actuation; observe operator/input state |
+
+The pin/register assignments above are emulator-confirmed by synthetic GPIO or
+ADC differentials and cross-referenced to BixCheck masks. They are not yet
+validated on serial 5215. The two fuel-select records are reachable in the UI,
+but the current 5.5 result dispatcher does not machine-check their states;
+retained unreachable handlers make CR02 bit 2 an explicitly provisional
+candidate.
 
 Automatic sender actions are identical across all three EXEs:
 

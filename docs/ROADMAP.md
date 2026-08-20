@@ -11,6 +11,12 @@
 - [x] Deep-analyze all three BixCheck EXEs and export symbols, call graphs,
   configuration/telemetry/Checkout tables, focused assembly, and semantic diffs.
 - [x] Build a read-only virtual serial lab and experimental PIC execution harness.
+- [x] Execute CR00-CR0E on all three application generations with handler-level
+  RAM/SFR traces, watchpoints, and response artifacts.
+- [x] Model synthetic GPIO/ADC inputs and map door, drawer, thermostat, and both
+  potentiometers offline; retain fuel-select as provisional.
+- [x] Model PIC internal data EEPROM and verify AR00-ARFF across all three
+  generations with checksum-valid format-05/07 fixtures.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
 - [x] Preserve the prior OpenMaxFire v0.1 snapshot.
 - [ ] Publish a public preservation copy to Archive.org after reviewing redistribution and privacy.

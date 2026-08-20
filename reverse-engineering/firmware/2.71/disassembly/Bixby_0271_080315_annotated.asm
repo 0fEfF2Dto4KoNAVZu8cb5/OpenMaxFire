@@ -15,7 +15,8 @@
 ;   SPBRG = 0x20
 ;   TXSTA = 0x26
 ;   RCSTA = 0x90
-; With a 20 MHz oscillator this is approximately 38.4 kbaud.
+; BixCheck selects 19,200 baud for this generation; paired with SPBRG=0x20,
+; this strongly implies a 10 MHz controller oscillator (physical check pending).
 ; =============================================================================
 
 

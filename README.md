@@ -22,8 +22,12 @@ Confirmed by static evidence:
 - BixCheck 5.0.21 selects 9,600 baud; 5.5.x selects 9,600/19,200, all at 8N1.
 - The configuration/telemetry/Checkout tables, lean-burn transforms, and
   configuration checksum are now machine-readable.
-- The experimental emulator runs the actual firmware: all application images
-  answer `CR00` with `CR0000`+LF, and the PICkit loader answers `EA` with `EB`.
+- The experimental emulator runs the actual firmware: all 45 `CR00`-`CR0E`
+  handlers and all 768 `AR00`-`ARFF` internal-EEPROM reads complete, while the
+  PICkit loader answers `EA` with `EB`.
+- BixCheck masks plus firmware GPIO/ADC traces map door to CR02.5/RD1, ash
+  drawer to CR02.6/RD4, thermostat to CR06.2/RB4, fan pot to CR09/AN3, and feed
+  pot to CR0A/AN4. These are offline mappings, not live wiring validation.
 - The recovered stove is serial 5215; its owner identifies it as a MaxFire 115.
 
 Not yet confirmed on physical hardware:
@@ -32,7 +36,8 @@ Not yet confirmed on physical hardware:
 - Physical oscillator marking/frequency. The exact BixCheck rates and firmware
   divisors strongly imply 10 MHz, but the board has not been checked.
 - Live electrical/timing validation of the reconstructed response grammar.
-- Which exposed input bit is the firebox door switch.
+- Physical validation of the offline door/drawer/thermostat/pot mappings and
+  the still-provisional fuel-select multiplexer slot.
 - Any remote command on the actual stove.
 
 No live connection should be attempted until [SAFETY.md](SAFETY.md) and the [J3 working specification](docs/protocol/j3-protocol.md) have been reviewed.
@@ -89,7 +94,8 @@ python tools/pic14_emulator.py project --repo-root .
 Start with [the research status](docs/STATUS.md),
 [the BixCheck comparison](docs/reverse-engineering/bixcheck-comparison.md),
 [the J3 protocol](docs/protocol/j3-protocol.md),
-[the firmware comparison](docs/reverse-engineering/firmware-comparison.md), and
+[the firmware comparison](docs/reverse-engineering/firmware-comparison.md),
+[the exhaustive emulator pass](docs/reverse-engineering/emulator-deep-pass.md), and
 [the preservation manifest](preservation/MANIFEST.md).
 
 ## Licensing

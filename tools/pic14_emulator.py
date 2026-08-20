@@ -15,18 +15,26 @@ It never connects to a stove and never modifies the source HEX files.
 from __future__ import annotations
 
 import argparse
+import copy
 import csv
 import json
-from collections import Counter, deque
+from collections import Counter, defaultdict, deque
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Mapping
 
 
 try:
-    from firmware_pipeline import IHexImage, decode_pic14, parse_ihex, region_for_word
+    from firmware_pipeline import (
+        CR_HANDLER_MATRIX,
+        IHexImage,
+        decode_pic14,
+        parse_ihex,
+        region_for_word,
+    )
 except ModuleNotFoundError:
     from tools.firmware_pipeline import (  # type: ignore[no-redef]
+        CR_HANDLER_MATRIX,
         IHexImage,
         decode_pic14,
         parse_ihex,
@@ -48,9 +56,15 @@ SFR_TMR0 = 0x001
 SFR_PCL = 0x002
 SFR_STATUS = 0x003
 SFR_FSR = 0x004
+SFR_PORTA = 0x005
+SFR_PORTB = 0x006
+SFR_PORTC = 0x007
+SFR_PORTD = 0x008
+SFR_PORTE = 0x009
 SFR_PCLATH = 0x00A
 SFR_INTCON = 0x00B
 SFR_PIR1 = 0x00C
+SFR_PIR2 = 0x00D
 SFR_TMR1L = 0x00E
 SFR_TMR1H = 0x00F
 SFR_TMR2 = 0x011
@@ -58,15 +72,24 @@ SFR_SSPBUF = 0x013
 SFR_RCSTA = 0x018
 SFR_TXREG = 0x019
 SFR_RCREG = 0x01A
+SFR_ADRESH = 0x01E
 SFR_ADCON0 = 0x01F
+SFR_TRISA = 0x085
+SFR_TRISB = 0x086
+SFR_TRISC = 0x087
+SFR_TRISD = 0x088
+SFR_TRISE = 0x089
 SFR_PIE1 = 0x08C
 SFR_SSPCON2 = 0x091
 SFR_PR2 = 0x092
 SFR_TXSTA = 0x098
 SFR_SPBRG = 0x099
+SFR_ADRESL = 0x09E
+SFR_ADCON1 = 0x09F
 SFR_EEDATA = 0x10C
 SFR_EEADR = 0x10D
 SFR_EECON1 = 0x18C
+SFR_EECON2 = 0x18D
 
 INTCON_T0IF = 2
 INTCON_PEIE = 6
@@ -76,6 +99,66 @@ PIR1_TMR2IF = 1
 PIR1_TXIF = 4
 PIR1_RCIF = 5
 PIE1_RCIE = 5
+
+
+PORT_NAMES = {
+    SFR_PORTA: "PORTA",
+    SFR_PORTB: "PORTB",
+    SFR_PORTC: "PORTC",
+    SFR_PORTD: "PORTD",
+    SFR_PORTE: "PORTE",
+}
+PORT_ADDRESS_BY_NAME = {name: address for address, name in PORT_NAMES.items()}
+TRIS_BY_PORT = {
+    SFR_PORTA: SFR_TRISA,
+    SFR_PORTB: SFR_TRISB,
+    SFR_PORTC: SFR_TRISC,
+    SFR_PORTD: SFR_TRISD,
+    SFR_PORTE: SFR_TRISE,
+}
+SFR_NAMES = {
+    SFR_INDF: "INDF",
+    SFR_TMR0: "TMR0",
+    SFR_PCL: "PCL",
+    SFR_STATUS: "STATUS",
+    SFR_FSR: "FSR",
+    **PORT_NAMES,
+    SFR_PCLATH: "PCLATH",
+    SFR_INTCON: "INTCON",
+    SFR_PIR1: "PIR1",
+    SFR_PIR2: "PIR2",
+    SFR_TMR1L: "TMR1L",
+    SFR_TMR1H: "TMR1H",
+    SFR_TMR2: "TMR2",
+    SFR_SSPBUF: "SSPBUF",
+    SFR_RCSTA: "RCSTA",
+    SFR_TXREG: "TXREG",
+    SFR_RCREG: "RCREG",
+    SFR_ADRESH: "ADRESH",
+    SFR_ADCON0: "ADCON0",
+    SFR_TRISA: "TRISA",
+    SFR_TRISB: "TRISB",
+    SFR_TRISC: "TRISC",
+    SFR_TRISD: "TRISD",
+    SFR_TRISE: "TRISE",
+    SFR_PIE1: "PIE1",
+    SFR_SSPCON2: "SSPCON2",
+    SFR_PR2: "PR2",
+    SFR_TXSTA: "TXSTA",
+    SFR_SPBRG: "SPBRG",
+    SFR_ADRESL: "ADRESL",
+    SFR_ADCON1: "ADCON1",
+    SFR_EEDATA: "EEDATA",
+    SFR_EEADR: "EEADR",
+    SFR_EECON1: "EECON1",
+    SFR_EECON2: "EECON2",
+}
+
+
+def memory_name(address: int | None) -> str:
+    if address is None:
+        return "NULL_INDF"
+    return SFR_NAMES.get(address, f"RAM_0x{address:03X}")
 
 
 class EmulationError(RuntimeError):
@@ -102,20 +185,61 @@ class InstructionTrace:
     status: int
 
 
+@dataclass(frozen=True, slots=True)
+class MemoryAccess:
+    step: int
+    pc: int
+    action: str
+    address: int | None
+    name: str
+    value: int
+    via: str
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryChange:
+    step: int
+    pc: int
+    address: int | None
+    name: str
+    before: int
+    after: int
+    via: str
+
+
 class PIC16F877A:
     """Instruction-accurate core with deterministic lightweight peripherals."""
 
-    def __init__(self, image: IHexImage, *, fast_forward_delays: bool = True):
+    def __init__(
+        self,
+        image: IHexImage,
+        *,
+        fast_forward_delays: bool = True,
+        data_eeprom: Mapping[int, int] | bytes | bytearray | memoryview | None = None,
+        gpio_inputs: Mapping[int | str, int] | None = None,
+        adc_inputs: Mapping[int, int] | None = None,
+    ):
         self.words = {
             address: word & 0x3FFF
             for address, word in image.words.items()
             if region_for_word(address) == "program"
         }
-        self.eeprom = {
+        image_eeprom = {
             address - 0x2100: word & 0xFF
             for address, word in image.words.items()
             if region_for_word(address) == "eeprom"
         }
+        self.eeprom = {address: 0xFF for address in range(0x100)}
+        self.eeprom.update(image_eeprom)
+        if data_eeprom is not None:
+            if isinstance(data_eeprom, Mapping):
+                supplied = data_eeprom.items()
+            else:
+                supplied = enumerate(bytes(data_eeprom))
+            for address, value in supplied:
+                if not 0 <= address <= 0xFF or not 0 <= value <= 0xFF:
+                    raise ValueError("data EEPROM addresses and values must be bytes")
+                self.eeprom[address] = value
         self.ram = bytearray(0x200)
         self.w = 0
         self.pc = 0
@@ -129,9 +253,96 @@ class PIC16F877A:
         self.pc_hits: Counter[int] = Counter()
         self.fast_forward_delays = fast_forward_delays
         self.accelerated_delay_loops = 0
+        self.port_inputs = {address: 0 for address in PORT_NAMES}
+        if gpio_inputs:
+            for port, value in gpio_inputs.items():
+                self.set_gpio_port(port, value)
+        self.adc_inputs = {channel: 0 for channel in range(8)}
+        if adc_inputs:
+            for channel, value in adc_inputs.items():
+                self.set_adc_input(channel, value)
+        self.memory_trace_enabled = False
+        self.memory_accesses: list[MemoryAccess] = []
+        self.memory_changes: list[MemoryChange] = []
+        self._instruction_pc = 0
         self.ram[SFR_STATUS] = (1 << STATUS_TO) | (1 << STATUS_PD)
         self.ram[SFR_PIR1] = 1 << PIR1_TXIF
         self.ram[SFR_PR2] = 0xFF
+
+    def clone(self) -> "PIC16F877A":
+        """Clone a deterministic booted state for an independent probe."""
+
+        return copy.deepcopy(self)
+
+    def set_gpio_port(self, port: int | str, value: int, *, mask: int = 0xFF) -> None:
+        """Set synthetic external pin levels without changing output latches."""
+
+        if isinstance(port, str):
+            try:
+                address = PORT_ADDRESS_BY_NAME[port.upper()]
+            except KeyError as exc:
+                raise ValueError(f"unknown GPIO port {port!r}") from exc
+        else:
+            address = port
+        if address not in PORT_NAMES:
+            raise ValueError(f"0x{address:03X} is not a modeled GPIO port")
+        if not 0 <= value <= 0xFF or not 0 <= mask <= 0xFF:
+            raise ValueError("GPIO value and mask must be bytes")
+        previous = self.port_inputs[address]
+        self.port_inputs[address] = (previous & ~mask) | (value & mask)
+
+    def set_gpio_bit(self, port: int | str, bit: int, high: bool) -> None:
+        if not 0 <= bit <= 7:
+            raise ValueError("GPIO bit must be from 0 through 7")
+        self.set_gpio_port(port, (1 << bit) if high else 0, mask=1 << bit)
+
+    def set_adc_input(self, channel: int, value: int) -> None:
+        if not 0 <= channel <= 7:
+            raise ValueError("ADC channel must be from 0 through 7")
+        if not 0 <= value <= 0x3FF:
+            raise ValueError("ADC input must be a 10-bit value")
+        self.adc_inputs[channel] = value
+
+    def begin_memory_trace(self) -> None:
+        self.memory_accesses.clear()
+        self.memory_changes.clear()
+        self.memory_trace_enabled = True
+
+    def end_memory_trace(self) -> tuple[list[MemoryAccess], list[MemoryChange]]:
+        self.memory_trace_enabled = False
+        return list(self.memory_accesses), list(self.memory_changes)
+
+    def _record_access(
+        self, action: str, address: int | None, value: int, via: str
+    ) -> None:
+        if self.memory_trace_enabled:
+            self.memory_accesses.append(
+                MemoryAccess(
+                    self.steps,
+                    self._instruction_pc,
+                    action,
+                    address,
+                    memory_name(address),
+                    value & 0xFF,
+                    via,
+                )
+            )
+
+    def _record_change(
+        self, address: int | None, before: int, after: int, via: str
+    ) -> None:
+        if self.memory_trace_enabled and before != after:
+            self.memory_changes.append(
+                MemoryChange(
+                    self.steps,
+                    self._instruction_pc,
+                    address,
+                    memory_name(address),
+                    before & 0xFF,
+                    after & 0xFF,
+                    via,
+                )
+            )
 
     @property
     def status(self) -> int:
@@ -139,7 +350,9 @@ class PIC16F877A:
 
     @status.setter
     def status(self, value: int) -> None:
+        before = self.ram[SFR_STATUS]
         self.ram[SFR_STATUS] = value & 0xFF
+        self._record_change(SFR_STATUS, before, self.ram[SFR_STATUS], "alu-flag")
 
     def _flag(self, bit: int) -> bool:
         return bool(self.status & (1 << bit))
@@ -171,6 +384,13 @@ class PIC16F877A:
     def _read_effective(self, address: int | None) -> int:
         if address is None:
             return 0
+        if address in PORT_NAMES:
+            # PIC port reads return physical pin levels for inputs and the
+            # output latch for outputs.  Keep external levels separate from
+            # the latch so virtual switch changes cannot overwrite outputs.
+            tris = self.ram[TRIS_BY_PORT[address]]
+            latch = self.ram[address]
+            return (latch & ~tris) | (self.port_inputs[address] & tris)
         if address == SFR_PCL:
             return self.pc & 0xFF
         if address == SFR_PIR1:
@@ -194,8 +414,14 @@ class PIC16F877A:
     def read_file(self, file_register: int) -> int:
         effective = self._resolve_direct(file_register)
         if effective == SFR_INDF:
-            return self._read_effective(self._resolve_indirect())
-        return self._read_effective(effective)
+            address = self._resolve_indirect()
+            via = "indirect"
+        else:
+            address = effective
+            via = "direct"
+        value = self._read_effective(address)
+        self._record_access("read", address, value, via)
+        return value
 
     def _write_effective(self, address: int | None, value: int) -> None:
         if address is None:
@@ -234,7 +460,27 @@ class PIC16F877A:
                 )
             return
         if address == SFR_ADCON0:
-            self.ram[address] = value & ~0x04
+            self.ram[address] = value
+            if value & 0x04:  # GO/DONE: complete a deterministic conversion.
+                channel = (value >> 3) & 0x07
+                sample = self.adc_inputs[channel]
+                if self.ram[SFR_ADCON1] & 0x80:  # ADFM: right justified.
+                    self.ram[SFR_ADRESH] = (sample >> 8) & 0x03
+                    self.ram[SFR_ADRESL] = sample & 0xFF
+                else:
+                    self.ram[SFR_ADRESH] = (sample >> 2) & 0xFF
+                    self.ram[SFR_ADRESL] = (sample & 0x03) << 6
+                self.ram[SFR_PIR1] |= 1 << 6  # ADIF
+                self.events.append(
+                    TraceEvent(
+                        self.steps,
+                        "adc_sample",
+                        self.pc,
+                        sample,
+                        f"AN{channel}=0x{sample:03X}",
+                    )
+                )
+            self.ram[address] &= ~0x04
             return
         if address == SFR_SSPCON2:
             # Model an attached, immediately acknowledging I2C device.  The
@@ -253,9 +499,16 @@ class PIC16F877A:
     def write_file(self, file_register: int, value: int) -> None:
         effective = self._resolve_direct(file_register)
         if effective == SFR_INDF:
-            self._write_effective(self._resolve_indirect(), value)
+            address = self._resolve_indirect()
+            via = "indirect"
         else:
-            self._write_effective(effective, value)
+            address = effective
+            via = "direct"
+        before = 0 if address is None else self.ram[address]
+        self._record_access("write", address, value, via)
+        self._write_effective(address, value)
+        after = 0 if address is None else self.ram[address]
+        self._record_change(address, before, after, via)
 
     def _write_destination(self, file_register: int, destination_file: bool, value: int) -> None:
         value &= 0xFF
@@ -329,6 +582,7 @@ class PIC16F877A:
             return trace
 
         current_pc = self.pc
+        self._instruction_pc = current_pc
         try:
             word = self.words[current_pc]
         except KeyError as exc:
@@ -540,6 +794,237 @@ PROBE_SPECS = (
 )
 
 
+APPLICATION_SPECS = (
+    (
+        "2.06",
+        "2.06/extracted/Bixby_02060021_Downloader.hex",
+        5,
+    ),
+    (
+        "2.70",
+        "2.70/extracted/Bixby_0270_070206.hex",
+        7,
+    ),
+    (
+        "2.71",
+        "2.71/extracted/Bixby_0271_080315.hex",
+        7,
+    ),
+)
+
+RESPONSE_FORMATTERS = {
+    "2.06": 0x1265,
+    "2.70": 0x1352,
+    "2.71": 0x132F,
+}
+
+CHECKSUM_END_BY_FORMAT = {
+    0: 0x4B,
+    1: 0x4B,
+    2: 0x4C,
+    3: 0x4C,
+    4: 0x69,
+    5: 0x9A,
+    7: 0xFF,
+}
+
+VOLATILE_SFRS = frozenset(
+    (SFR_TMR0, SFR_TMR1L, SFR_TMR1H, SFR_TMR2, SFR_PIR1, SFR_INTCON)
+)
+
+
+@dataclass(slots=True)
+class RequestExecution:
+    start_step: int
+    request: bytes
+    response: bytes
+    steps: int
+    error: str | None
+    handler_seen: bool
+    formatter_seen: bool
+    accesses: list[MemoryAccess]
+    changes: list[MemoryChange]
+    net_changes: list[tuple[int, int, int]]
+    events: list[TraceEvent]
+
+
+def calculate_fixture_checksum(data_format: int, data: bytes | bytearray) -> int:
+    """Implement the BixCheck add-then-ROL16 configuration checksum."""
+
+    try:
+        end = CHECKSUM_END_BY_FORMAT[data_format]
+    except KeyError as exc:
+        raise ValueError(f"unsupported data format {data_format}") from exc
+    if len(data) < end + 1:
+        raise ValueError(f"format {data_format} requires EEPROM through 0x{end:02X}")
+    checksum = 0
+    for value in data[0x02 : end + 1]:
+        checksum = (checksum + value) & 0xFFFF
+        checksum = ((checksum << 1) | (checksum >> 15)) & 0xFFFF
+    return checksum
+
+
+def synthetic_controller_eeprom(data_format: int) -> bytes:
+    """Build an obvious, deterministic, checksum-valid 256-byte lab fixture."""
+
+    data = bytearray(((address * 0x25) + 0x5A) & 0xFF for address in range(0x100))
+    data[0x02] = data_format
+    data[0x03:0x0B] = b"EMU00001"
+    data[0x0B:0x13] = b"01012000"
+    data[0x13:0x23] = b"OPENMAXFIRE-LAB "
+    checksum = calculate_fixture_checksum(data_format, data)
+    data[0x00] = checksum >> 8
+    data[0x01] = checksum & 0xFF
+    return bytes(data)
+
+
+def response_value(response: bytes) -> int | None:
+    """Return the data byte from a six-character addressed response."""
+
+    line = response.rstrip(b"\r\n")
+    if len(line) != 6:
+        return None
+    try:
+        return int(line[4:6], 16)
+    except ValueError:
+        return None
+
+
+def execute_request(
+    cpu: PIC16F877A,
+    request: bytes,
+    *,
+    step_limit: int,
+    handler_pc: int | None = None,
+    formatter_pc: int | None = None,
+    trace_entire_request: bool = False,
+) -> RequestExecution:
+    """Execute one request and optionally isolate its register handler."""
+
+    start_step = cpu.steps
+    tx_before = len(cpu.tx_bytes)
+    events_before = len(cpu.events)
+    accesses: list[MemoryAccess] = []
+    changes: list[MemoryChange] = []
+    net_changes: list[tuple[int, int, int]] = []
+    handler_seen = False
+    formatter_seen = False
+    trace_started = False
+    ram_before: bytes | None = None
+    error: str | None = None
+    if cpu.memory_trace_enabled:
+        cpu.end_memory_trace()
+    if trace_entire_request:
+        ram_before = bytes(cpu.ram)
+        cpu.begin_memory_trace()
+        trace_started = True
+    cpu.queue_uart(request)
+    completed = False
+    try:
+        for _ in range(step_limit):
+            if (
+                handler_pc is not None
+                and not handler_seen
+                and cpu.pc == handler_pc
+            ):
+                handler_seen = True
+                ram_before = bytes(cpu.ram)
+                cpu.begin_memory_trace()
+                trace_started = True
+            if (
+                trace_started
+                and handler_seen
+                and formatter_pc is not None
+                and cpu.pc == formatter_pc
+            ):
+                accesses, changes = cpu.end_memory_trace()
+                trace_started = False
+                formatter_seen = True
+                assert ram_before is not None
+                net_changes = [
+                    (address, before, after)
+                    for address, (before, after) in enumerate(
+                        zip(ram_before, bytes(cpu.ram), strict=True)
+                    )
+                    if before != after
+                ]
+            cpu.step()
+            if b"\n" in bytes(cpu.tx_bytes[tx_before:]):
+                completed = True
+                break
+        if not completed:
+            error = f"no LF response within {step_limit} modeled instructions"
+    except EmulationError as exc:
+        error = str(exc)
+    finally:
+        if trace_started:
+            accesses, changes = cpu.end_memory_trace()
+            if ram_before is not None:
+                net_changes = [
+                    (address, before, after)
+                    for address, (before, after) in enumerate(
+                        zip(ram_before, bytes(cpu.ram), strict=True)
+                    )
+                    if before != after
+                ]
+    return RequestExecution(
+        start_step=start_step,
+        request=request,
+        response=bytes(cpu.tx_bytes[tx_before:]),
+        steps=cpu.steps - start_step,
+        error=error,
+        handler_seen=handler_seen,
+        formatter_seen=formatter_seen,
+        accesses=accesses,
+        changes=changes,
+        net_changes=net_changes,
+        events=list(cpu.events[events_before:]),
+    )
+
+
+def read_cr_registers(
+    cpu: PIC16F877A,
+    registers: Iterable[int],
+    *,
+    step_limit: int,
+) -> tuple[dict[int, int | None], list[str]]:
+    values: dict[int, int | None] = {}
+    errors: list[str] = []
+    for register in registers:
+        if not 0 <= register <= 0x0E:
+            raise ValueError("CR register must be in the range 0x00 through 0x0E")
+        request = f"CR{register:02X}".encode("ascii")
+        # Stop-on-LF leaves the firmware only one instruction past its final
+        # TXREG write.  Clone the settled state for every query so a following
+        # command cannot arrive before the parser returns to its idle state.
+        result = execute_request(cpu.clone(), request, step_limit=step_limit)
+        values[register] = response_value(result.response)
+        if result.error:
+            errors.append(f"{request.decode()}: {result.error}")
+    return values, errors
+
+
+def read_cr_snapshot(
+    cpu: PIC16F877A, *, step_limit: int
+) -> tuple[dict[int, int | None], list[str]]:
+    return read_cr_registers(cpu, range(0x0F), step_limit=step_limit)
+
+
+def changed_bits(before: int, after: int) -> str:
+    mask = before ^ after
+    return ",".join(str(bit) for bit in range(8) if mask & (1 << bit))
+
+
+def write_csv_rows(
+    path: Path, fieldnames: tuple[str, ...], rows: Iterable[Mapping[str, object]]
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def ascii_preview(data: bytes | bytearray) -> str:
     return "".join(chr(value) if 0x20 <= value <= 0x7E else f"\\x{value:02X}" for value in data)
 
@@ -600,8 +1085,10 @@ def probe_image(
         ],
         "limitations": [
             "Peripheral timing is synthetic and is not cycle-accurate.",
-            "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
-            "Analog inputs, external switches, motors, watchdog, and electrical behavior are not modeled.",
+            "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while "
+            "preserving their terminal register state.",
+            "GPIO and ADC inputs are synthetic; external mux hardware, motors, "
+            "watchdog, and electrical behavior are not modeled.",
             "A successful software trace does not establish hardware safety or live compatibility.",
         ],
     }
@@ -652,6 +1139,574 @@ def write_probe_artifacts(
             writer.writerow(row)
 
 
+def run_deep_project(
+    repo_root: Path,
+    boot_steps: int,
+    probe_steps: int,
+) -> dict[str, object]:
+    """Run exhaustive offline read probes and write machine-readable evidence."""
+
+    firmware_root = repo_root / "reverse-engineering" / "firmware"
+    destination = firmware_root / "emulation" / "deep"
+    destination.mkdir(parents=True, exist_ok=True)
+    settle_steps = max(10_000, min(50_000, boot_steps))
+
+    fixtures = {
+        data_format: synthetic_controller_eeprom(data_format)
+        for data_format in sorted({item[2] for item in APPLICATION_SPECS})
+    }
+    fixture_rows: list[dict[str, object]] = []
+    fixture_metadata: list[dict[str, object]] = []
+    for data_format, fixture in fixtures.items():
+        checksum = calculate_fixture_checksum(data_format, fixture)
+        endpoint = CHECKSUM_END_BY_FORMAT[data_format]
+        fixture_metadata.append(
+            {
+                "data_format": data_format,
+                "checksum": f"0x{checksum:04X}",
+                "checksum_storage": f"{fixture[0]:02X} {fixture[1]:02X}",
+                "checksum_endpoint": f"0x{endpoint:02X}",
+                "serial": fixture[0x03:0x0B].decode("ascii"),
+                "production_date": fixture[0x0B:0x13].decode("ascii"),
+                "model": fixture[0x13:0x23].decode("ascii").rstrip(),
+            }
+        )
+        for address, value in enumerate(fixture):
+            if address < 0x02:
+                role = "stored checksum"
+            elif address == 0x02:
+                role = "data format"
+            elif 0x03 <= address <= 0x0A:
+                role = "synthetic serial"
+            elif 0x0B <= address <= 0x12:
+                role = "synthetic production date"
+            elif 0x13 <= address <= 0x22:
+                role = "synthetic model"
+            else:
+                role = "deterministic lab pattern"
+            fixture_rows.append(
+                {
+                    "data_format": f"0x{data_format:02X}",
+                    "address": f"0x{address:02X}",
+                    "value": f"0x{value:02X}",
+                    "ascii": chr(value) if 0x20 <= value <= 0x7E else "",
+                    "checksum_covered": "yes" if 0x02 <= address <= endpoint else "no",
+                    "role": role,
+                }
+            )
+    write_csv_rows(
+        destination / "controller-eeprom-fixtures.csv",
+        ("data_format", "address", "value", "ascii", "checksum_covered", "role"),
+        fixture_rows,
+    )
+
+    booted: dict[str, PIC16F877A] = {}
+    parsed_images: dict[str, IHexImage] = {}
+    formats: dict[str, int] = {}
+    images: dict[str, str] = {}
+    for version, relative, data_format in APPLICATION_SPECS:
+        path = firmware_root / relative
+        image = parse_ihex(path.read_bytes())
+        cpu = PIC16F877A(
+            image,
+            data_eeprom=fixtures[data_format],
+        )
+        cpu.run(boot_steps)
+        cpu.events.clear()
+        cpu.recent.clear()
+        cpu.pc_hits.clear()
+        booted[version] = cpu
+        parsed_images[version] = image
+        formats[version] = data_format
+        images[version] = path.name
+
+    cr_rows: list[dict[str, object]] = []
+    access_rows: list[dict[str, object]] = []
+    watch_rows: list[dict[str, object]] = []
+    net_change_rows: list[dict[str, object]] = []
+    dependencies: dict[
+        tuple[str, str, int | None, str], dict[str, object]
+    ] = defaultdict(lambda: {"count": 0, "values": set(), "pcs": set(), "vias": set()})
+
+    for version, _relative, _data_format in APPLICATION_SPECS:
+        for register, handler_pc in enumerate(CR_HANDLER_MATRIX[version]):
+            request = f"CR{register:02X}".encode("ascii")
+            cpu = booted[version].clone()
+            result = execute_request(
+                cpu,
+                request,
+                step_limit=probe_steps,
+                handler_pc=handler_pc,
+                formatter_pc=RESPONSE_FORMATTERS[version],
+            )
+            value = response_value(result.response)
+            cr_rows.append(
+                {
+                    "version": version,
+                    "image": images[version],
+                    "request": request.decode("ascii"),
+                    "response": ascii_preview(result.response),
+                    "response_hex": result.response.hex(" ").upper(),
+                    "value": "" if value is None else f"0x{value:02X}",
+                    "handler_pc": f"0x{handler_pc:04X}",
+                    "formatter_pc": f"0x{RESPONSE_FORMATTERS[version]:04X}",
+                    "handler_seen": "yes" if result.handler_seen else "no",
+                    "formatter_seen": "yes" if result.formatter_seen else "no",
+                    "steps": result.steps,
+                    "reads": sum(item.action == "read" for item in result.accesses),
+                    "writes": sum(item.action == "write" for item in result.accesses),
+                    "watchpoint_changes": len(result.changes),
+                    "net_changes": len(result.net_changes),
+                    "error": result.error or "",
+                }
+            )
+            for ordinal, item in enumerate(result.accesses, start=1):
+                address_text = "" if item.address is None else f"0x{item.address:03X}"
+                access_rows.append(
+                    {
+                        "version": version,
+                        "request": request.decode("ascii"),
+                        "ordinal": ordinal,
+                        "command_step": item.step - result.start_step,
+                        "pc": f"0x{item.pc:04X}",
+                        "action": item.action,
+                        "address": address_text,
+                        "name": item.name,
+                        "value": f"0x{item.value:02X}",
+                        "via": item.via,
+                    }
+                )
+                if item.action == "read":
+                    dependency = dependencies[
+                        (version, request.decode("ascii"), item.address, item.name)
+                    ]
+                    dependency["count"] = int(dependency["count"]) + 1
+                    dependency["values"].add(item.value)  # type: ignore[union-attr]
+                    dependency["pcs"].add(item.pc)  # type: ignore[union-attr]
+                    dependency["vias"].add(item.via)  # type: ignore[union-attr]
+            for ordinal, item in enumerate(result.changes, start=1):
+                watch_rows.append(
+                    {
+                        "version": version,
+                        "request": request.decode("ascii"),
+                        "ordinal": ordinal,
+                        "command_step": item.step - result.start_step,
+                        "pc": f"0x{item.pc:04X}",
+                        "address": "" if item.address is None else f"0x{item.address:03X}",
+                        "name": item.name,
+                        "before": f"0x{item.before:02X}",
+                        "after": f"0x{item.after:02X}",
+                        "changed_bits": changed_bits(item.before, item.after),
+                        "via": item.via,
+                    }
+                )
+            for address, before, after in result.net_changes:
+                net_change_rows.append(
+                    {
+                        "version": version,
+                        "request": request.decode("ascii"),
+                        "address": f"0x{address:03X}",
+                        "name": memory_name(address),
+                        "before": f"0x{before:02X}",
+                        "after": f"0x{after:02X}",
+                        "changed_bits": changed_bits(before, after),
+                        "volatile": "yes" if address in VOLATILE_SFRS else "no",
+                    }
+                )
+
+    dependency_rows: list[dict[str, object]] = []
+    for (version, request, address, name), detail in sorted(
+        dependencies.items(),
+        key=lambda item: (item[0][0], item[0][1], -1 if item[0][2] is None else item[0][2]),
+    ):
+        dependency_rows.append(
+            {
+                "version": version,
+                "request": request,
+                "address": "" if address is None else f"0x{address:03X}",
+                "name": name,
+                "read_count": detail["count"],
+                "values": " ".join(
+                    f"0x{value:02X}" for value in sorted(detail["values"])  # type: ignore[arg-type]
+                ),
+                "pcs": " ".join(
+                    f"0x{pc:04X}" for pc in sorted(detail["pcs"])  # type: ignore[arg-type]
+                ),
+                "via": " ".join(sorted(detail["vias"])),  # type: ignore[arg-type]
+            }
+        )
+
+    write_csv_rows(
+        destination / "cr-read-matrix.csv",
+        (
+            "version", "image", "request", "response", "response_hex", "value",
+            "handler_pc", "formatter_pc", "handler_seen", "formatter_seen", "steps",
+            "reads", "writes", "watchpoint_changes", "net_changes", "error",
+        ),
+        cr_rows,
+    )
+    write_csv_rows(
+        destination / "cr-handler-accesses.csv",
+        (
+            "version", "request", "ordinal", "command_step", "pc", "action",
+            "address", "name", "value", "via",
+        ),
+        access_rows,
+    )
+    write_csv_rows(
+        destination / "cr-handler-dependencies.csv",
+        ("version", "request", "address", "name", "read_count", "values", "pcs", "via"),
+        dependency_rows,
+    )
+    write_csv_rows(
+        destination / "cr-handler-watchpoints.csv",
+        (
+            "version", "request", "ordinal", "command_step", "pc", "address",
+            "name", "before", "after", "changed_bits", "via",
+        ),
+        watch_rows,
+    )
+    write_csv_rows(
+        destination / "cr-handler-net-changes.csv",
+        (
+            "version", "request", "address", "name", "before", "after",
+            "changed_bits", "volatile",
+        ),
+        net_change_rows,
+    )
+
+    eeprom_read_rows: list[dict[str, object]] = []
+    for version, _relative, data_format in APPLICATION_SPECS:
+        fixture = fixtures[data_format]
+        cpu = booted[version].clone()
+        for address in range(0x100):
+            request = f"AR{address:02X}".encode("ascii")
+            result = execute_request(cpu, request, step_limit=probe_steps)
+            actual = response_value(result.response)
+            eeprom_events = [item for item in result.events if item.kind == "eeprom_read"]
+            eeprom_read_rows.append(
+                {
+                    "version": version,
+                    "data_format": f"0x{data_format:02X}",
+                    "request": request.decode("ascii"),
+                    "response": ascii_preview(result.response),
+                    "response_hex": result.response.hex(" ").upper(),
+                    "address": f"0x{address:02X}",
+                    "expected": f"0x{fixture[address]:02X}",
+                    "actual": "" if actual is None else f"0x{actual:02X}",
+                    "match": "yes" if actual == fixture[address] else "no",
+                    "eeprom_read_events": len(eeprom_events),
+                    "event_details": " | ".join(item.detail for item in eeprom_events),
+                    "steps": result.steps,
+                    "error": result.error or "",
+                }
+            )
+    write_csv_rows(
+        destination / "a-unit-eeprom-reads.csv",
+        (
+            "version", "data_format", "request", "response", "response_hex",
+            "address", "expected", "actual", "match", "eeprom_read_events",
+            "event_details", "steps", "error",
+        ),
+        eeprom_read_rows,
+    )
+
+    gpio_input_rows: list[dict[str, object]] = []
+    gpio_scenario_rows: list[dict[str, object]] = []
+    gpio_effect_rows: list[dict[str, object]] = []
+    for version, _relative, _data_format in APPLICATION_SPECS:
+        base = booted[version]
+        for port_address, port_name in PORT_NAMES.items():
+            tris = base.ram[TRIS_BY_PORT[port_address]]
+            for bit in range(8):
+                gpio_input_rows.append(
+                    {
+                        "version": version,
+                        "port": port_name,
+                        "bit": bit,
+                        "direction": "input" if tris & (1 << bit) else "output",
+                        "tris": f"0x{tris:02X}",
+                        "output_latch": f"0x{base.ram[port_address]:02X}",
+                    }
+                )
+        baseline_cpu = base.clone()
+        baseline_cpu.run(settle_steps)
+        baseline_values, baseline_errors = read_cr_snapshot(
+            baseline_cpu, step_limit=probe_steps
+        )
+        for port_address, port_name in PORT_NAMES.items():
+            tris = base.ram[TRIS_BY_PORT[port_address]]
+            for bit in range(8):
+                if not tris & (1 << bit):
+                    continue
+                cpu = base.clone()
+                cpu.set_gpio_bit(port_address, bit, True)
+                cpu.run(settle_steps)
+                values, errors = read_cr_snapshot(cpu, step_limit=probe_steps)
+                changed = [
+                    register
+                    for register in range(0x0F)
+                    if values[register] != baseline_values[register]
+                ]
+                gpio_scenario_rows.append(
+                    {
+                        "version": version,
+                        "stimulus": f"{port_name}{bit}=1",
+                        "port": port_name,
+                        "bit": bit,
+                        "settle_steps": settle_steps,
+                        "changed_registers": " ".join(
+                            f"CR{register:02X}" for register in changed
+                        ),
+                        "changed_count": len(changed),
+                        "baseline_errors": " | ".join(baseline_errors),
+                        "stimulus_errors": " | ".join(errors),
+                    }
+                )
+                for register in changed:
+                    before = baseline_values[register]
+                    after = values[register]
+                    gpio_effect_rows.append(
+                        {
+                            "version": version,
+                            "stimulus": f"{port_name}{bit}=1",
+                            "port": port_name,
+                            "bit": bit,
+                            "register": f"CR{register:02X}",
+                            "baseline": "" if before is None else f"0x{before:02X}",
+                            "stimulated": "" if after is None else f"0x{after:02X}",
+                            "changed_bits": (
+                                "" if before is None or after is None
+                                else changed_bits(before, after)
+                            ),
+                        }
+                    )
+    write_csv_rows(
+        destination / "gpio-input-matrix.csv",
+        ("version", "port", "bit", "direction", "tris", "output_latch"),
+        gpio_input_rows,
+    )
+    write_csv_rows(
+        destination / "gpio-scenarios.csv",
+        (
+            "version", "stimulus", "port", "bit", "settle_steps",
+            "changed_registers", "changed_count", "baseline_errors", "stimulus_errors",
+        ),
+        gpio_scenario_rows,
+    )
+    write_csv_rows(
+        destination / "gpio-effects.csv",
+        (
+            "version", "stimulus", "port", "bit", "register", "baseline",
+            "stimulated", "changed_bits",
+        ),
+        gpio_effect_rows,
+    )
+
+    adc_scenario_rows: list[dict[str, object]] = []
+    adc_effect_rows: list[dict[str, object]] = []
+    adc_levels = (0x100, 0x200, 0x300, 0x3FF)
+    for version, _relative, data_format in APPLICATION_SPECS:
+        base = booted[version]
+        baseline_cpu = base.clone()
+        baseline_values, baseline_errors = read_cr_registers(
+            baseline_cpu, (0x09, 0x0A), step_limit=probe_steps
+        )
+        for channel in range(8):
+            for level in adc_levels:
+                # These images take their modeled analog samples during the
+                # reset/startup sequence.  Apply each value before reset and
+                # replay the same number of instructions for a fair diff.
+                cpu = PIC16F877A(
+                    parsed_images[version],
+                    data_eeprom=fixtures[data_format],
+                    adc_inputs={channel: level},
+                )
+                cpu.run(boot_steps)
+                sample_events = [
+                    item
+                    for item in cpu.events
+                    if item.kind == "adc_sample" and item.detail.startswith(f"AN{channel}=")
+                ]
+                values, errors = read_cr_registers(
+                    cpu, (0x09, 0x0A), step_limit=probe_steps
+                )
+                changed = [
+                    register
+                    for register in (0x09, 0x0A)
+                    if values[register] != baseline_values[register]
+                ]
+                adc_scenario_rows.append(
+                    {
+                        "version": version,
+                        "channel": f"AN{channel}",
+                        "input_10bit": f"0x{level:03X}",
+                        "sample_events_during_boot": len(sample_events),
+                        "boot_steps": boot_steps,
+                        "changed_registers": " ".join(
+                            f"CR{register:02X}" for register in changed
+                        ),
+                        "changed_count": len(changed),
+                        "baseline_errors": " | ".join(baseline_errors),
+                        "stimulus_errors": " | ".join(errors),
+                    }
+                )
+                for register in changed:
+                    before = baseline_values[register]
+                    after = values[register]
+                    adc_effect_rows.append(
+                        {
+                            "version": version,
+                            "channel": f"AN{channel}",
+                            "input_10bit": f"0x{level:03X}",
+                            "register": f"CR{register:02X}",
+                            "baseline": "" if before is None else f"0x{before:02X}",
+                            "stimulated": "" if after is None else f"0x{after:02X}",
+                            "changed_bits": (
+                                "" if before is None or after is None
+                                else changed_bits(before, after)
+                            ),
+                        }
+                    )
+    write_csv_rows(
+        destination / "adc-scenarios.csv",
+        (
+            "version", "channel", "input_10bit", "sample_events_during_boot",
+            "boot_steps", "changed_registers", "changed_count", "baseline_errors",
+            "stimulus_errors",
+        ),
+        adc_scenario_rows,
+    )
+    write_csv_rows(
+        destination / "adc-effects.csv",
+        (
+            "version", "channel", "input_10bit", "register", "baseline",
+            "stimulated", "changed_bits",
+        ),
+        adc_effect_rows,
+    )
+
+    adc_sources: dict[str, set[str]] = defaultdict(set)
+    for row in adc_effect_rows:
+        adc_sources[str(row["register"])].add(str(row["channel"]))
+    signal_rows = (
+        {
+            "signal": "front-panel buttons",
+            "protocol_source": "CR01",
+            "encoding": "none=00, ON=02, OFF=01, UP=04, DOWN=08",
+            "pic_source": "RAM 0x53; no direct GPIO read in CR01 handler",
+            "evidence": "BixCheck AnalyzeInteractiveResult plus firmware handler trace",
+            "confidence": "high for encoding; physical transport unresolved",
+        },
+        {
+            "signal": "firebox door",
+            "protocol_source": "CR02 bit 5",
+            "encoding": "open=1, closed=0",
+            "pic_source": "RD1",
+            "evidence": "BixCheck checkout mask cross-referenced to firmware/GPIO trace",
+            "confidence": "high offline mapping; not live-validated",
+        },
+        {
+            "signal": "ash drawer",
+            "protocol_source": "CR02 bit 6",
+            "encoding": "open=1, closed=0",
+            "pic_source": "RD4",
+            "evidence": "BixCheck checkout mask cross-referenced to firmware/GPIO trace",
+            "confidence": "high offline mapping; not live-validated",
+        },
+        {
+            "signal": "thermostat",
+            "protocol_source": "CR06 bit 2",
+            "encoding": "open/closed are opposite states",
+            "pic_source": "RB4",
+            "evidence": "BixCheck checkout mask cross-referenced to firmware/GPIO trace",
+            "confidence": "high pin/bit mapping; polarity awaits live validation",
+        },
+        {
+            "signal": "fuel-select switch",
+            "protocol_source": "candidate CR02 bit 2",
+            "encoding": "two opposite states",
+            "pic_source": "multiplexed RD3 sampling path, slot 2 candidate",
+            "evidence": "unreachable BixCheck result handlers plus firmware mux trace",
+            "confidence": "provisional; reachable 5.5 tests are not machine-checked",
+        },
+        {
+            "signal": "fan potentiometer",
+            "protocol_source": "CR09",
+            "encoding": "low<=03, detent=79..86, high>FB in BixCheck checkout",
+            "pic_source": " ".join(sorted(adc_sources.get("CR09", set()))) or "not resolved",
+            "evidence": "BixCheck thresholds plus synthetic ADC differential",
+            "confidence": "high register mapping; ADC channel depends on modeled result",
+        },
+        {
+            "signal": "feed potentiometer",
+            "protocol_source": "CR0A",
+            "encoding": "low<=03, detent=79..86, high>FB in BixCheck checkout",
+            "pic_source": " ".join(sorted(adc_sources.get("CR0A", set()))) or "not resolved",
+            "evidence": "BixCheck thresholds plus synthetic ADC differential",
+            "confidence": "high register mapping; ADC channel depends on modeled result",
+        },
+    )
+    write_csv_rows(
+        destination / "signal-map.csv",
+        (
+            "signal", "protocol_source", "encoding", "pic_source", "evidence", "confidence",
+        ),
+        signal_rows,
+    )
+
+    cr_errors = [row for row in cr_rows if row["error"]]
+    eeprom_mismatches = [row for row in eeprom_read_rows if row["match"] != "yes"]
+    summary: dict[str, object] = {
+        "schema": 1,
+        "status": "experimental offline emulation",
+        "generated_by": "tools/pic14_emulator.py project",
+        "boot_steps": boot_steps,
+        "probe_step_limit": probe_steps,
+        "synthetic_settle_steps": settle_steps,
+        "firmware_versions": [item[0] for item in APPLICATION_SPECS],
+        "cr_commands_executed": len(cr_rows),
+        "cr_handlers_reached": sum(row["handler_seen"] == "yes" for row in cr_rows),
+        "cr_formatters_reached": sum(row["formatter_seen"] == "yes" for row in cr_rows),
+        "cr_errors": len(cr_errors),
+        "handler_access_records": len(access_rows),
+        "handler_read_dependencies": len(dependency_rows),
+        "watchpoint_records": len(watch_rows),
+        "handler_net_change_records": len(net_change_rows),
+        "a_unit_reads_executed": len(eeprom_read_rows),
+        "a_unit_read_mismatches": len(eeprom_mismatches),
+        "gpio_input_scenarios": len(gpio_scenario_rows),
+        "gpio_effect_records": len(gpio_effect_rows),
+        "adc_scenarios": len(adc_scenario_rows),
+        "adc_effect_records": len(adc_effect_rows),
+        "fixture_metadata": fixture_metadata,
+        "adc_register_sources": {
+            register: sorted(channels) for register, channels in sorted(adc_sources.items())
+        },
+        "limitations": [
+            "GPIO and ADC stimuli are synthetic logical values, not electrical models.",
+            "The RD3 multiplexer is represented only as a pin level; external "
+            "selection-aware hardware is not modeled.",
+            "Signal names come from cross-referencing BixCheck masks with firmware "
+            "data flow and remain unvalidated on serial 5215.",
+            "The EEPROM fixture is conspicuously synthetic and contains no owner "
+            "or stove calibration data.",
+            "No write request is issued by this deep pass.",
+        ],
+    }
+    (destination / "summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(
+        "deep: "
+        f"{summary['cr_handlers_reached']}/{summary['cr_commands_executed']} CR handlers; "
+        f"{summary['a_unit_reads_executed'] - summary['a_unit_read_mismatches']}"
+        f"/{summary['a_unit_reads_executed']} EEPROM reads matched; "
+        f"{summary['gpio_effect_records']} GPIO and {summary['adc_effect_records']} ADC effects"
+    )
+    return summary
+
+
 def run_project(repo_root: Path, boot_steps: int, probe_steps: int) -> list[dict[str, object]]:
     firmware_root = repo_root / "reverse-engineering" / "firmware"
     destination = firmware_root / "emulation"
@@ -675,6 +1730,7 @@ def run_project(repo_root: Path, boot_steps: int, probe_steps: int) -> list[dict
     (destination / "summary.json").write_text(
         json.dumps(summaries, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    run_deep_project(repo_root, boot_steps, probe_steps)
     return summaries
 
 
