@@ -31,6 +31,11 @@ Each image has:
 - a sparse-aware program binary, padded with `0xFF` only between mapped program addresses;
 - portable raw and annotated PIC14 assembly listings.
 
+`emulation/` contains experimental execution evidence from
+`tools/pic14_emulator.py`: per-image summaries, UART/peripheral events, and
+recent instruction traces. It dynamically corroborates `CR00`→`CR0000`+LF for
+2.06/2.70/2.71 and the PICkit loader's reset-time `EA`→`EB` identify pair.
+
 The earlier gpdasm-based 2.71 bundle is retained as independent prior work. The portable decoder was checked against it and produced zero mnemonic/word mismatches over all 7,755 mapped 2.71 program words.
 
 ## Regeneration
@@ -39,6 +44,7 @@ From the repository root:
 
 ```bash
 python3 tools/firmware_pipeline.py project --repo-root .
+python3 tools/pic14_emulator.py project --repo-root .
 ```
 
 The pipeline uses only Python's standard library, verifies every Intel HEX checksum, rejects conflicting/partial words, and emits deterministic outputs. It does not contain any device-write or serial communication path.

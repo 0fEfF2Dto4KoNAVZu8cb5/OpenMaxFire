@@ -1,0 +1,111 @@
+{
+  "accelerated_delay_loops": 0,
+  "boot_steps_requested": 0,
+  "eeprom_read_events": 0,
+  "emulator": "tools/pic14_emulator.py",
+  "error": null,
+  "final_pc": "0x1EEB",
+  "image": "Bixby_02060021_PICkit.hex",
+  "interrupt_events": 0,
+  "label": "2.06-pickit-bootloader",
+  "limitations": [
+    "Peripheral timing is synthetic and is not cycle-accurate.",
+    "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
+    "Analog inputs, external switches, motors, watchdog, and electrical behavior are not modeled.",
+    "A successful software trace does not establish hardware safety or live compatibility."
+  ],
+  "probe_ascii": "\\xEA",
+  "probe_description": "binary bootloader identify probe",
+  "probe_hex": "EA",
+  "probe_steps_limit": 500000,
+  "rx_bytes_remaining": 0,
+  "schema": 1,
+  "status": "experimental",
+  "steps_executed": 43,
+  "top_pc_hits": [
+    {
+      "count": 1,
+      "pc": "0x0000"
+    },
+    {
+      "count": 1,
+      "pc": "0x0001"
+    },
+    {
+      "count": 1,
+      "pc": "0x0002"
+    },
+    {
+      "count": 1,
+      "pc": "0x0003"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E88"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E8A"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E8B"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E8C"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E8D"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E8E"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E8F"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E90"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E91"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E92"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E93"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E94"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E95"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E96"
+    },
+    {
+      "count": 1,
+      "pc": "0x1E97"
+    },
+    {
+      "count": 1,
+      "pc": "0x1EEC"
+    }
+  ],
+  "tx_ascii": "\\xEB",
+  "tx_hex": "EB",
+  "uart_rx_events": 1,
+  "uart_tx_events": 1
+}

@@ -1,0 +1,157 @@
+version,file_offset,matched_terms,string
+5.0.21,0x00034601,exhaust fan,Exhaust fan full power
+5.0.21,0x00034621,exhaust fan,Testing the exhaust fan at full power
+5.0.21,0x00034723,exhaust fan,Exhaust fan 1/2 power
+5.0.21,0x00034743,exhaust fan,Testing the exhaust fan at half power
+5.0.21,0x00034845,exhaust fan,Exhaust fan off
+5.0.21,0x00034865,exhaust fan,Testing the exhaust fan off
+5.0.21,0x00034967,igniter,'1' side igniter test
+5.0.21,0x00034987,igniter,Testing the igniters
+5.0.21,0x00034A07,igniter,Igniter connections; fuse; igniter
+5.0.21,0x00034A89,igniter,'2' side igniter test
+5.0.21,0x00034AA9,igniter,Testing the igniters
+5.0.21,0x00034B29,igniter,Igniter connections; fuse; igniter
+5.0.21,0x00034BAB,igniter,'1' side igniter check
+5.0.21,0x00034BCB,igniter,Checking the igniters
+5.0.21,0x00034C4B,igniter,Igniter connections; fuse; igniter
+5.0.21,0x00034CCD,igniter,'2' side igniter check
+5.0.21,0x00034CED,igniter,Checking the igniters
+5.0.21,0x00034D6D,igniter,Igniter connections; fuse; igniter
+5.0.21,0x00034F11,plate motor,Plate motor cycle test
+5.0.21,0x00034F31,plate motor,Testing the plate motor
+5.0.21,0x00034FB1,plate motor,Plate motor
+5.0.21,0x00035CB7,plate motor,Plate motor on
+5.0.21,0x00035CD7,plate motor,Is the plate motor running?
+5.0.21,0x00035DD9,plate motor,Plate motor off
+5.0.21,0x00035DF9,plate motor,Wait for the plate motor to turn off
+5.0.21,0x000368AB,igniter,Igniter board wiring
+5.0.21,0x00037481,wood,Fuel select switch wood / B
+5.0.21,0x000374A1,wood,Switch to wood / setting B
+5.0.21,0x000375A3,corn,Fuel select switch corn / A
+5.0.21,0x000375C3,corn,Switch to corn / setting A
+5.0.21,0x00037803,checksum,Checksum verified
+5.0.21,0x00037823,checksum,Calculating checksum
+5.0.21,0x000378A3,checksum,Return to Monitor and recalculate checksum
+5.0.21,0x00037925,data format,Data format matched
+5.0.21,0x00037945,data format,Checking data format
+5.0.21,0x000379C5,data format,Set the correct software version data format
+5.0.21,0x00038929,telemetry,Telemetry
+5.0.21,0x00038CB9,biomass,5% ash Biomass
+5.0.21,0x00038D11,biomass,2% ash Biomass
+5.0.21,0x00038D69,wood,Wood - Lean
+5.0.21,0x00038DC1,wood,Wood - Rich
+5.0.21,0x00038E71,biomass,5% ash Biomass
+5.0.21,0x00038EC9,biomass,2% ash Biomass
+5.0.21,0x00038F21,wood,Wood - Lean
+5.0.21,0x00038F79,wood,Wood - Rich
+5.0.21,0x00039C29,igniter,Igniter time %
+5.0.21,0x0003A831,igniter,Igniter time %
+5.0.21,0x0003ABB9,checksum,Internal checksum
+5.0.21,0x0003AC11,checksum,Calculated checksum
+5.0.21,0x0003AC69,data format,Internal data format
+5.0.21,0x0003ACC1,data format,Calculated data format
+5.0.21,0x0003AD19,serial,Serial number
+5.0.21,0x0003B4C1,exhaust fan,Exhaust fan speed
+5.0.21,0x0003B519,exhaust fan,Exhaust fan phase
+5.0.21,0x0003B621,igniter,Igniter state
+5.0.21,0x0003B641,igniter,"Igniter code, Igniter state"
+5.0.21,0x0003BA41,igniter,Igniter current
+5.0.21,0x0003BA61,igniter,Igniter current
+5.0.21,0x0003BB49,exhaust fan,Exhaust fan target
+5.0.21,0x0003BD01,telemetry,Telemetry Mode
+5.0.21,0x0003C206,serial,Serial port open failed
+5.0.21,0x0003C498,checkout,Waiting after checkout mode off: %d
+5.0.21,0x0003C544,checkout,The checkout file:
+5.0.21,0x0003C57C,checkout,Checkout File Save
+5.0.21,0x0003C5D3,checksum,Checksum: %04x
+5.0.21,0x0003C5E4,data format,Data Format: %02x
+5.0.21,0x0003C5F8,serial,Serial Number: %s
+5.0.21,0x0003C774,checkout,COM %d: Bixby Energy 110 / 115 Checkout 5.0.21
+5.0.21,0x0003C83F,checkout,Bixby110Checkout
+5.0.21,0x0003C86C,checksum,Internal checksum: %x  Calculated checksum: %x
+5.0.21,0x0003C89C,checksum,Checksum problem. Check in the Monitor
+5.0.21,0x0003C8F0,data format,Data format problem. Check in the Monitor
+5.0.21,0x0003CAB0,checksum,These show the checksum information.
+5.0.21,0x0003CAF0,serial,"These parameters set up the serial number, model name, "
+5.0.21,0x0003CE6B,telemetry,with the check boxes in the Telemetry window.
+5.0.21,0x0003D5DE,igniter,processes. The Igniter on time is adjusted to a 
+5.0.21,0x0003D63F,igniter,"parameter. For instance, if the default igniter on time "
+5.0.21,0x0003D678,igniter,"is 3 minutes and this parameter is 150, then the igniter "
+5.0.21,0x0003D79E,corn,"feed. If the value for corn was 16, then the ash dump "
+5.0.21,0x0003D80E,corn,corresponds to an ash content of around 1% for corn. For 
+5.0.21,0x0003DB10,telemetry,This turns telemetry data transmission from the stove on 
+5.0.21,0x0003DB4A,telemetry,or off. The stove will send telemetry data for a time 
+5.0.21,0x0003DC10,exhaust fan,Adjusts the fan table to compensate for the exhaust fan type. 
+5.0.21,0x0003DE46,checkout,the Checkout program.
+5.0.21,0x0003DE70,telemetry,This window displays telemetry data from the stove. 
+5.0.21,0x0003E1D5,telemetry,About telemetry data
+5.0.21,0x0003E2F6,checksum,About checksum data
+5.0.21,0x0003E6D4,serial,Serial Number: 
+5.0.21,0x0003EB0C,serial,Too many files for this serial number; range is 01 to 99.
+5.0.21,0x00053519,downloader,Bixby_02060021_Downloader.hex
+5.0.21,0x0005357F,downloader,Downloader
+5.0.21,0x00053698,downloader,COM %d: Bixby Energy Model 110 / 115 Downloader 1.4
+5.0.21,0x000536E7,checksum,Checksum
+5.0.21,0x00053760,igniter,"Unplug stove, unplug igniters, select 'Use internal firmware' or 'Load' for a new firmware file"
+5.0.21,0x000537EC,stove software,Stove software .hex file
+5.0.21,0x0005385C,igniter,Download process completed. Plug the igniters back in
+5.0.21,0x00053A86,checkout,Checkout 5.0
+5.0.21,0x00053A93,downloader,Downloader 1.4
+5.0.21,0x00053AA8,bixcheck,About BixCheck
+5.0.21,0x00053AB8,checkout,"Bixby Energy Systems stove Monitor, Checkout,"
+5.0.21,0x00053AE6,downloader,and Downloader interface.
+5.0.21,0x00053B38,stove software,"Use stove software 02.06, database version 05."
+5.0.21,0x00053BA8,stove software,Make sure the stove software version
+5.0.21,0x00063093,checkout,__ZN16bixby110checkoutC2Ev
+5.0.21,0x000630AE,checkout,__ZN16bixby110checkoutC1Ev
+5.0.21,0x000630C9,checkout,__ZN16bixby110checkoutD2Ev
+5.0.21,0x000630E4,checkout,__ZN16bixby110checkoutD1Ev
+5.0.21,0x000630FF,checkout,__ZN16bixby110checkout7ChkStopEv
+5.0.21,0x00063120,checkout,__ZN16bixby110checkout21SendInteractiveActionEi
+5.0.21,0x00063150,checkout,__ZN16bixby110checkout21ReadInteractiveResultEi
+5.0.21,0x00063180,checkout,__ZN16bixby110checkout24AnalyzeInteractiveResultEi
+5.0.21,0x000631B3,checkout,__ZN16bixby110checkout19SendAutomaticActionEi
+5.0.21,0x000631E1,checkout,__ZN16bixby110checkout13IterativeReadEjhh
+5.0.21,0x0006320B,checkout,__ZN16bixby110checkout13IterativeScanEjhj
+5.0.21,0x00063235,checkout,__ZN16bixby110checkout19ReadAutomaticResultEi
+5.0.21,0x00063263,checkout,__ZN16bixby110checkout7writelnEPvPc
+5.0.21,0x00063287,checkout,__ZN16bixby110checkout14GenerateReportEv
+5.0.21,0x000632B0,checkout,__ZN16bixby110checkout18Bixby110UpdateDataEv
+5.0.21,0x000632DD,checkout,__ZN16bixby110checkout37Bixby110SetupCheckoutInteractiveTestsEiiii
+5.0.21,0x00063320,checkout,__ZN16bixby110checkout35Bixby110SetupCheckoutAutomaticTestsEiiii
+5.0.21,0x00063361,checkout,__ZN16bixby110checkout42Bixby110SetupCheckoutIndividualizationDataEiiii
+5.0.21,0x000633A9,checkout,__ZN16bixby110checkout16Bixby110CheckoutEP11HINSTANCE__i
+5.0.21,0x000633E2,checkout,__ZN16bixby110checkout22AnalyzeAutomaticResultEi
+5.0.21,0x000638D4,checksum,__ZN10bixby110io17CalculateChecksumEh
+5.0.21,0x0006392B,telemetry,__GLOBAL__I_Bixby110TelemetryData
+5.0.21,0x0006394D,telemetry,__GLOBAL__D_Bixby110TelemetryData
+5.0.21,0x00063988,checksum,_HELP_ADJUSTMENT_CHECKSUM
+5.0.21,0x00063B6F,telemetry,_HELP_UTILITY_TELEMETRY
+5.0.21,0x00063C32,telemetry,_HELP_WINDOW_TELEMETRY
+5.0.21,0x00064088,telemetry,__ZN15bixby110control28Bixby110DialogSetupTelemetryEiiii
+5.0.21,0x00064310,downloader,__ZN18bixby110downloaderC2Ev
+5.0.21,0x0006432D,downloader,__ZN18bixby110downloaderC1Ev
+5.0.21,0x0006434A,downloader,__ZN18bixby110downloaderD2Ev
+5.0.21,0x00064367,downloader,__ZN18bixby110downloaderD1Ev
+5.0.21,0x00064384,downloader,__ZN18bixby110downloader2gxEc
+5.0.21,0x000643A2,downloader,__ZN18bixby110downloader3g2xEPc
+5.0.21,0x000643C2,downloader,__ZN18bixby110downloader3g4xEPc
+5.0.21,0x000643E2,downloader,__ZN18bixby110downloader7getbyteEhPh
+5.0.21,0x00064407,downloader,__ZN18bixby110downloader7getbyteEPh
+5.0.21,0x0006442B,downloader,__ZN18bixby110downloader8sendbyteEc
+5.0.21,0x0006444F,downloader,__ZN18bixby110downloader15GetStoveVersionEv
+5.0.21,0x0006447B,downloader,__ZN18bixby110downloader17AttemptStoveResetEv
+5.0.21,0x000644A9,downloader,__ZN18bixby110downloader8SendDoneEv
+5.0.21,0x000644E6,downloader,__ZN18bixby110downloader12LoadHex_OpenEPc
+5.0.21,0x00064510,downloader,__ZN18bixby110downloader12LoadHex_ReadEv
+5.0.21,0x00064539,downloader,__ZN18bixby110downloader13LoadHex_CloseEv
+5.0.21,0x00064563,downloader,__ZN18bixby110downloader7LoadHexEPc
+5.0.21,0x00064587,downloader,__ZN18bixby110downloader8DownLoadEv
+5.0.21,0x000645AB,downloader,__ZN18bixby110downloader8IdentifyEv
+5.0.21,0x000645CF,downloader,__ZN18bixby110downloader18Bixby110DownloaderEP11HINSTANCE__iPc
+5.0.21,0x0006460E,downloader,__ZN18bixby110downloader13StatusMessageEPc
+5.0.21,0x00064639,downloader,Bixby110Downloader.cpp
+5.0.21,0x0006ADCE,checkout,_Bixby110AutomaticCheckoutTests
+5.0.21,0x0006B092,telemetry,_Bixby110TelemetryData
+5.0.21,0x0006B691,checkout,_Bixby110InteractiveCheckoutTests
+5.0.21,0x0006B895,checkout,_cp_checkout

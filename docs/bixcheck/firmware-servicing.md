@@ -10,6 +10,10 @@ The recovered 2.06 release package contains:
 
 BixCheck 5.5.01 instead embeds `Bixby_0271_080315.hex` and labels its Downloader as version 2.71.
 
+BixCheck 5.5.00 embeds `Bixby_0270_070206.hex` and labels its Downloader as
+version 2.70. The static pipeline deterministically extracts both ASCII-hex
+embedded payloads and validates their Intel HEX checksums.
+
 ## Vendor workflow
 
 1. Connect the custom PC cable to J3.
@@ -24,12 +28,24 @@ BixCheck 5.5.01 instead embeds `Bixby_0271_080315.hex` and labels its Downloader
 
 The manual warns that an interrupted transfer can leave the stove non-functional, although the update can be attempted again because the protected update software is not damaged.
 
+## Reconstructed wire sequence
+
+All three Downloader implementations are semantically equivalent. They read
+CR08 and CR0B-CR0E, issue state-changing reset request `CW0FC4`, identify the
+reset-time loader with raw `EA`/`EB`, and transfer binary `E3` program blocks.
+Each block carries a PIC word address, byte count, additive data checksum, and
+up to 32 data bytes. `ED` finishes the transfer.
+
+The experimental emulator executes the PICkit reset-time code and confirms
+that `EA` produces `EB`. It intentionally does not attempt erase/program
+operations. See [the protocol reconstruction](../reverse-engineering/bixcheck-downloader-protocol.md).
+
 ## OpenMaxFire policy
 
 No firmware write will be implemented or attempted on serial 5215 until:
 
 - normal read/write framing is captured;
-- the boot protocol is independently decoded;
+- the remaining boot acknowledgement/erase semantics are independently decoded;
 - current calibration is backed up;
 - a known-good recovery image and programmer method exist;
 - recovery is proven on spare or bench hardware;

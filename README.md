@@ -4,23 +4,34 @@ OpenMaxFire is a preservation and reverse-engineering project for the discontinu
 
 ## Current status
 
-The repository contains the recovered vendor packages, BixCheck 5.x manual, all preserved 2.06/2.70/2.71 firmware images, portable and annotated disassemblies, cross-version analysis, photographs, provenance records, and the first protocol library.
+The repository contains the recovered vendor packages, BixCheck 5.x manual, all
+preserved 2.06/2.70/2.71 firmware images, portable and annotated disassemblies,
+a deep three-EXE comparison, decoded application tables, an experimental PIC
+emulator, a virtual serial lab, photographs, provenance records, and the first
+protocol library.
 
 Confirmed by static evidence:
 
 - All four preserved firmware images target a PIC16F877A and pass Intel HEX checksum validation.
 - The controller recognizes ASCII register commands `CRXX` and `CWXXYY`.
-- Responses use ASCII hexadecimal and end with LF (`0x0A`).
+- Requests are fixed at four/six bytes and have no terminator.
+- Addressed responses are six ASCII characters; telemetry frames carry one or
+  two bytes; BixCheck accepts CR or LF termination.
 - BixCheck maps remote OFF/ON/UP/DOWN to `CW0E11`, `CW0E12`, `CW0E14`, and `CW0E18`.
 - CR0B/CR0C expose firmware `2.06`, `2.70`, or `2.71` as constant bytes.
-- Firmware 2.06 loads UART divisor `0x40`; 2.70/2.71 load `0x20`.
+- BixCheck 5.0.21 selects 9,600 baud; 5.5.x selects 9,600/19,200, all at 8N1.
+- The configuration/telemetry/Checkout tables, lean-burn transforms, and
+  configuration checksum are now machine-readable.
+- The experimental emulator runs the actual firmware: all application images
+  answer `CR00` with `CR0000`+LF, and the PICkit loader answers `EA` with `EB`.
 - The recovered stove is serial 5215; its owner identifies it as a MaxFire 115.
 
 Not yet confirmed on physical hardware:
 
 - J3 pinout and electrical levels.
-- Oscillator frequency and therefore the absolute baud rate. At 20 MHz, the observed divisors correspond to nominal 19,200 for 2.06 and 38,400 for 2.70/2.71.
-- Response framing beyond the LF terminator and acknowledgement semantics.
+- Physical oscillator marking/frequency. The exact BixCheck rates and firmware
+  divisors strongly imply 10 MHz, but the board has not been checked.
+- Live electrical/timing validation of the reconstructed response grammar.
 - Which exposed input bit is the firebox door switch.
 - Any remote command on the actual stove.
 
@@ -52,16 +63,34 @@ maxfirectl encode button up
 
 Live I/O is intentionally gated and requires an explicit port, baud rate, and acknowledgement flag.
 
+Run the read-only virtual endpoint without hardware:
+
+```bash
+python tools/virtual_serial_lab.py --demo
+```
+
+Regenerate the three-EXE analysis and offline firmware probes:
+
+```bash
+python tools/analyze_bixcheck.py --repo-root .
+python tools/pic14_emulator.py project --repo-root .
+```
+
 ## Repository map
 
 - `preservation/original/` - recovered files as received, plus provenance and hashes
-- `reverse-engineering/` - extracted firmware, disassembly, strings, and analysis outputs
+- `reverse-engineering/` - EXE tables/call graphs, firmware, disassembly,
+  comparisons, and emulation traces
 - `docs/` - hardware, protocol, BixCheck, automation, status, history, and roadmap
 - `src/openmaxfire/` - modern Python protocol/transport foundation
 - `tools/` - reproducible Debian analysis helpers
 - `tests/` - offline protocol tests
 
-Start with [the research status](docs/STATUS.md), [the firmware comparison](docs/reverse-engineering/firmware-comparison.md), [the project roadmap](docs/ROADMAP.md), and [the preservation manifest](preservation/MANIFEST.md).
+Start with [the research status](docs/STATUS.md),
+[the BixCheck comparison](docs/reverse-engineering/bixcheck-comparison.md),
+[the J3 protocol](docs/protocol/j3-protocol.md),
+[the firmware comparison](docs/reverse-engineering/firmware-comparison.md), and
+[the preservation manifest](preservation/MANIFEST.md).
 
 ## Licensing
 

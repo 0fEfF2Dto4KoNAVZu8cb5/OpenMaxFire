@@ -1,0 +1,111 @@
+{
+  "accelerated_delay_loops": 9288,
+  "boot_steps_requested": 250000,
+  "eeprom_read_events": 0,
+  "emulator": "tools/pic14_emulator.py",
+  "error": null,
+  "final_pc": "0x1289",
+  "image": "Bixby_02060021_Downloader.hex",
+  "interrupt_events": 4,
+  "label": "2.06-downloader",
+  "limitations": [
+    "Peripheral timing is synthetic and is not cycle-accurate.",
+    "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
+    "Analog inputs, external switches, motors, watchdog, and electrical behavior are not modeled.",
+    "A successful software trace does not establish hardware safety or live compatibility."
+  ],
+  "probe_ascii": "CR00",
+  "probe_description": "ASCII read probe",
+  "probe_hex": "43 52 30 30",
+  "probe_steps_limit": 500000,
+  "rx_bytes_remaining": 0,
+  "schema": 1,
+  "status": "experimental",
+  "steps_executed": 250845,
+  "top_pc_hits": [
+    {
+      "count": 6960,
+      "pc": "0x05EA"
+    },
+    {
+      "count": 6960,
+      "pc": "0x05EB"
+    },
+    {
+      "count": 6960,
+      "pc": "0x05ED"
+    },
+    {
+      "count": 4640,
+      "pc": "0x05EE"
+    },
+    {
+      "count": 3852,
+      "pc": "0x01C3"
+    },
+    {
+      "count": 3852,
+      "pc": "0x01C4"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01C6"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01C7"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01C8"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01C9"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01CC"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01CD"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01CE"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01CF"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01D0"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01D1"
+    },
+    {
+      "count": 3424,
+      "pc": "0x01D2"
+    },
+    {
+      "count": 3389,
+      "pc": "0x01CA"
+    },
+    {
+      "count": 2320,
+      "pc": "0x05E8"
+    },
+    {
+      "count": 2320,
+      "pc": "0x05E9"
+    }
+  ],
+  "tx_ascii": "CR0000\\x0A",
+  "tx_hex": "43 52 30 30 30 30 0A",
+  "uart_rx_events": 4,
+  "uart_tx_events": 7
+}

@@ -1,0 +1,44 @@
+{
+  "comparisons": {
+    "5.0.21_to_5.5.00": {
+      "checkout_records": {
+        "same": 46
+      },
+      "combustion_bytes": {
+        "same": 352
+      },
+      "data_elements": {
+        "added": 11,
+        "changed": 76,
+        "same": 73
+      },
+      "functions": {
+        "added": 16,
+        "changed": 46,
+        "removed": 4,
+        "same_normalized": 85
+      }
+    },
+    "5.5.00_to_5.5.01": {
+      "checkout_records": {
+        "same": 46
+      },
+      "combustion_bytes": {
+        "changed": 24,
+        "same": 328
+      },
+      "data_elements": {
+        "added": 4,
+        "changed": 6,
+        "same": 154
+      },
+      "functions": {
+        "changed": 38,
+        "same_normalized": 109
+      }
+    }
+  },
+  "generated_by": "tools/analyze_bixcheck.py",
+  "normalization_note": "Function normalization removes build-specific absolute addresses and symbolic branch destinations; changed hashes still require human review.",
+  "schema": 1
+}

@@ -13,13 +13,17 @@ The detailed map below comes from the 2.71 PIC16F877A disassembly, not a live st
 | `CR0D` | `0x00` | `0x00` | `0x00` |
 | `CR0E` | `0x21` | `0x02` | `0x00` |
 
-CR0B/CR0C are strongly identified as firmware version bytes. CR08 is probably a data-format/database generation because it moves from 05 to 07 with the preserved software generations, but that name remains unconfirmed. CR0E read behavior changes even though BixCheck 5.5.01 uses writes to 0x0E for remote-button actions. See the [full firmware comparison](../reverse-engineering/firmware-comparison.md).
+CR0B/CR0C are identified as the two-byte stove software version. Every
+BixCheck Individualization table labels C08 `Stove data format`, so CR08's name
+is now statically confirmed rather than inferred. CR0E read behavior changes
+even though BixCheck uses writes to 0x0E for remote-button actions. See the
+[full firmware comparison](../reverse-engineering/firmware-comparison.md).
 
 ## 2.71 detailed handlers
 
 | Request | Static return/source | Interpretation |
 | --- | --- | --- |
-| `CR00` | Constant `0x00` | Useful first read-only probe |
+| `CR00` | Constant `0x00` | Emulator-confirmed first read-only probe |
 | `CR01` | Bank-1 RAM byte 0x53 | State byte; semantic mapping unresolved |
 | `CR02` | Packed input byte | See bit table below |
 | `CR03` | Packed status/output byte | See bit table below |
@@ -27,11 +31,11 @@ CR0B/CR0C are strongly identified as firmware version bytes. CR08 is probably a 
 | `CR05` | RAM byte 0x34 | Unknown |
 | `CR06` | Packed flags | See bit table below |
 | `CR07` | Derived/scaled from RAM 0x44/0x45 | Unknown engineering value |
-| `CR08` | Constant `0x07` | Likely data-format/database version 07 |
+| `CR08` | Constant `0x07` | Stove data format 07 |
 | `CR09` | RAM byte 0x2E | Unknown |
 | `CR0A` | RAM byte 0x2F | Unknown |
-| `CR0B` | Constant `0x02` | Likely firmware major byte |
-| `CR0C` | Constant `0x71` | Likely firmware minor byte; together 2.71 |
+| `CR0B` | Constant `0x02` | Firmware major byte |
+| `CR0C` | Constant `0x71` | Firmware minor byte; together 2.71 |
 | `CR0D` | Constant `0x00` | Unknown/reserved |
 | `CR0E` | Constant `0x00` on read | Writes to 0x0E carry remote buttons in BixCheck |
 

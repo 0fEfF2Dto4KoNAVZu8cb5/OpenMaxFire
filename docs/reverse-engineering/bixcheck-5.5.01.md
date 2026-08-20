@@ -1,39 +1,145 @@
 # BixCheck 5.5.01 reverse engineering
 
-Source: `preservation/original/binaries/BixCheck_080315.exe`
+## Artifact identity
 
-SHA-256: `b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792`
+| Field | Value |
+| --- | --- |
+| Preserved package | `BixCheck_080315.zip` |
+| Executable | `BixCheck_080315.exe` |
+| Size | 464,650 bytes |
+| SHA-256 | `b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792` |
+| PE linker timestamp | 2008-03-16 04:31:21 UTC |
+| Application | BixCheck Control/Monitor/Checkout 5.5.01 |
+| Downloader | 2.71 |
+| Intended stove software | 02.71 |
+| Data format | 07 |
 
-The PE32 executable reports BixCheck control/monitor/Checkout version 5.5.01, Downloader 2.71, stove software 02.71, and database version 07. Its linker timestamp is 2008-03-16 14:31:21 UTC.
+The EXE was not executed during the static pass. `tools/analyze_bixcheck.py`
+verifies the package member hash, parses PE sections and retained COFF symbols,
+disassembles code with GNU `objdump`, decodes the embedded application tables,
+and produces deterministic CSV/JSON evidence.
 
-## Useful retained symbols
+## Recoverable source architecture
 
-The binary has stripped normal debugging information but retains many GCC C++ symbol strings, including:
+The PE header says ordinary debug information and line numbers were removed,
+but the MinGW COFF table retains 655 function symbols at 654 unique code
+offsets, demangled C++ names, and original compilation-unit names. Important
+units include:
 
-- `bixby110io::getrs232port()`
-- `bixby110io::sendcommand()`
-- `bixby110io::scanio()`
-- `bixby110io::regio()`
-- `bixby110io::writereg()`
-- `bixby110io::readreg()`
-- `bixby110io::CollectResponse()`
-- `bixby110io::GetEEPROMContents()`
-- `bixby110io::CalculateChecksum()`
-- `bixby110control::BixbyWriteRegister()`
-- `bixby110checkout::SendInteractiveAction()`
-- `bixby110downloader::Identify()`
-- `bixby110downloader::DownLoad()`
+- `async.cpp`: Win32 serial setup and buffered I/O
+- `Bixby110DataElements.cpp`: request/response grammar, data tables, checksum,
+  and configuration conversions
+- `Bixby110chkdlg.cpp`: factory Checkout workflow and reporting
+- `Bixby110dlg.cpp`: Monitor/control UI and register operations
+- `Bixby110Downloader.cpp`: Intel HEX loader and binary bootloader client
 
-The searchable string inventories are preserved under `reverse-engineering/bixcheck/5.5.01/`.
+This is substantially richer than a string-only analysis. It allows methods to
+be bounded, hashed, compared across builds, and archived as focused assembly.
 
-## Remote-control evidence
+## Normal serial protocol
 
-`Bixby110RCButtonData` is located at VA 0x0043D380 in this build. Its OFF/ON/UP/DOWN entries contain values `0x11`, `0x12`, `0x14`, and `0x18`.
+The Win32 serial layer selects 9,600 or 19,200 baud and configures 8 data bits,
+no parity, one stop bit, DTR enabled, RTS enabled, binary mode, and no CTS/DSR
+or software flow control. `SetupComm` requests 30,480-byte input and output
+buffers.
 
-Handlers around VA 0x0041B0D7 and neighboring paths load those values and call:
+`bixby110io::regio()` emits uppercase ASCII with no request terminator:
 
-`bixby110io::writereg('C', 0x0E, value)`
+| Operation | Exact request |
+| --- | --- |
+| Read | `<unit>R<address:02X>` (4 bytes) |
+| Write | `<unit>W<address:02X><value:02X>` (6 bytes) |
 
-`writereg()` calls `regio()` with opcode `W`; `regio()` emits uppercase hexadecimal ASCII. This reconstructs `CW0E14` for UP and the other commands in the protocol document.
+`scanio()` accepts CR or LF response termination, strips leading control bytes
+`01`, `02`, or `03`, and dispatches these forms:
 
-These addresses are build-specific. Do not assume they are stable in BixCheck 5.5.00 or 5.0.21.
+- addressed response: `<A|C|D><operation><address:02X><value:02X>`;
+- one-byte telemetry: `T<index:02X><value:02X>`;
+- two-byte telemetry: `T<index:02X><value0:02X><value1:02X>`;
+- `M` and `I` status/control families, whose inner semantics remain unresolved.
+
+Incoming hexadecimal accepts either case. The vendor parser performs weak
+length and invalid-character checking; the replacement parser is intentionally
+stricter. `CollectResponse()` makes at most 16 scan attempts and ignores
+telemetry frames while waiting for a non-telemetry reply.
+
+The real 2.71 firmware has also been run in the experimental PIC14 emulator: an
+injected `CR00` produced `CR0000` plus LF. This is independent dynamic support
+for the grammar, not a live-J3 validation.
+
+## Recovered object and table layouts
+
+The `bixby110io` object contains four 256-byte data areas:
+
+| Object offset | Role |
+| ---: | --- |
+| `0x030` | D-unit data |
+| `0x130` | A/unit-0 EEPROM data |
+| `0x230` | telemetry data |
+| `0x330` | serial-object pointer |
+| `0x434` | C/command data |
+| `0x634` | receive string |
+| `0x734` | transmit string |
+
+The global UI/configuration records are 0x58 bytes each. Their recovered layout
+is documented in [configuration.md](../bixcheck/configuration.md), and every
+record is exported in `reverse-engineering/bixcheck/5.5.01/data-elements.csv`.
+
+5.5.01 contains 82 adjustment records and 34 telemetry/display records. Its
+release-specific changes are:
+
+- `Wheat` replaces `2% ash Biomass` in both Fuel A and Fuel B selection lists;
+- 24 bytes in the corresponding fuel combustion profile change;
+- telemetry `T19` is relabeled `BF drop limit`;
+- `T1E` adds `LB drop limit`;
+- virtual time-to-ash-dump moves from index `V1B` to `V1C`;
+- `TFD`, `TFE`, and `TFF` add low-temperature count, sample maximum, and recent
+  sample.
+
+No functions were added or removed relative to 5.5.00. Most changed method
+hashes come from the four-record table insertion shifting object offsets. The
+register builder, checksum, checkout action senders, and downloader core remain
+semantically equivalent.
+
+## Configuration math
+
+The 5.5 generation adds lean-burn parameters at A6B-A6E and A9B-A9E. The EXE
+converts their raw values for display and reverses that conversion before
+writing or calculating a checksum. The exact assembly is preserved in
+`protocol-core.asm`; equivalent tested Python lives in
+`src/openmaxfire/protocol.py`.
+
+The configuration checksum starts at A02, adds each logical byte to a 16-bit
+accumulator, then rotates the accumulator left by one bit. Data format 07 covers
+through AFF. Displayed lean-burn values at A6B-A6D and A9B-A9D are converted
+back to stove encoding before inclusion.
+
+## Checkout and downloader
+
+All 46 embedded Checkout records are byte-identical across the three EXEs.
+Forty-five are reachable: 37 interactive/verification tests and eight automatic
+tests. A ninth automatic record, `Plate motor cycle test`, exists in data but is
+excluded by both the UI setup loop and action dispatcher.
+
+The Downloader code is also semantically unchanged across all three builds.
+It reads CR08 and CR0B-CR0E for identity, uses `CW0FC4` to request reset, then
+switches to a separate raw-binary bootloader protocol. See
+[bixcheck-downloader-protocol.md](bixcheck-downloader-protocol.md). Downloader
+traffic must never be exposed through ordinary monitoring APIs.
+
+## Generated evidence
+
+The per-build directory contains:
+
+- `summary.json`: PE identity, counts, and serial facts;
+- `functions.csv` and `call-graph.csv`: retained function inventory and calls;
+- `data-elements.csv`: decoded UI/configuration/telemetry records;
+- `checkout-tests.csv`: all records plus reachability;
+- `combustion-adjustments.csv`: raw adjustment arrays;
+- `selected-strings.csv`: provenance-focused string inventory;
+- `protocol-core.asm`, `checkout-core.asm`, and `downloader-core.asm`: exact
+  focused disassembly excerpts.
+
+Build-specific addresses are evidence locators, not stable protocol constants.
+All conclusions remain static or emulated until J3 electrical levels and a live
+read-only exchange are safely verified.

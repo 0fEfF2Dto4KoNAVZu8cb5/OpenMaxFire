@@ -11,7 +11,8 @@ Startup at 0x1825 configures:
   SPBRG = 0x20
   TXSTA = 0x26
   RCSTA = 0x90
-If Fosc is 20 MHz, this corresponds closely to 38400 baud, 8N1 async serial.
+The paired BixCheck 5.5.01 host code selects 19200 baud, 8N1. Together with
+SPBRG=0x20 this strongly implies Fosc=10 MHz; physical confirmation is pending.
 
 Protocol parser
 ---------------

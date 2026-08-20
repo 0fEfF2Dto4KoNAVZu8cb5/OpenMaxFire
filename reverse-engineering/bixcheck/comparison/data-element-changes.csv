@@ -1,0 +1,325 @@
+comparison,table,index,status,old_type,new_type,old_label,new_label,old_units_or_description,new_units_or_description,old_value_or_default,new_value_or_default,old_unit,new_unit,old_address_hex,new_address_hex,old_maximum,new_maximum,old_minimum,new_minimum,old_length_or_mask,new_length_or_mask,old_display_mode,new_display_mode
+5.0.21_to_5.5.00,adjustment_descriptions,0,same,1,1,Fan,Fan,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,1,same,1,1,Fuel A,Fuel A,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,2,same,1,1,Fuel B,Fuel B,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,3,same,1,1,Feed,Feed,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,4,same,1,1,Fuel A,Fuel A,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,5,same,1,1,Fuel B,Fuel B,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,6,same,1,1,Ash,Ash,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,7,same,1,1,Fuel A,Fuel A,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustment_descriptions,8,same,1,1,Fuel B,Fuel B,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,adjustments,0,changed,1,1,L1,L1,,,0,0,A,A,0x40,0x40,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,1,changed,1,1,L2,L2,,,0,0,A,A,0x41,0x41,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,2,changed,1,1,L3,L3,,,0,0,A,A,0x42,0x42,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,3,changed,1,1,L4,L4,,,0,0,A,A,0x43,0x43,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,4,changed,1,1,L5,L5,,,0,0,A,A,0x44,0x44,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,5,changed,1,1,L6,L6,,,0,0,A,A,0x45,0x45,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,6,changed,1,1,L7,L7,,,0,0,A,A,0x46,0x46,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,7,changed,1,1,L8,L8,,,0,0,A,A,0x47,0x47,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,8,changed,1,1,L1,L1,,,0,0,A,A,0x48,0x48,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,9,changed,1,1,L2,L2,,,0,0,A,A,0x49,0x49,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,10,changed,1,1,L3,L3,,,0,0,A,A,0x4A,0x4A,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,11,changed,1,1,L4,L4,,,0,0,A,A,0x4B,0x4B,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,12,changed,1,1,L5,L5,,,0,0,A,A,0x4C,0x4C,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,13,changed,1,1,L6,L6,,,0,0,A,A,0x4D,0x4D,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,14,changed,1,1,L7,L7,,,0,0,A,A,0x4E,0x4E,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,15,changed,1,1,L8,L8,,,0,0,A,A,0x4F,0x4F,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,16,changed,1,1,L1,L1,,,0,0,A,A,0x50,0x50,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,17,changed,1,1,L2,L2,,,0,0,A,A,0x51,0x51,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,18,changed,1,1,L3,L3,,,0,0,A,A,0x52,0x52,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,19,changed,1,1,L4,L4,,,0,0,A,A,0x53,0x53,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,20,changed,1,1,L5,L5,,,0,0,A,A,0x54,0x54,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,21,changed,1,1,L6,L6,,,0,0,A,A,0x55,0x55,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,22,changed,1,1,L7,L7,,,0,0,A,A,0x56,0x56,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,23,changed,1,1,L8,L8,,,0,0,A,A,0x57,0x57,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,24,changed,1,1,Startup fan,Startup fan,,,0,0,A,A,0x58,0x58,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,25,changed,1,1,Startup feed,Startup feed,,,0,0,A,A,0x59,0x59,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,26,changed,1,1,Startup time %,Startup time %,,,0,0,A,A,0x5A,0x5A,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,27,changed,1,1,Igniter time %,Igniter time %,,,0,0,A,A,0x5B,0x5B,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,28,changed,1,1,Ash dump fan,Ash dump fan,,,0,0,A,A,0x60,0x60,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,29,changed,1,1,Ash dump feed,Ash dump feed,,,0,0,A,A,0x61,0x61,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,30,changed,1,1,Ash dump time %,Ash dump time %,,,0,0,A,A,0x62,0x62,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,31,changed,1,1,Ash dump heat level,Ash dump heat level,,,0,0,A,A,0x63,0x63,0,8,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,32,changed,1,1,Ash dump target %,Ash dump target %,,,0,0,A,A,0x64,0x64,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,33,changed,1,1,TC for 25% fan,TC for 25% fan,,,0,0,A,A,0x68,0x68,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,34,changed,1,1,TC for 100% fan,TC for 100% fan,,,0,0,A,A,0x69,0x69,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,35,changed,1,1,L1,Thermostat heat level,,,0,0,A,A,0x70,0x6A,0,8,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,36,changed,1,1,L2,LB threshold %,,,0,0,A,A,0x71,0x6B,0,100,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,37,changed,1,2,L3,LB fan adjustment,,,0,0,A,A,0x72,0x6C,0,30,0,-30,1,1,2,2
+5.0.21_to_5.5.00,adjustments,38,changed,1,2,L4,LB feed adjustment,,,0,0,A,A,0x73,0x6D,0,30,0,-30,1,1,2,2
+5.0.21_to_5.5.00,adjustments,39,changed,1,10,L5,Ratio / Ash trimpot mode,,Send,0,0,A,A,0x74,0x6E,0,0,0,0,1,1,2,8
+5.0.21_to_5.5.00,adjustments,40,changed,1,10,L6,Disable auto restart,,Send,0,0,A,A,0x75,0x6E,0,0,0,0,1,2,2,8
+5.0.21_to_5.5.00,adjustments,41,changed,1,1,L7,L1,,,0,0,A,A,0x76,0x70,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,42,changed,1,1,L8,L2,,,0,0,A,A,0x77,0x71,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,43,changed,1,1,L1,L3,,,0,0,A,A,0x78,0x72,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,44,changed,1,1,L2,L4,,,0,0,A,A,0x79,0x73,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,45,changed,1,1,L3,L5,,,0,0,A,A,0x7A,0x74,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,46,changed,1,1,L4,L6,,,0,0,A,A,0x7B,0x75,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,47,changed,1,1,L5,L7,,,0,0,A,A,0x7C,0x76,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,48,changed,1,1,L6,L8,,,0,0,A,A,0x7D,0x77,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,49,changed,1,1,L7,L1,,,0,0,A,A,0x7E,0x78,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,50,changed,1,1,L8,L2,,,0,0,A,A,0x7F,0x79,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,51,changed,1,1,L1,L3,,,0,0,A,A,0x80,0x7A,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,52,changed,1,1,L2,L4,,,0,0,A,A,0x81,0x7B,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,53,changed,1,1,L3,L5,,,0,0,A,A,0x82,0x7C,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,54,changed,1,1,L4,L6,,,0,0,A,A,0x83,0x7D,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,55,changed,1,1,L5,L7,,,0,0,A,A,0x84,0x7E,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,56,changed,1,1,L6,L8,,,0,0,A,A,0x85,0x7F,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,57,changed,1,1,L7,L1,,,0,0,A,A,0x86,0x80,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,58,changed,1,1,L8,L2,,,0,0,A,A,0x87,0x81,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,59,changed,1,1,Startup fan,L3,,,0,0,A,A,0x88,0x82,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,60,changed,1,1,Startup feed,L4,,,0,0,A,A,0x89,0x83,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,61,changed,1,1,Startup time %,L5,,,0,0,A,A,0x8A,0x84,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,62,changed,1,1,Igniter time %,L6,,,0,0,A,A,0x8B,0x85,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,63,changed,1,1,Ash dump fan,L7,,,0,0,A,A,0x90,0x86,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,64,changed,1,1,Ash dump feed,L8,,,0,0,A,A,0x91,0x87,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,65,changed,1,1,Ash dump time %,Startup fan,,,0,0,A,A,0x92,0x88,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,66,changed,1,1,Ash dump heat level,Startup feed,,,0,0,A,A,0x93,0x89,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,67,changed,1,1,Ash dump target %,Startup time %,,,0,0,A,A,0x94,0x8A,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,68,changed,1,1,TC for 25% fan,Igniter time %,,,0,0,A,A,0x98,0x8B,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,69,changed,1,1,TC for 100% fan,Ash dump fan,,,0,0,A,A,0x99,0x90,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,70,changed,1,1,Thermostat heat level,Ash dump feed,,,0,0,A,A,0x9A,0x91,0,255,0,0,1,1,2,2
+5.0.21_to_5.5.00,adjustments,71,added,,1,,Ash dump time %,,,,0,,A,,0x92,,255,,0,,1,,2
+5.0.21_to_5.5.00,adjustments,72,added,,1,,Ash dump heat level,,,,0,,A,,0x93,,8,,0,,1,,2
+5.0.21_to_5.5.00,adjustments,73,added,,1,,Ash dump target %,,,,0,,A,,0x94,,255,,0,,1,,2
+5.0.21_to_5.5.00,adjustments,74,added,,1,,TC for 25% fan,,,,0,,A,,0x98,,255,,0,,1,,2
+5.0.21_to_5.5.00,adjustments,75,added,,1,,TC for 100% fan,,,,0,,A,,0x99,,255,,0,,1,,2
+5.0.21_to_5.5.00,adjustments,76,added,,1,,Thermostat heat level,,,,0,,A,,0x9A,,8,,0,,1,,2
+5.0.21_to_5.5.00,adjustments,77,added,,1,,LB threshold %,,,,0,,A,,0x9B,,100,,0,,1,,2
+5.0.21_to_5.5.00,adjustments,78,added,,2,,LB fan adjustment,,,,0,,A,,0x9C,,30,,-30,,1,,2
+5.0.21_to_5.5.00,adjustments,79,added,,2,,LB feed adjustment,,,,0,,A,,0x9D,,30,,-30,,1,,2
+5.0.21_to_5.5.00,adjustments,80,added,,10,,Ratio / Ash trimpot mode,,Send,,0,,A,,0x9E,,0,,0,,1,,8
+5.0.21_to_5.5.00,adjustments,81,added,,10,,Disable auto restart,,Send,,0,,A,,0x9E,,0,,0,,2,,8
+5.0.21_to_5.5.00,altitude_settings,0,same,1,1,Low altitude,Low altitude,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,altitude_settings,1,same,1,1,Medium altitude,Medium altitude,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,altitude_settings,2,same,1,1,High altitude,High altitude,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fan_curve_settings,0,same,1,1,High output fan,High output fan,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fan_curve_settings,1,same,1,1,Regular fan,Regular fan,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,feedwheel_settings,0,same,1,1,Regular wheel; 4.0 ci,Regular wheel; 4.0 ci,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,feedwheel_settings,1,same,1,1,Beveled wheel; 5.3 ci,Beveled wheel; 5.3 ci,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,0,same,1,1,Corn,Corn,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,1,same,1,1,5% ash Biomass,5% ash Biomass,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,2,same,1,1,2% ash Biomass,2% ash Biomass,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,3,same,1,1,Wood - Lean,Wood - Lean,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,4,same,1,1,Wood - Rich,Wood - Rich,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,5,same,1,1,Corn,Corn,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,6,same,1,1,5% ash Biomass,5% ash Biomass,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,7,same,1,1,2% ash Biomass,2% ash Biomass,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,8,same,1,1,Wood - Lean,Wood - Lean,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,fuel_settings,9,same,1,1,Wood - Rich,Wood - Rich,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,individualization,0,changed,6,6,Software version,Stove software version,,,0,0,C,C,0x0B,0x0B,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,individualization,1,changed,3,3,Internal checksum,Stove checksum,,,0,0,A,A,0x00,0x00,0,0,0,0,2,2,3,3
+5.0.21_to_5.5.00,individualization,2,changed,3,3,Calculated checksum,BixCheck checksum,,,0,0,,,0x00,0x00,0,0,0,0,2,2,3,3
+5.0.21_to_5.5.00,individualization,3,changed,1,1,Internal data format,Stove data format,,,0,0,C,C,0x08,0x08,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,individualization,4,changed,1,1,Calculated data format,BixCheck data format,,,0,0,A,A,0x02,0x02,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,individualization,5,same,7,7,Serial number,Serial number,,,0,0,A,A,0x03,0x03,0,0,0,0,8,8,2,2
+5.0.21_to_5.5.00,individualization,6,same,7,7,Production date,Production date,,,0,0,A,A,0x0B,0x0B,0,0,0,0,8,8,2,2
+5.0.21_to_5.5.00,individualization,7,same,7,7,Model name,Model name,,,0,0,A,A,0x13,0x13,0,0,0,0,16,16,2,2
+5.0.21_to_5.5.00,individualization,8,same,1,1,Spare,Spare,,,0,0,A,A,0x23,0x23,0,0,0,0,13,13,1,1
+5.0.21_to_5.5.00,model_settings,0,same,1,1,Bixby Model 115,Bixby Model 115,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,model_settings,1,same,1,1,Bixby Model 110,Bixby Model 110,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.0.21_to_5.5.00,remote_buttons,0,same,1,1,Off,Off,,,17,17,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.0.21_to_5.5.00,remote_buttons,1,same,1,1,On,On,,,18,18,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.0.21_to_5.5.00,remote_buttons,2,same,1,1,Up,Up,,,20,20,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.0.21_to_5.5.00,remote_buttons,3,same,1,1,Down,Down,,,24,24,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.0.21_to_5.5.00,telemetry,0,same,2,2,Temperature,Temperature,"Temp C, Temp F","Temp C, Temp F",0,0,T,T,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,1,same,1,1,Thermocouple,Thermocouple,TC Points,TC Points,0,0,T,T,0x01,0x01,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,2,same,1,1,Fan potentiometer,Fan potentiometer,"Fan units, Fan %","Fan units, Fan %",0,0,T,T,0x02,0x02,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,3,same,1,1,Feed potentiometer,Feed potentiometer,"Feed units, Feed %","Feed units, Feed %",0,0,T,T,0x03,0x03,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,4,same,1,1,Exhaust fan speed,Exhaust fan speed,"Exh speed cnt, Exh RPM","Exh speed cnt, Exh RPM",0,0,T,T,0x04,0x04,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,5,same,1,1,Exhaust fan phase,Exhaust fan phase,"Exh ph cnt, Exh ph us","Exh ph cnt, Exh ph us",0,0,T,T,0x05,0x05,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,6,same,1,1,Convection fan level,Convection fan level,Convection %,Convection %,0,0,T,T,0x06,0x06,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,7,same,1,1,Display LED,Display LED,LED display,LED display,0,0,T,T,0x07,0x07,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,8,same,5,5,Igniter state,Igniter state,"Igniter code, Igniter state","Igniter code, Igniter state",0,0,T,T,0x08,0x08,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,9,same,1,1,Current heat level,Current heat level,Current level,Current level,0,0,C,C,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,10,same,1,1,Target heat level,Target heat level,Target level,Target level,0,0,C,C,0x00,0x00,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,11,same,5,5,State control,State control,"State ctrl, State mode","State ctrl, State mode",0,0,T,T,0x09,0x09,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,12,same,3,3,Ash level,Ash level,Ash level,Ash level,0,0,T,T,0x0A,0x0A,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,13,same,3,3,Ash target,Ash target,Ash target,Ash target,0,0,T,T,0x0C,0x0C,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,14,same,3,3,Feed on time,Feed on time,"Feed on 1/120, Feed on s","Feed on 1/120, Feed on s",0,0,T,T,0x0E,0x0E,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,15,same,3,3,Feed off time,Feed off time,"Feed off 1/120, Feed off s","Feed off 1/120, Feed off s",0,0,T,T,0x10,0x10,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,16,same,3,3,Feed cycle time,Feed cycle time,"Feed cycle 1/120, Feed cycle s","Feed cycle 1/120, Feed cycle s",0,0,C,C,0x00,0x00,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,17,same,5,5,IIC status,IIC status,IIC mode,IIC mode,0,0,T,T,0x12,0x12,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,18,same,5,5,Alarm status,Alarm status,Alarm mode,Alarm mode,0,0,T,T,0x13,0x13,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,19,same,5,5,Flag status,Flag status,Flag mode,Flag mode,0,0,T,T,0x14,0x14,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,20,same,1,1,Igniter current,Igniter current,Igniter current,Igniter current,0,0,T,T,0x15,0x15,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,21,same,1,1,Firedoor timer,Firedoor timer,Firedoor units,Firedoor units,0,0,T,T,0x16,0x16,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,22,same,1,1,Ash drawer timer,Ash drawer timer,Ash drawer units,Ash drawer units,0,0,T,T,0x17,0x17,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,23,same,1,1,Exhaust fan target,Exhaust fan target,"Exh target cnt, Exh tgt RPM","Exh target cnt, Exh tgt RPM",0,0,T,T,0x18,0x18,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,24,same,1,1,Drop limit,Drop limit,TC drop limit,TC drop limit,0,0,T,T,0x19,0x19,0,0,0,0,1,1,1,1
+5.0.21_to_5.5.00,telemetry,25,same,3,3,Feed cycle table,Feed cycle table,"Feed table 1/120, Feed table s","Feed table 1/120, Feed table s",0,0,T,T,0x1A,0x1A,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,26,same,3,3,Feed cycle cal,Feed cycle cal,"Feed cal 1/120, Feed cal s","Feed cal 1/120, Feed cal s",0,0,T,T,0x1C,0x1C,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,27,same,3,3,Time to ash dump,Time to ash dump,TtAD,TtAD,0,0,V,V,0x1B,0x1B,0,0,0,0,2,2,1,1
+5.0.21_to_5.5.00,telemetry,28,same,1,1,Telemetry Mode,Telemetry Mode,,,0,0,C,C,0x00,0x00,0,0,0,0,1,1,3,3
+5.0.21_to_5.5.00,telemetry,29,same,1,1,LED No Log,LED No Log,,,0,0,C,C,0x20,0x20,0,0,0,0,1,1,3,3
+5.0.21_to_5.5.00,test_settings,0,same,1,1,Data Out,Data Out,,,0,0,,,0x00,0x00,0,0,0,0,1,1,3,3
+5.0.21_to_5.5.00,test_settings,1,same,1,1,Data In,Data In,,,0,0,,,0x00,0x00,0,0,0,0,1,1,3,3
+5.0.21_to_5.5.00,test_settings,2,same,1,1,Status,Status,,,0,0,,,0x00,0x00,0,0,0,0,1,1,3,3
+5.0.21_to_5.5.00,utility,0,same,1,1,Flue Monitor,Flue Monitor,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.0.21_to_5.5.00,utility,1,same,1,1,Fuel A Data,Fuel A Data,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.0.21_to_5.5.00,utility,2,same,1,1,Fuel B Data,Fuel B Data,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.0.21_to_5.5.00,utility,3,same,1,1,Telemetry,Telemetry,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustment_descriptions,0,same,1,1,Fan,Fan,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,1,same,1,1,Fuel A,Fuel A,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,2,same,1,1,Fuel B,Fuel B,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,3,same,1,1,Feed,Feed,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,4,same,1,1,Fuel A,Fuel A,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,5,same,1,1,Fuel B,Fuel B,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,6,same,1,1,Ash,Ash,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,7,same,1,1,Fuel A,Fuel A,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustment_descriptions,8,same,1,1,Fuel B,Fuel B,,,0,0,X,X,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,adjustments,0,same,1,1,L1,L1,,,0,0,A,A,0x40,0x40,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,1,same,1,1,L2,L2,,,0,0,A,A,0x41,0x41,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,2,same,1,1,L3,L3,,,0,0,A,A,0x42,0x42,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,3,same,1,1,L4,L4,,,0,0,A,A,0x43,0x43,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,4,same,1,1,L5,L5,,,0,0,A,A,0x44,0x44,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,5,same,1,1,L6,L6,,,0,0,A,A,0x45,0x45,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,6,same,1,1,L7,L7,,,0,0,A,A,0x46,0x46,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,7,same,1,1,L8,L8,,,0,0,A,A,0x47,0x47,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,8,same,1,1,L1,L1,,,0,0,A,A,0x48,0x48,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,9,same,1,1,L2,L2,,,0,0,A,A,0x49,0x49,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,10,same,1,1,L3,L3,,,0,0,A,A,0x4A,0x4A,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,11,same,1,1,L4,L4,,,0,0,A,A,0x4B,0x4B,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,12,same,1,1,L5,L5,,,0,0,A,A,0x4C,0x4C,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,13,same,1,1,L6,L6,,,0,0,A,A,0x4D,0x4D,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,14,same,1,1,L7,L7,,,0,0,A,A,0x4E,0x4E,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,15,same,1,1,L8,L8,,,0,0,A,A,0x4F,0x4F,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,16,same,1,1,L1,L1,,,0,0,A,A,0x50,0x50,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,17,same,1,1,L2,L2,,,0,0,A,A,0x51,0x51,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,18,same,1,1,L3,L3,,,0,0,A,A,0x52,0x52,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,19,same,1,1,L4,L4,,,0,0,A,A,0x53,0x53,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,20,same,1,1,L5,L5,,,0,0,A,A,0x54,0x54,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,21,same,1,1,L6,L6,,,0,0,A,A,0x55,0x55,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,22,same,1,1,L7,L7,,,0,0,A,A,0x56,0x56,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,23,same,1,1,L8,L8,,,0,0,A,A,0x57,0x57,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,24,same,1,1,Startup fan,Startup fan,,,0,0,A,A,0x58,0x58,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,25,same,1,1,Startup feed,Startup feed,,,0,0,A,A,0x59,0x59,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,26,same,1,1,Startup time %,Startup time %,,,0,0,A,A,0x5A,0x5A,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,27,same,1,1,Igniter time %,Igniter time %,,,0,0,A,A,0x5B,0x5B,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,28,same,1,1,Ash dump fan,Ash dump fan,,,0,0,A,A,0x60,0x60,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,29,same,1,1,Ash dump feed,Ash dump feed,,,0,0,A,A,0x61,0x61,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,30,same,1,1,Ash dump time %,Ash dump time %,,,0,0,A,A,0x62,0x62,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,31,same,1,1,Ash dump heat level,Ash dump heat level,,,0,0,A,A,0x63,0x63,8,8,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,32,same,1,1,Ash dump target %,Ash dump target %,,,0,0,A,A,0x64,0x64,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,33,same,1,1,TC for 25% fan,TC for 25% fan,,,0,0,A,A,0x68,0x68,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,34,same,1,1,TC for 100% fan,TC for 100% fan,,,0,0,A,A,0x69,0x69,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,35,same,1,1,Thermostat heat level,Thermostat heat level,,,0,0,A,A,0x6A,0x6A,8,8,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,36,same,1,1,LB threshold %,LB threshold %,,,0,0,A,A,0x6B,0x6B,100,100,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,37,same,2,2,LB fan adjustment,LB fan adjustment,,,0,0,A,A,0x6C,0x6C,30,30,-30,-30,1,1,2,2
+5.5.00_to_5.5.01,adjustments,38,same,2,2,LB feed adjustment,LB feed adjustment,,,0,0,A,A,0x6D,0x6D,30,30,-30,-30,1,1,2,2
+5.5.00_to_5.5.01,adjustments,39,same,10,10,Ratio / Ash trimpot mode,Ratio / Ash trimpot mode,Send,Send,0,0,A,A,0x6E,0x6E,0,0,0,0,1,1,8,8
+5.5.00_to_5.5.01,adjustments,40,same,10,10,Disable auto restart,Disable auto restart,Send,Send,0,0,A,A,0x6E,0x6E,0,0,0,0,2,2,8,8
+5.5.00_to_5.5.01,adjustments,41,same,1,1,L1,L1,,,0,0,A,A,0x70,0x70,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,42,same,1,1,L2,L2,,,0,0,A,A,0x71,0x71,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,43,same,1,1,L3,L3,,,0,0,A,A,0x72,0x72,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,44,same,1,1,L4,L4,,,0,0,A,A,0x73,0x73,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,45,same,1,1,L5,L5,,,0,0,A,A,0x74,0x74,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,46,same,1,1,L6,L6,,,0,0,A,A,0x75,0x75,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,47,same,1,1,L7,L7,,,0,0,A,A,0x76,0x76,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,48,same,1,1,L8,L8,,,0,0,A,A,0x77,0x77,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,49,same,1,1,L1,L1,,,0,0,A,A,0x78,0x78,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,50,same,1,1,L2,L2,,,0,0,A,A,0x79,0x79,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,51,same,1,1,L3,L3,,,0,0,A,A,0x7A,0x7A,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,52,same,1,1,L4,L4,,,0,0,A,A,0x7B,0x7B,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,53,same,1,1,L5,L5,,,0,0,A,A,0x7C,0x7C,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,54,same,1,1,L6,L6,,,0,0,A,A,0x7D,0x7D,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,55,same,1,1,L7,L7,,,0,0,A,A,0x7E,0x7E,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,56,same,1,1,L8,L8,,,0,0,A,A,0x7F,0x7F,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,57,same,1,1,L1,L1,,,0,0,A,A,0x80,0x80,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,58,same,1,1,L2,L2,,,0,0,A,A,0x81,0x81,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,59,same,1,1,L3,L3,,,0,0,A,A,0x82,0x82,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,60,same,1,1,L4,L4,,,0,0,A,A,0x83,0x83,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,61,same,1,1,L5,L5,,,0,0,A,A,0x84,0x84,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,62,same,1,1,L6,L6,,,0,0,A,A,0x85,0x85,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,63,same,1,1,L7,L7,,,0,0,A,A,0x86,0x86,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,64,same,1,1,L8,L8,,,0,0,A,A,0x87,0x87,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,65,same,1,1,Startup fan,Startup fan,,,0,0,A,A,0x88,0x88,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,66,same,1,1,Startup feed,Startup feed,,,0,0,A,A,0x89,0x89,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,67,same,1,1,Startup time %,Startup time %,,,0,0,A,A,0x8A,0x8A,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,68,same,1,1,Igniter time %,Igniter time %,,,0,0,A,A,0x8B,0x8B,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,69,same,1,1,Ash dump fan,Ash dump fan,,,0,0,A,A,0x90,0x90,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,70,same,1,1,Ash dump feed,Ash dump feed,,,0,0,A,A,0x91,0x91,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,71,same,1,1,Ash dump time %,Ash dump time %,,,0,0,A,A,0x92,0x92,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,72,same,1,1,Ash dump heat level,Ash dump heat level,,,0,0,A,A,0x93,0x93,8,8,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,73,same,1,1,Ash dump target %,Ash dump target %,,,0,0,A,A,0x94,0x94,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,74,same,1,1,TC for 25% fan,TC for 25% fan,,,0,0,A,A,0x98,0x98,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,75,same,1,1,TC for 100% fan,TC for 100% fan,,,0,0,A,A,0x99,0x99,255,255,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,76,same,1,1,Thermostat heat level,Thermostat heat level,,,0,0,A,A,0x9A,0x9A,8,8,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,77,same,1,1,LB threshold %,LB threshold %,,,0,0,A,A,0x9B,0x9B,100,100,0,0,1,1,2,2
+5.5.00_to_5.5.01,adjustments,78,same,2,2,LB fan adjustment,LB fan adjustment,,,0,0,A,A,0x9C,0x9C,30,30,-30,-30,1,1,2,2
+5.5.00_to_5.5.01,adjustments,79,same,2,2,LB feed adjustment,LB feed adjustment,,,0,0,A,A,0x9D,0x9D,30,30,-30,-30,1,1,2,2
+5.5.00_to_5.5.01,adjustments,80,same,10,10,Ratio / Ash trimpot mode,Ratio / Ash trimpot mode,Send,Send,0,0,A,A,0x9E,0x9E,0,0,0,0,1,1,8,8
+5.5.00_to_5.5.01,adjustments,81,same,10,10,Disable auto restart,Disable auto restart,Send,Send,0,0,A,A,0x9E,0x9E,0,0,0,0,2,2,8,8
+5.5.00_to_5.5.01,altitude_settings,0,same,1,1,Low altitude,Low altitude,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,altitude_settings,1,same,1,1,Medium altitude,Medium altitude,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,altitude_settings,2,same,1,1,High altitude,High altitude,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fan_curve_settings,0,same,1,1,High output fan,High output fan,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fan_curve_settings,1,same,1,1,Regular fan,Regular fan,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,feedwheel_settings,0,same,1,1,Regular wheel; 4.0 ci,Regular wheel; 4.0 ci,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,feedwheel_settings,1,same,1,1,Beveled wheel; 5.3 ci,Beveled wheel; 5.3 ci,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,0,same,1,1,Corn,Corn,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,1,same,1,1,5% ash Biomass,5% ash Biomass,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,2,changed,1,1,2% ash Biomass,Wheat,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,3,same,1,1,Wood - Lean,Wood - Lean,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,4,same,1,1,Wood - Rich,Wood - Rich,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,5,same,1,1,Corn,Corn,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,6,same,1,1,5% ash Biomass,5% ash Biomass,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,7,changed,1,1,2% ash Biomass,Wheat,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,8,same,1,1,Wood - Lean,Wood - Lean,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,fuel_settings,9,same,1,1,Wood - Rich,Wood - Rich,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,individualization,0,same,6,6,Stove software version,Stove software version,,,0,0,C,C,0x0B,0x0B,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,individualization,1,same,3,3,Stove checksum,Stove checksum,,,0,0,A,A,0x00,0x00,0,0,0,0,2,2,3,3
+5.5.00_to_5.5.01,individualization,2,same,3,3,BixCheck checksum,BixCheck checksum,,,0,0,,,0x00,0x00,0,0,0,0,2,2,3,3
+5.5.00_to_5.5.01,individualization,3,same,1,1,Stove data format,Stove data format,,,0,0,C,C,0x08,0x08,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,individualization,4,same,1,1,BixCheck data format,BixCheck data format,,,0,0,A,A,0x02,0x02,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,individualization,5,same,7,7,Serial number,Serial number,,,0,0,A,A,0x03,0x03,0,0,0,0,8,8,2,2
+5.5.00_to_5.5.01,individualization,6,same,7,7,Production date,Production date,,,0,0,A,A,0x0B,0x0B,0,0,0,0,8,8,2,2
+5.5.00_to_5.5.01,individualization,7,same,7,7,Model name,Model name,,,0,0,A,A,0x13,0x13,0,0,0,0,16,16,2,2
+5.5.00_to_5.5.01,individualization,8,same,1,1,Spare,Spare,,,0,0,A,A,0x23,0x23,0,0,0,0,13,13,1,1
+5.5.00_to_5.5.01,model_settings,0,same,1,1,Bixby Model 115,Bixby Model 115,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,model_settings,1,same,1,1,Bixby Model 110,Bixby Model 110,,,0,0,,,0x00,0x00,0,0,0,0,1,1,4,4
+5.5.00_to_5.5.01,remote_buttons,0,same,1,1,Off,Off,,,17,17,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,remote_buttons,1,same,1,1,On,On,,,18,18,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,remote_buttons,2,same,1,1,Up,Up,,,20,20,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,remote_buttons,3,same,1,1,Down,Down,,,24,24,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,telemetry,0,same,2,2,Temperature,Temperature,"Temp C, Temp F","Temp C, Temp F",0,0,T,T,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,1,same,1,1,Thermocouple,Thermocouple,TC Points,TC Points,0,0,T,T,0x01,0x01,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,2,same,1,1,Fan potentiometer,Fan potentiometer,"Fan units, Fan %","Fan units, Fan %",0,0,T,T,0x02,0x02,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,3,same,1,1,Feed potentiometer,Feed potentiometer,"Feed units, Feed %","Feed units, Feed %",0,0,T,T,0x03,0x03,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,4,same,1,1,Exhaust fan speed,Exhaust fan speed,"Exh speed cnt, Exh RPM","Exh speed cnt, Exh RPM",0,0,T,T,0x04,0x04,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,5,same,1,1,Exhaust fan phase,Exhaust fan phase,"Exh ph cnt, Exh ph us","Exh ph cnt, Exh ph us",0,0,T,T,0x05,0x05,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,6,same,1,1,Convection fan level,Convection fan level,Convection %,Convection %,0,0,T,T,0x06,0x06,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,7,same,1,1,Display LED,Display LED,LED display,LED display,0,0,T,T,0x07,0x07,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,8,same,5,5,Igniter state,Igniter state,"Igniter code, Igniter state","Igniter code, Igniter state",0,0,T,T,0x08,0x08,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,9,same,1,1,Current heat level,Current heat level,Current level,Current level,0,0,C,C,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,10,same,1,1,Target heat level,Target heat level,Target level,Target level,0,0,C,C,0x00,0x00,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,11,same,5,5,State control,State control,"State ctrl, State mode","State ctrl, State mode",0,0,T,T,0x09,0x09,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,12,same,3,3,Ash level,Ash level,Ash level,Ash level,0,0,T,T,0x0A,0x0A,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,telemetry,13,same,3,3,Ash target,Ash target,Ash target,Ash target,0,0,T,T,0x0C,0x0C,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,telemetry,14,same,3,3,Feed on time,Feed on time,"Feed on 1/120, Feed on s","Feed on 1/120, Feed on s",0,0,T,T,0x0E,0x0E,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,telemetry,15,same,3,3,Feed off time,Feed off time,"Feed off 1/120, Feed off s","Feed off 1/120, Feed off s",0,0,T,T,0x10,0x10,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,telemetry,16,same,3,3,Feed cycle time,Feed cycle time,"Feed cycle 1/120, Feed cycle s","Feed cycle 1/120, Feed cycle s",0,0,C,C,0x00,0x00,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,telemetry,17,same,5,5,IIC status,IIC status,IIC mode,IIC mode,0,0,T,T,0x12,0x12,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,18,same,5,5,Alarm status,Alarm status,Alarm mode,Alarm mode,0,0,T,T,0x13,0x13,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,19,same,5,5,Flag status,Flag status,Flag mode,Flag mode,0,0,T,T,0x14,0x14,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,20,same,1,1,Igniter current,Igniter current,Igniter current,Igniter current,0,0,T,T,0x15,0x15,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,21,same,1,1,Firedoor timer,Firedoor timer,Firedoor units,Firedoor units,0,0,T,T,0x16,0x16,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,22,same,1,1,Ash drawer timer,Ash drawer timer,Ash drawer units,Ash drawer units,0,0,T,T,0x17,0x17,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,23,same,1,1,Exhaust fan target,Exhaust fan target,"Exh target cnt, Exh tgt RPM","Exh target cnt, Exh tgt RPM",0,0,T,T,0x18,0x18,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,24,changed,1,1,Drop limit,BF drop limit,TC drop limit,BF drop limit,0,0,T,T,0x19,0x19,0,0,0,0,1,1,1,1
+5.5.00_to_5.5.01,telemetry,25,same,3,3,Feed cycle table,Feed cycle table,"Feed table 1/120, Feed table s","Feed table 1/120, Feed table s",0,0,T,T,0x1A,0x1A,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,telemetry,26,same,3,3,Feed cycle cal,Feed cycle cal,"Feed cal 1/120, Feed cal s","Feed cal 1/120, Feed cal s",0,0,T,T,0x1C,0x1C,0,0,0,0,2,2,1,1
+5.5.00_to_5.5.01,telemetry,27,changed,3,1,Time to ash dump,LB drop limit,TtAD,LB drop limit,0,0,V,T,0x1B,0x1E,0,0,0,0,2,1,1,1
+5.5.00_to_5.5.01,telemetry,28,changed,1,3,Telemetry Mode,Time to ash dump,,TtAD,0,0,C,V,0x00,0x1C,0,0,0,0,1,2,3,1
+5.5.00_to_5.5.01,telemetry,29,changed,1,1,LED No Log,Telemetry Mode,,,0,0,C,C,0x20,0x00,0,0,0,0,1,1,3,3
+5.5.00_to_5.5.01,telemetry,30,added,,1,,LED No Log,,,,0,,C,,0x20,,0,,0,,1,,3
+5.5.00_to_5.5.01,telemetry,31,added,,1,,Low temp count,,Low temp count,,0,,T,,0xFD,,0,,0,,1,,1
+5.5.00_to_5.5.01,telemetry,32,added,,1,,Sample maximum,,Sample max,,0,,T,,0xFE,,0,,0,,1,,1
+5.5.00_to_5.5.01,telemetry,33,added,,1,,Recent sample,,Recent sample,,0,,T,,0xFF,,0,,0,,1,,1
+5.5.00_to_5.5.01,test_settings,0,same,1,1,Data Out,Data Out,,,0,0,,,0x00,0x00,0,0,0,0,1,1,3,3
+5.5.00_to_5.5.01,test_settings,1,same,1,1,Data In,Data In,,,0,0,,,0x00,0x00,0,0,0,0,1,1,3,3
+5.5.00_to_5.5.01,test_settings,2,same,1,1,Status,Status,,,0,0,,,0x00,0x00,0,0,0,0,1,1,3,3
+5.5.00_to_5.5.01,utility,0,same,1,1,Flue Monitor,Flue Monitor,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,utility,1,same,1,1,Fuel A Data,Fuel A Data,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,utility,2,same,1,1,Fuel B Data,Fuel B Data,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2
+5.5.00_to_5.5.01,utility,3,same,1,1,Telemetry,Telemetry,,,0,0,,,0x00,0x00,0,0,0,0,1,1,2,2

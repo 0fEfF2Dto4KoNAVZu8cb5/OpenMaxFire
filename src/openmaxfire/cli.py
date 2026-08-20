@@ -24,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--baud",
         type=int,
-        help="required for live I/O; current candidates are 38400 and 19200",
+        help="required for live I/O; BixCheck uses 9600 (2.06) or 19200 (2.70/2.71)",
     )
     p.add_argument("--timeout", type=float, default=0.25)
 
@@ -40,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     eb = enc_sub.add_parser("button")
     eb.add_argument("button", choices=[b.name.lower() for b in RemoteButton])
 
-    rr = sub.add_parser("read", help="transmit a register read (response decoder not implemented yet)")
+    rr = sub.add_parser("read", help="transmit a register read")
     rr.add_argument("address", type=_int_auto)
     rr.add_argument(
         "--i-understand-unverified-io",
@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.i_understand_unverified_io:
         print(
-            "Refusing live I/O: J3 electrical levels, pinout, baud rate, and framing are not yet "
+            "Refusing live I/O: J3 electrical levels, pinout, and serial behavior are not yet "
             "validated on the physical stove. Pass --i-understand-unverified-io only on a "
             "protected bench setup after reading SAFETY.md.",
             file=sys.stderr,

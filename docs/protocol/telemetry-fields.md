@@ -1,39 +1,67 @@
-# Vendor-documented telemetry fields
+# BixCheck telemetry map
 
-The BixCheck 5.x manual documents the values visible to its Monitor. The protocol address or stream field for each value is not yet mapped.
+The addresses below are decoded directly from BixCheck's 0x58-byte telemetry
+records. `T` entries arrive from the serial telemetry stream; `C` and `V`
+entries are computed/display records rather than additional T frames.
 
-## Runtime values
+## Shared 5.0.21 / 5.5.00 table
 
-| Field | Vendor meaning |
-| --- | --- |
-| Temperature | Ambient air temperature measured on the control board |
-| Thermocouple | Exhaust temperature; manual says no calibrated units |
-| Fan potentiometer | Raw 0-255 reading used for roughly +/-30% exhaust-fan adjustment |
-| Feed potentiometer | Raw 0-255 reading used for roughly +/-30% feed-rate adjustment |
-| Exhaust fan speed | Measured fan speed, 0-3600 RPM |
-| Exhaust fan phase | Internal fan-control parameter, 0-255 |
-| Convection fan level | Commanded power, 0-100% |
-| Display LED | Graphical front-panel LED state |
-| Igniter state | Internal igniter status byte |
-| Current heat level | Current level 1-8 |
-| Target heat level | Front-panel target 1-8 |
-| State control | Operating-state byte |
-| Ash level | Current 16-bit ash counter |
-| Ash target | 16-bit ash-dump threshold |
-| Feed on/off/cycle time | 16-bit values in 1/120-second units |
-| IIC status | Serial-memory status byte |
-| Alarm status | Internal alarm byte |
-| Flag status | Internal flag byte |
-| Igniter current | Instantaneous raw current reading |
-| Firedoor timer | Door-open time in 1/3-second units |
-| Ash drawer timer | Drawer-open time in 5 1/3-second units |
-| Exhaust fan target | Target fan speed, 0-3600 RPM |
-| Drop limit | Allowed thermocouple drop before blocked-flue handling |
-| Feed cycle table | Base 16-bit feed-cycle value |
-| Feed cycle calibration | Adjusted 16-bit feed-cycle value |
-| Time to ash dump | Approximate hours:minutes |
+| Source | Bytes | Field | BixCheck units/conversion label |
+| --- | ---: | --- | --- |
+| T00 | 1 | Temperature | Temp C, Temp F |
+| T01 | 1 | Thermocouple | TC Points |
+| T02 | 1 | Fan potentiometer | Fan units, Fan % |
+| T03 | 1 | Feed potentiometer | Feed units, Feed % |
+| T04 | 1 | Exhaust fan speed | count, RPM |
+| T05 | 1 | Exhaust fan phase | count, microseconds |
+| T06 | 1 | Convection fan level | percent |
+| T07 | 1 | Display LED | LED display |
+| T08 | 1 | Igniter state | code, state |
+| C00 | computed | Current heat level | current level |
+| C00 | computed | Target heat level | target level |
+| T09 | 1 | State control | code, mode |
+| T0A | 2 | Ash level | 16-bit |
+| T0C | 2 | Ash target | 16-bit |
+| T0E | 2 | Feed on time | 1/120 s, seconds |
+| T10 | 2 | Feed off time | 1/120 s, seconds |
+| C00 | computed | Feed cycle time | 1/120 s, seconds |
+| T12 | 1 | IIC status | mode |
+| T13 | 1 | Alarm status | mode |
+| T14 | 1 | Flag status | mode |
+| T15 | 1 | Igniter current | raw |
+| T16 | 1 | Firedoor timer | raw units |
+| T17 | 1 | Ash drawer timer | raw units |
+| T18 | 1 | Exhaust fan target | count, RPM |
+| T19 | 1 | Drop limit | TC drop limit |
+| T1A | 2 | Feed cycle table | 1/120 s, seconds |
+| T1C | 2 | Feed cycle calibration | 1/120 s, seconds |
+| V1B | computed | Time to ash dump | hours:minutes display |
+| C00 | computed | Telemetry mode | UI state |
+| C20 | computed | LED no-log | UI state |
+
+## 5.5.01 changes
+
+The first 24 rows remain the same. The tail becomes:
+
+| Source | Bytes | Field |
+| --- | ---: | --- |
+| T19 | 1 | BF drop limit |
+| T1A | 2 | Feed cycle table |
+| T1C | 2 | Feed cycle calibration |
+| T1E | 1 | LB drop limit |
+| V1C | computed | Time to ash dump |
+| C00 | computed | Telemetry mode |
+| C20 | computed | LED no-log |
+| TFD | 1 | Low temp count |
+| TFE | 1 | Sample maximum |
+| TFF | 1 | Recent sample |
+
+The `scanio()` code changes its virtual time-to-ash-dump index from 0x1B to
+0x1C in the same release, corroborating the table move.
 
 ## State-control values
+
+The vendor manual describes these patterns:
 
 | Pattern | Vendor description |
 | --- | --- |
@@ -47,8 +75,15 @@ The BixCheck 5.x manual documents the values visible to its Monitor. The protoco
 
 ## Blocked-flue monitor
 
-BixCheck exposes warning, detected, shutdown, warning count, overtemperature pullback, history index/maximum, sample timer, ramp/adjustment values, reset countdown, current/target level, low-temperature timer, and two eight-entry temperature-history tables.
+The vendor algorithm watches for a rapid thermocouple drop consistent with
+reduced exhaust flow. A warning can clear if temperature recovers; otherwise
+the factory controller shuts down. Fuel exhaustion or an overly lean fire can
+produce similar indications.
 
-The vendor algorithm watches for a rapid thermocouple drop consistent with reduced exhaust airflow. A warning can clear if temperature recovers; otherwise the stove performs a blocked-flue shutdown. Running out of fuel or an overly lean fire can produce similar #2/#3 indications.
+OpenMaxFire should expose BF/LB measurements and factory alarms without
+reimplementing or bypassing the controller's shutdown logic. Numeric unit
+conversions beyond the labels above still require code-level reconstruction or
+live correlation.
 
-OpenMaxFire must expose these values without reimplementing or bypassing the factory shutdown logic.
+The complete raw records for each release are in that release's
+`data-elements.csv`.

@@ -8,6 +8,9 @@
 - [x] Preserve the earlier 2.71 analysis bundle and independent gpdasm disassembly.
 - [x] Add a dependency-free Intel HEX parser/PIC14 disassembler and deterministic analysis for all images.
 - [x] Map cross-version protocol anchors, constant CR responses, UART changes, and the 2.06 bootloader/EEPROM delta.
+- [x] Deep-analyze all three BixCheck EXEs and export symbols, call graphs,
+  configuration/telemetry/Checkout tables, focused assembly, and semantic diffs.
+- [x] Build a read-only virtual serial lab and experimental PIC execution harness.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
 - [x] Preserve the prior OpenMaxFire v0.1 snapshot.
 - [ ] Publish a public preservation copy to Archive.org after reviewing redistribution and privacy.
@@ -19,16 +22,18 @@
 - [ ] Measure idle voltage and polarity through a protected interface.
 - [ ] Confirm controller oscillator frequency.
 - [ ] Capture BixCheck startup traffic if the Windows application can run.
-- [ ] Test read-only commands first at 38,400 baud, then 19,200 only if necessary.
+- [ ] Test only `CR00` at 9,600 for likely 2.06; try 19,200 only if the
+  protected electrical capture shows no valid response.
 - [ ] Record exact request bytes, response bytes, timing, and line termination.
 - [ ] Poll CR00-CR0E with the stove safely off.
 - [ ] Repeat polling while operating the fire door, ash drawer, thermostat, fuel switch, trim pots, and panel buttons.
 
 ## Phase 2 - read-only Linux monitor
 
-- [ ] Decode acknowledgements and response framing.
+- [x] Decode addressed/telemetry response framing statically and in emulation.
 - [ ] Implement robust timeouts, resynchronization, and stale-data detection.
-- [ ] Map firmware register values to the vendor telemetry field list.
+- [x] Map BixCheck T-stream indexes and widths to the vendor telemetry fields.
+- [ ] Complete unresolved numeric conversions and M/I status payload semantics.
 - [ ] Expose stove identity, state, heat level, alarms, temperatures, fan values, door timers, and ash values.
 - [ ] Add CSV/JSON logging and replayable capture fixtures.
 - [ ] Back up complete configuration/EEPROM before enabling any write.
@@ -43,7 +48,7 @@
 
 ## Phase 4 - BixCheck configuration parity
 
-- [ ] Decode identification, checksum, data-format, serial-number, production-date, and model fields.
+- [x] Decode identification, checksum, data-format, serial-number, production-date, and model addresses statically.
 - [ ] Implement readback and backups.
 - [ ] Map fuel A/B fan, feed, ash, startup, igniter, ash-dump, and convection-fan calibration fields.
 - [ ] Add range validation, version/data-format checks, diff preview, verify-after-write, and restore.
@@ -59,7 +64,10 @@
 
 ## Phase 6 - firmware servicing
 
-- [ ] Decode the Downloader/PICkit serial boot protocol (its code region and reset entry are now mapped).
+- [x] Decode Downloader/PICkit identify and program-block framing; confirm
+  reset-time `EA`/`EB` in emulation.
+- [ ] Resolve erase/program acknowledgement semantics and validate recovery on
+  sacrificial bench hardware.
 - [x] Distinguish Downloader and PICkit firmware layouts and preserve their exact word-level delta.
 - [ ] Implement firmware identity and compatibility checks.
 - [ ] Add interrupted-transfer recovery and post-flash calibration guidance.

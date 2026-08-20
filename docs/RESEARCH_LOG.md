@@ -24,3 +24,20 @@
 - Identified UART register values `SPBRG=0x20`, `TXSTA=0x26`, and `RCSTA=0x90`.
 - Mapped CR00-CR0E static handlers and narrowed door-switch candidates to CR02/CR06 input bits.
 - Created this structured GitHub archive and documented the 19.2/38.4 kbaud conflict.
+- Completed a reproducible deep reverse-engineering pass over BixCheck 5.0.21,
+  5.5.00, and 5.5.01 using retained MinGW COFF symbols, focused disassembly,
+  decoded tables, call graphs, and normalized function comparison.
+- Established exact BixCheck host settings: 5.0.21 uses 9,600 baud; 5.5.x
+  selects 9,600/19,200; all are 8N1. This resolves the earlier divisor ambiguity
+  in favor of a strongly inferred 10 MHz controller oscillator.
+- Reconstructed the complete outer response grammar, no-terminator request
+  framing, 34-record 5.5.01 telemetry map, 0x58-byte configuration record,
+  lean-burn transforms, and add/rotate checksum.
+- Decoded all direct Checkout actions and found the dormant, unreachable ninth
+  automatic plate-motor record shared by every EXE.
+- Reconstructed Downloader identity/block framing and kept it isolated from the
+  normal protocol API.
+- Built a read-only-by-default PTY serial lab and strict response parser.
+- Built an experimental PIC16F877A execution harness. The real 2.06, 2.70, and
+  2.71 images responded to `CR00` with `CR0000` plus LF; the PICkit loader
+  responded to reset-time `EA` with `EB`.
