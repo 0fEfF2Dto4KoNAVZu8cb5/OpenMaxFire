@@ -23,6 +23,13 @@ This report compares the three preserved generations at PIC16F877A word level. R
    BixCheck Checkout masks.
 9. A-unit reads use the PIC16F877A internal data EEPROM. All 768 AR00-ARFF
    cross-version probes match checksum-valid synthetic format-05/07 fixtures.
+10. All three generations contain the same input-multiplexer design. RD2 and
+    RD6:RD5 scan the active-low front-panel buttons into CR01; RD7 and RD6:RD5
+    scan three active-high RD3 external inputs into CR02.0-2.
+11. Static configuration-bank selection fixes CR02.2 as the fuel selector:
+    `1`=Fuel A/corn and `0`=Fuel B/wood. BixCheck and the related-board diagram
+    corroborate the name; CR02.0 is the burn-drive limit switch and CR02.1
+    remains unassigned.
 
 ## Protocol-anchor matrix
 
@@ -60,8 +67,8 @@ Compiled routines move between releases, so a word at the same numerical address
 
 - Resolve remaining erase/program acknowledgement semantics in the PICkit-only
   bootloader region; `EA`/`EB`, block framing, and completion are mapped.
-- Resolve the RD3 external-multiplexer selector/return relationship and the
-  provisional fuel-select slot.
+- Assign the remaining CR02.1 external-multiplexer slot and verify all muxed
+  inputs against the installed `9067-0604` board.
 - Continue assigning CR04-CR07 engineering semantics from their traced RAM
   producers, not just their read handlers.
 - Match write-register handler paths across all versions before considering any live write.

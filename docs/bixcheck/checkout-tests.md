@@ -73,7 +73,8 @@ table uses these direct serial actions (numbers are the manual/display numbers):
 | 10 LEDs off | `CW0400` |
 | 11-14 door/drawer switch states | Read `CR02`; door is bit 5/RD1, drawer bit 6/RD4 |
 | 15 plate motor on | `CW0500` |
-| 16-17 plate motor off/burn position | No direct write; wait/observe |
+| 16 plate motor off | No direct write; result checks `CR02.0` (burn-drive limit switch) and `CR03.1` |
+| 17 plates in burn position | No direct write; wait/observe |
 | 18 air pump on | `CW0600` |
 | 19 air pump off | `CW0700` |
 | 20 convection level 1 | `CW0801` on old format; `CW0819` on newer format |
@@ -87,12 +88,13 @@ table uses these direct serial actions (numbers are the manual/display numbers):
 | 33-34 thermostat | Read `CR06` bit 2 (RB4) |
 | 32, 35-37 remaining inputs | No direct actuation; observe operator/input state |
 
-The pin/register assignments above are emulator-confirmed by synthetic GPIO or
-ADC differentials and cross-referenced to BixCheck masks. They are not yet
-validated on serial 5215. The two fuel-select records are reachable in the UI,
-but the current 5.5 result dispatcher does not machine-check their states;
-retained unreachable handlers make CR02 bit 2 an explicitly provisional
-candidate.
+The pin/register assignments above are emulator- or static-firmware-confirmed
+and cross-referenced to BixCheck masks. They are not yet validated on serial
+5215. The controller's shared input scanner plus its Fuel A/B configuration
+bank selection establish `CR02.2`: `1` is Fuel A/corn and `0` is Fuel B/wood.
+Retained BixCheck predicates agree, but the reachable 5.5 fuel-test rows omit
+the machine check and rely on the operator. The preserved 9067-0404 diagram
+independently labels this physical input `Fuel Switch`.
 
 Automatic sender actions are identical across all three EXEs:
 

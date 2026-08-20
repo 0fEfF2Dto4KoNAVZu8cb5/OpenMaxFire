@@ -61,22 +61,30 @@ them with BixCheck's `AnalyzeInteractiveResult()` masks produces:
 
 | Physical/service signal | Protocol representation | PIC source | Offline confidence |
 | --- | --- | --- | --- |
-| Front-panel buttons | `CR01`: none `00`, ON `02`, OFF `01`, UP `04`, DOWN `08` | RAM `0x53`; transport into the PIC remains unresolved | High encoding confidence |
+| Front-panel buttons | `CR01`: none `00`, ON `02`, OFF `01`, UP `04`, DOWN `08` | RD2 button-bank select, RD6:RD5 address, active-low RD3 return; debounced into RAM `0x53` | High static mapping; not live-validated |
+| Burn-drive limit switch | `CR02` bit 0 | RD3 external-input mux slot 0 | High static mapping; physical polarity unverified |
+| Unassigned mux input | `CR02` bit 1 | RD3 external-input mux slot 1 | Transport mapped; physical function unresolved |
 | Firebox door | `CR02` bit 5; open `1`, closed `0` | RD1 | High; not live-validated |
 | Ash drawer | `CR02` bit 6; open `1`, closed `0` | RD4 | High; not live-validated |
 | Thermostat | `CR06` bit 2 | RB4 | High pin/bit confidence; verify polarity live |
-| Fuel select | Candidate `CR02` bit 2 | RD3 external-multiplexer sample slot | Provisional |
+| Fuel select | `CR02` bit 2; `1`=Fuel A/corn, `0`=Fuel B/wood | RD3 external-input mux slot 2 | High static mapping and polarity; not live-validated |
 | Fan potentiometer | `CR09`; low `00`, center about `80`, high `FF` | AN3 | High offline mapping |
 | Feed potentiometer | `CR0A`; low `00`, center about `80`, high `FF` | AN4 | High offline mapping |
 
-Additional direct CR02 mappings are RD0→bit 4 and RE1→bit 7. Holding the
-synthetic RD3 mux-return line high sets CR02 bits 0-2 because the firmware
-samples it under three selector states. A future selection-aware external-mux
-model or a live cold/off correlation is required to assign each slot. The
-fuel-switch association is therefore kept provisional: the current BixCheck
-table presents the two fuel tests, but its reachable 5.5 result paths do not
-machine-check them; two retained, unreachable handlers test opposite states of
-CR02 bit 2.
+Additional direct CR02 mappings are RD0→bit 4 and RE1→bit 7. The original GPIO
+replay held RD3 at one synthetic level and therefore set all three external-mux
+slots together. Static scanner reconstruction now separates the selectors:
+RD7 chooses the external-input bank, RD6:RD5 choose slots 0-2, and RD3 is the
+active-high return. The related-board 9067-0404 diagram labels the corresponding
+physical signals as the burn-drive motor switch and fuel switch; slot 1 remains
+unassigned.
+
+Fuel polarity is independently fixed by controller behavior. When CR02.2 is
+clear, 2.70/2.71 add `0x30` to move configuration reads from Fuel A (`A40...`)
+to Fuel B (`A70...`); 2.06 has equivalent paths, and retained BixCheck result
+predicates test the same opposite states. The reachable 5.5 fuel-test rows
+still fail to machine-check the operator state, which is a BixCheck application
+defect rather than evidence against the firmware mapping.
 
 The ADC replay starts each image from reset. Each generation samples AN1-AN4
 during startup. Sweeping AN3 changes CR09 linearly through the high eight bits
@@ -127,6 +135,7 @@ All files below are under `reverse-engineering/firmware/emulation/deep/`:
   bounce, isolation, or a real cable.
 - The emulator executes no `CW` or `AW` request in this pass.
 - Firmware control flow can identify a PIC pin and protocol bit, but only a
-  cold/off physical correlation can validate the board wiring on serial 5215.
+  cold/off physical correlation can validate the `9067-0604` board wiring on
+  serial 5215. The diagram used for signal names depicts `9067-0404`.
 - This work does not make ignition, actuator, downloader, or write commands
   safe.

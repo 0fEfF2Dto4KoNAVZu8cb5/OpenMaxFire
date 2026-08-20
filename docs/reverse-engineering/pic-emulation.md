@@ -64,10 +64,11 @@ hexadecimal letters (`CR0A`→`CR0a00`), which the host parser accepts.
 Synthetic GPIO/ADC differentials plus BixCheck's Checkout masks identify RD1
 as the firebox-door input (`CR02.5`), RD4 as ash drawer (`CR02.6`), RB4 as
 thermostat (`CR06.2`), AN3 as fan potentiometer (`CR09`), and AN4 as feed
-potentiometer (`CR0A`). Front-panel button values live in `CR01`; their physical
-transport into RAM 0x53 is not yet resolved. See the
-[exhaustive pass report](emulator-deep-pass.md) for evidence levels and the
-provisional fuel-select mapping.
+potentiometer (`CR0A`). Static scanner reconstruction maps the active-low
+front-panel button bank into `CR01`, burn-drive limit switch into `CR02.0`, and
+fuel selector into `CR02.2` (`1`=Fuel A/corn, `0`=Fuel B/wood). See the
+[exhaustive pass report](emulator-deep-pass.md) for selectors and evidence
+levels.
 
 ## Reproducing
 

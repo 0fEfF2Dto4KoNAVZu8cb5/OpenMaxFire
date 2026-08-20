@@ -27,7 +27,7 @@ even though BixCheck uses writes to 0x0E for remote-button actions. See the
 | Request | Traced return/source | Interpretation |
 | --- | --- | --- |
 | `CR00` | Constant `0x00` | Emulator-confirmed first read-only probe |
-| `CR01` | Bank-1 RAM byte 0x53 | Front-panel button code; physical transport unresolved |
+| `CR01` | Bank-1 RAM byte 0x53 | Front-panel button code from RD3/RD2/RD6:RD5 mux scanner |
 | `CR02` | Packed input byte | See bit table below |
 | `CR03` | Packed status/output byte | See bit table below |
 | `CR04` | Bank-1 RAM byte 0x0A2 | Thermometer value used by Checkout; conversion unresolved |
@@ -46,7 +46,9 @@ even though BixCheck uses writes to 0x0E for remote-button actions. See the
 
 | Bit | Firmware source | Cross-referenced meaning |
 | ---: | --- | --- |
-| 0-2 | Three multiplexed readings sampled through RD3 | External input bank; bit 2 is a provisional fuel-select candidate |
+| 0 | RD3 external-input mux slot 0 | Burn-drive motor limit switch; polarity unverified |
+| 1 | RD3 external-input mux slot 1 | Physical function unresolved |
+| 2 | RD3 external-input mux slot 2 | Fuel selector: 1=Fuel A/corn, 0=Fuel B/wood |
 | 3 | Internal/multiplexer state | Unknown |
 | 4 | RD0 | Direct digital input |
 | 5 | RD1 | Firebox door: open=1, closed=0 |
@@ -77,8 +79,9 @@ even though BixCheck uses writes to 0x0E for remote-button actions. See the
 `AnalyzeInteractiveResult()` supplies exact service-test encodings:
 
 - CR01 front-panel buttons: none `0x00`, ON `0x02`, OFF `0x01`, UP `0x04`,
-  DOWN `0x08`. CR01 reads RAM 0x53; its physical/control-cable transport remains
-  unresolved.
+  DOWN `0x08`. RD2 selects the active-low button bank, RD6:RD5 select
+  OFF/ON/UP/DOWN, RD3 supplies the shared return, and the debounced result is
+  stored in RAM 0x53.
 - CR09 fan potentiometer: low `<=0x03`, detent `0x79-0x86`, high `>0xFB`.
 - CR0A feed potentiometer: the same low/detent/high thresholds.
 
@@ -88,11 +91,16 @@ firmware generations. The reported byte is the high eight bits of the modeled
 
 ## Physical-validation boundary
 
-The offline cross-reference now assigns the door, drawer, and thermostat
-protocol bits and PIC pins. It still cannot prove the PCB wiring or polarity on
-serial 5215. The safe validation remains a cold/off CR02/CR06 baseline with one
-physical switch changed at a time. The RD3 multiplexer and fuel-select slot
-remain provisional until a selection-aware model or live correlation exists.
+The offline cross-reference now assigns the front-panel multiplexer,
+burn-drive limit switch, fuel selector, door, drawer, thermostat, and trim-pot
+paths. `CR02.1` remains unnamed. Static code establishes the fuel polarity by
+following the `0x30` configuration-bank offset: clear selects Fuel B (`A70...`)
+and set leaves Fuel A (`A40...`).
+
+This still cannot prove the PCB wiring or electrical polarity on serial 5215.
+The preserved diagram shows board `9067-0404`, while the installed board is
+owner-reported as `9067-0604`. Safe validation remains a cold/off CR01/CR02/CR06
+baseline with one physical input changed at a time.
 
 Machine-readable traces and stimulus results are documented in the
 [exhaustive emulator pass](../reverse-engineering/emulator-deep-pass.md).

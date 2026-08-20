@@ -33,6 +33,8 @@ OpenMaxFire separates evidence into four levels:
 | Offline inputs | Door=CR02.5/RD1; drawer=CR02.6/RD4; thermostat=CR06.2/RB4; fan pot=CR09/AN3; feed pot=CR0A/AN4 | BixCheck masks plus firmware GPIO/ADC traces |
 | A-unit storage | Firmware reads A00-AFF through PIC16F877A internal data EEPROM registers | Emulator events and bank-aware handler trace |
 | J3/cable | Black four-pin connector location; factory cable P/N 2013324 | Vendor notes/manual |
+| Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
+| Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
 
 ## Important unresolved items
 
@@ -42,8 +44,8 @@ OpenMaxFire separates evidence into four levels:
 | Oscillator | 10 MHz is strongly inferred, not physically checked | Read marking/frequency |
 | Live framing | Software/emulator grammar is established; no electrical capture | Passive capture, then `CR00` only |
 | M/I families | Outer dispatch known; payload semantics unresolved | Deeper data-flow analysis or controlled capture |
-| Input wiring | Offline pin/bit assignments are strong; serial 5215 wiring and polarity remain untested | Cold/off polling while toggling one switch |
-| Fuel select | CR02 bit 2 / RD3 mux slot is provisional; reachable 5.5 Checkout paths do not machine-check it | Selection-aware mux model or cold/off correlation |
+| Board revision | Diagram depicts 9067-0404; serial 5215 board is owner-reported as 9067-0604 | Clear photos of both board sides, especially J3 and silkscreen |
+| Input wiring | Offline assignments are strong; serial 5215 wiring and physical polarity remain untested; CR02.1 is unnamed | Cold/off polling while toggling one switch |
 | Telemetry conversions | Indexes/widths mapped; several numeric formulas unresolved | Trace display conversions, then correlate safely |
 | EEPROM semantics | Internal storage, addresses/types/checksum, and read path mapped; many calibration meanings rely on labels | Read-only live backup, then field correlation |
 | Checkout thresholds | Direct actions mapped; some result criteria/state bits unresolved | Continue `Analyze*Result()` reconstruction |

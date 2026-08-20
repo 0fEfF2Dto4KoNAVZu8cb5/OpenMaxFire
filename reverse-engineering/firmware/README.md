@@ -31,6 +31,11 @@ Each image has:
 - a sparse-aware program binary, padded with `0xFF` only between mapped program addresses;
 - portable raw and annotated PIC14 assembly listings.
 
+`comparison/multiplexed-inputs.csv` records the common front-panel and
+external-switch mux selectors across 2.06, 2.70, and 2.71, including exact
+routine addresses, PORTD selector values, CR mappings, interpretations, and
+confidence boundaries.
+
 `emulation/` contains experimental execution evidence from
 `tools/pic14_emulator.py`: per-image summaries, UART/peripheral events, and
 recent instruction traces. Its `deep/` subtree contains the exhaustive 45-read

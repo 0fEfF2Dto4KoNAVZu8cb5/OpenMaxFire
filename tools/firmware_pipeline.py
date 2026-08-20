@@ -120,6 +120,10 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
         0x0000: "Reset vector; Downloader enters the application, PICkit image redirects through its bootloader.",
         0x0004: "Interrupt vector; saves context before source dispatch.",
         0x00C6: "UART receive interrupt routine (signature match; medium confidence).",
+        0x0134: "Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.",
+        0x03FF: "Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.",
+        0x079C: "Second 2.06 fuel-table read path; a clear CR02.2 adds the same 0x30 Fuel-B offset.",
+        0x0F03: "External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.",
         0x0E71: "Read next byte from the command receive buffer.",
         0x0EA4: "Decode one uppercase ASCII hexadecimal nibble.",
         0x0EC0: "Decode two ASCII hexadecimal characters into one byte.",
@@ -143,6 +147,9 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
         0x0000: "Reset vector; enters application startup at 0x1800.",
         0x0004: "Interrupt vector; saves context before source dispatch.",
         0x00AE: "UART receive interrupt routine.",
+        0x0118: "Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.",
+        0x03D0: "Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.",
+        0x1004: "External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.",
         0x0F63: "Read next byte from the command receive buffer.",
         0x0F95: "Decode one uppercase ASCII hexadecimal nibble.",
         0x0FB1: "Decode two ASCII hexadecimal characters into one byte.",
@@ -164,6 +171,9 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
         0x0000: "Reset vector; loads PCLATH and enters application startup at 0x1825.",
         0x0004: "Interrupt vector; saves context before source dispatch.",
         0x00AE: "UART receive interrupt routine.",
+        0x0118: "Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.",
+        0x03D0: "Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.",
+        0x0FBF: "External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.",
         0x0F2E: "Read next byte from the command receive buffer.",
         0x0F60: "Decode one uppercase ASCII hexadecimal nibble.",
         0x0F7C: "Decode two ASCII hexadecimal characters into one byte.",
@@ -218,6 +228,28 @@ CR_CONSTANTS: dict[str, dict[int, int]] = {
 }
 
 
+BUTTON_MUX_PATTERN = (
+    0x3004, 0x0088, 0x1052, 0x1D88, 0x1452,
+    0x3024, 0x0088, 0x10D2, 0x1D88, 0x14D2,
+    0x3044, 0x0088, 0x1152, 0x1D88, 0x1552,
+    0x3064, 0x0088, 0x11D2, 0x1D88, 0x15D2,
+)
+
+
+SENSOR_MUX_PATTERN = (
+    0x301F, 0x0588, 0x3080, 0x0788, 0x1051, 0x1988, 0x1451,
+    0x3020, 0x0788, 0x10D1, 0x1988, 0x14D1,
+    0x3020, 0x0788, 0x1151, 0x1988, 0x1551,
+)
+
+
+MUX_SCAN_EXPECTED = {
+    "2.06": {"front_panel": 0x0134, "external_sensors": 0x0F03},
+    "2.70": {"front_panel": 0x0118, "external_sensors": 0x1004},
+    "2.71": {"front_panel": 0x0118, "external_sensors": 0x0FBF},
+}
+
+
 for _version, _handlers in CR_HANDLER_MATRIX.items():
     for _register, _handler in enumerate(_handlers):
         _constant = CR_CONSTANTS.get(_version, {}).get(_register)
@@ -229,6 +261,17 @@ for _version, _handlers in CR_HANDLER_MATRIX.items():
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def find_word_sequence(words: dict[int, int], pattern: tuple[int, ...]) -> list[int]:
+    """Return every contiguous program address matching a PIC word pattern."""
+
+    matches: list[int] = []
+    for start in sorted(words):
+        if all((words.get(start + offset, -1) & 0x3FFF) == expected
+               for offset, expected in enumerate(pattern)):
+            matches.append(start)
+    return matches
 
 
 def write_bytes(path: Path, data: bytes) -> None:
@@ -681,6 +724,78 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
                 constant = CR_CONSTANTS[version].get(register)
                 row.append("" if constant is None else f"0x{constant:02X}")
             writer.writerow(row)
+
+    application_labels = {
+        "2.06": "2.06-downloader",
+        "2.70": "2.70-embedded",
+        "2.71": "2.71-embedded",
+    }
+    mux_rows: list[tuple[str, ...]] = []
+    front_panel_slots = (
+        (0, 0x04, "00", "OFF", "CR01 bit 0 / value 0x01"),
+        (1, 0x24, "01", "ON", "CR01 bit 1 / value 0x02"),
+        (2, 0x44, "10", "UP", "CR01 bit 2 / value 0x04"),
+        (3, 0x64, "11", "DOWN", "CR01 bit 3 / value 0x08"),
+    )
+    sensor_slots = (
+        (
+            0, 0x80, "00", "burn-drive motor limit switch",
+            "CR02 bit 0",
+            "BixCheck plate-motor-off predicate plus motherboard diagram",
+            "high static; physical polarity not live-validated",
+        ),
+        (
+            1, 0xA0, "01", "unassigned external sensor slot",
+            "CR02 bit 1", "firmware scan only", "unknown",
+        ),
+        (
+            2, 0xC0, "10", "fuel-select switch",
+            "CR02 bit 2; 1=Fuel A/corn, 0=Fuel B/wood",
+            "firmware 0x30 EEPROM-bank offset, dormant BixCheck predicates, and motherboard diagram",
+            "high static; not live-validated on serial 5215",
+        ),
+    )
+    for version, label in application_labels.items():
+        spec, image = parsed[label]
+        patterns = {
+            "front_panel": BUTTON_MUX_PATTERN,
+            "external_sensors": SENSOR_MUX_PATTERN,
+        }
+        matches: dict[str, int] = {}
+        for family, pattern in patterns.items():
+            found = find_word_sequence(image.words, pattern)
+            expected = MUX_SCAN_EXPECTED[version][family]
+            if found != [expected]:
+                raise FirmwareError(
+                    f"{version} {family} mux signature: expected "
+                    f"[0x{expected:04X}], found {[f'0x{item:04X}' for item in found]}"
+                )
+            matches[family] = expected
+        for slot, selector, address, name, protocol in front_panel_slots:
+            mux_rows.append((
+                version, spec.filename, "front_panel", f"0x{matches['front_panel']:04X}",
+                f"0x{selector:02X}", "RD2=1, RD7=0", f"RD6:RD5={address}",
+                "RD3 active-low", f"bank-1 RAM 0x52 bit {slot}, debounced to 0x53",
+                protocol, name, "firmware scan plus BixCheck button codes and board diagram",
+                "high static; connector pin not live-validated",
+            ))
+        for slot, selector, address, name, protocol, evidence, confidence in sensor_slots:
+            mux_rows.append((
+                version, spec.filename, "external_sensors",
+                f"0x{matches['external_sensors']:04X}", f"0x{selector:02X}",
+                "RD7=1, RD2=0", f"RD6:RD5={address}", "RD3 active-high",
+                f"bank-1 RAM 0x51 bit {slot}", protocol, name, evidence, confidence,
+            ))
+    with (output / "multiplexed-inputs.csv").open(
+        "w", encoding="utf-8", newline=""
+    ) as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow((
+            "version", "image", "scan_family", "routine_pc", "selector_value",
+            "bank_enable", "address_lines", "sample_pin", "destination",
+            "protocol_mapping", "physical_interpretation", "evidence", "confidence",
+        ))
+        writer.writerows(mux_rows)
 
 
 def read_zip_member(archive: Path, pattern: str) -> tuple[str, bytes]:

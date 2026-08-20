@@ -74,6 +74,11 @@ three generations. Cross-referencing BixCheck's Checkout masks assigns:
   thermostat   -> CR06 bit2 / RB4 (polarity needs live validation)
   fan pot      -> CR09 / AN3
   feed pot     -> CR0A / AN4
-CR02 bit2, sampled through the external RD3 multiplexer, is a provisional
-fuel-select candidate. These are strong offline mappings, not proof of the PCB
-wiring on serial 5215; cold/off physical correlation remains required.
+Static scanner reconstruction further assigns:
+  panel buttons      -> CR01 via RD2/RD6:RD5 and active-low RD3 return
+  burn-drive switch  -> CR02 bit0 / external RD3 mux slot0
+  fuel selector      -> CR02 bit2 / external RD3 mux slot2
+The configuration-bank offset establishes fuel polarity: bit2 set is Fuel
+A/corn and clear is Fuel B/wood. CR02 bit1 remains physically unassigned. These
+are strong offline mappings, not proof of the PCB wiring on serial 5215;
+cold/off physical correlation remains required.

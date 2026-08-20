@@ -46,6 +46,8 @@ For changes relative to 2.06 and 2.70, see [the comparative report](firmware-com
 Bank-aware emulator traces plus BixCheck's Checkout masks assign firebox door
 to CR02 bit 5 / RD1, ash drawer to CR02 bit 6 / RD4, and thermostat to CR06 bit
 2 / RB4. Reset-time ADC replay assigns fan and feed potentiometers to AN3/CR09
-and AN4/CR0A. These are strong offline mappings, not physical validation of
-serial 5215; see the [register map](../protocol/register-map.md) and
-[exhaustive emulator pass](emulator-deep-pass.md).
+and AN4/CR0A. Static scanning also maps panel buttons to CR01, burn-drive limit
+switch to CR02.0, and fuel selector to CR02.2 (`1`=Fuel A/corn, `0`=Fuel
+B/wood). These are strong offline mappings, not physical validation of serial
+5215; see the [register map](../protocol/register-map.md) and [exhaustive
+emulator pass](emulator-deep-pass.md).

@@ -50,7 +50,7 @@
   "limitations": [
     "GPIO and ADC stimuli are synthetic logical values, not electrical models.",
     "The RD3 multiplexer is represented only as a pin level; external selection-aware hardware is not modeled.",
-    "Signal names come from cross-referencing BixCheck masks with firmware data flow and remain unvalidated on serial 5215.",
+    "Signal names come from cross-referencing BixCheck masks, firmware data flow, and a related-board 9067-0404 diagram; they remain unvalidated on serial 5215's reported 9067-0604 board.",
     "The EEPROM fixture is conspicuously synthetic and contains no owner or stove calibration data.",
     "No write request is issued by this deep pass."
   ],

@@ -48,9 +48,22 @@
   letters (`CR0A` returns `CR0a...`) even though host requests are uppercase.
 - Added separate GPIO latch/input modeling and cross-referenced BixCheck's
   result masks: firebox door=CR02.5/RD1, ash drawer=CR02.6/RD4, and
-  thermostat=CR06.2/RB4. CR02.2 remains a provisional fuel-select mux slot.
+  thermostat=CR06.2/RB4. This first pass identified CR02.2 as a fuel-select
+  candidate; the later scanner/configuration-bank analysis below resolves it.
 - Added reset-time ten-bit ADC replay and identified fan potentiometer=CR09/AN3
   and feed potentiometer=CR0A/AN4 across all three generations.
 - Corrected A-unit storage to the PIC16F877A internal data EEPROM path, built
   checksum-valid synthetic format-05/07 fixtures, and verified all 768
   AR00-ARFF reads byte-for-byte.
+- Preserved the owner-supplied `MaxFire Mother Board Pin Out` image and recorded
+  its exact hash and public-match provenance. Its visible PCB number is
+  `9067-0404`; serial 5215's installed controller remains owner-reported as
+  `9067-0604`, so it is explicitly classified as related-family evidence.
+- Reconstructed identical input scanners in 2.06, 2.70, and 2.71. The button
+  bank uses RD2/RD6:RD5 with an active-low RD3 return and produces CR01. The
+  external bank uses RD7/RD6:RD5 with an active-high RD3 return and produces
+  CR02.0-2.
+- Cross-referenced the diagram, firmware, and BixCheck result predicates to map
+  the burn-drive limit switch to CR02.0 and the fuel selector to CR02.2. The
+  firmware's `0x30` configuration-bank offset establishes `1`=Fuel A/corn and
+  `0`=Fuel B/wood. CR02.1 remains physically unassigned.

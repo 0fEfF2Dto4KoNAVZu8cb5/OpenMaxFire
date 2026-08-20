@@ -1594,9 +1594,40 @@ def run_deep_project(
             "signal": "front-panel buttons",
             "protocol_source": "CR01",
             "encoding": "none=00, ON=02, OFF=01, UP=04, DOWN=08",
-            "pic_source": "RAM 0x53; no direct GPIO read in CR01 handler",
-            "evidence": "BixCheck AnalyzeInteractiveResult plus firmware handler trace",
-            "confidence": "high for encoding; physical transport unresolved",
+            "pic_source": (
+                "RD3 active-low return; RD2 selects the button bank and RD6:RD5 "
+                "select OFF/ON/UP/DOWN; debounced into RAM 0x53"
+            ),
+            "evidence": (
+                "identical firmware mux scanner in 2.06/2.70/2.71 plus BixCheck "
+                "AnalyzeInteractiveResult"
+            ),
+            "confidence": "high static mapping; not live-validated",
+        },
+        {
+            "signal": "burn-drive motor limit switch",
+            "protocol_source": "CR02 bit 0",
+            "encoding": "opposite states; physical polarity not established",
+            "pic_source": (
+                "RD3 active-high external-input mux return; slot 0 selected by "
+                "RD7=1 and RD6:RD5=00"
+            ),
+            "evidence": (
+                "firmware mux scanner plus BixCheck plate-motor-off predicate and "
+                "9067-0404 board diagram label"
+            ),
+            "confidence": "high static mapping; not live-validated",
+        },
+        {
+            "signal": "unassigned external-input mux slot",
+            "protocol_source": "CR02 bit 1",
+            "encoding": "logical state only; function and polarity unknown",
+            "pic_source": (
+                "RD3 active-high external-input mux return; slot 1 selected by "
+                "RD7=1 and RD6:RD5=01"
+            ),
+            "evidence": "identical firmware mux scanner in 2.06/2.70/2.71",
+            "confidence": "high transport mapping; physical function unresolved",
         },
         {
             "signal": "firebox door",
@@ -1624,11 +1655,17 @@ def run_deep_project(
         },
         {
             "signal": "fuel-select switch",
-            "protocol_source": "candidate CR02 bit 2",
-            "encoding": "two opposite states",
-            "pic_source": "multiplexed RD3 sampling path, slot 2 candidate",
-            "evidence": "unreachable BixCheck result handlers plus firmware mux trace",
-            "confidence": "provisional; reachable 5.5 tests are not machine-checked",
+            "protocol_source": "CR02 bit 2",
+            "encoding": "1=Fuel A/corn, 0=Fuel B/wood",
+            "pic_source": (
+                "RD3 active-high external-input mux return; slot 2 selected by "
+                "RD7=1 and RD6:RD5=10"
+            ),
+            "evidence": (
+                "firmware mux scanner and 0x30 Fuel A/B configuration-bank offset, "
+                "opposite BixCheck predicates, and 9067-0404 board diagram label"
+            ),
+            "confidence": "high static mapping and polarity; not live-validated",
         },
         {
             "signal": "fan potentiometer",
@@ -1687,8 +1724,9 @@ def run_deep_project(
             "GPIO and ADC stimuli are synthetic logical values, not electrical models.",
             "The RD3 multiplexer is represented only as a pin level; external "
             "selection-aware hardware is not modeled.",
-            "Signal names come from cross-referencing BixCheck masks with firmware "
-            "data flow and remain unvalidated on serial 5215.",
+            "Signal names come from cross-referencing BixCheck masks, firmware data "
+            "flow, and a related-board 9067-0404 diagram; they remain unvalidated "
+            "on serial 5215's reported 9067-0604 board.",
             "The EEPROM fixture is conspicuously synthetic and contains no owner "
             "or stove calibration data.",
             "No write request is issued by this deep pass.",

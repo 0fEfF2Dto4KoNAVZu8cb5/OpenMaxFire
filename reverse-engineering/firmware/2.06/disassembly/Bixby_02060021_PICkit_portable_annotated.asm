@@ -321,6 +321,8 @@
 0131: 1252  bcf     0x52, 4
 0132: 16D2  bsf     0x52, 5
 0133: 2948  goto    0x148 ; low-11 target; resolve page through PCLATH
+
+; RE: Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.
 0134: 3004  movlw   0x04
 0135: 0088  movwf   0x08
 0136: 1052  bcf     0x52, 0
@@ -1036,6 +1038,8 @@
 03FC: 2BED  goto    0x3ED ; low-11 target; resolve page through PCLATH
 03FD: 1283  bcf     0x03, 5
 03FE: 3400  retlw   0x00
+
+; RE: Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.
 03FF: 1951  btfsc   0x51, 2
 0400: 2C05  goto    0x405 ; low-11 target; resolve page through PCLATH
 0401: 3030  movlw   0x30
@@ -1961,6 +1965,8 @@
 0799: 1C20  btfss   0x20, 0
 079A: 2FB9  goto    0x7B9 ; low-11 target; resolve page through PCLATH
 079B: 1283  bcf     0x03, 5
+
+; RE: Second 2.06 fuel-table read path; a clear CR02.2 adds the same 0x30 Fuel-B offset.
 079C: 1951  btfsc   0x51, 2
 079D: 2FA2  goto    0x7A2 ; low-11 target; resolve page through PCLATH
 079E: 3030  movlw   0x30
@@ -3862,6 +3868,8 @@
 0F00: 138B  bcf     0x0B, 7
 0F01: 1B8B  btfsc   0x0B, 7
 0F02: 2F00  goto    0x700 ; low-11 target; resolve page through PCLATH
+
+; RE: External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.
 0F03: 301F  movlw   0x1F
 0F04: 0588  andwf   0x08, F
 0F05: 3080  movlw   0x80

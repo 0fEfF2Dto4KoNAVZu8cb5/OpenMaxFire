@@ -6,6 +6,13 @@ The BixCheck manual calls for custom Bixby PC cable P/N 2013324. The 2.06 releas
 
 The custom cable should not be assumed to be passive, and the J3 side should not be assumed to use standard RS-232 voltages.
 
+The preserved [MaxFire motherboard diagram](maxfire-motherboard-pinout.md)
+independently labels J3 as `Computer Port` and places it along the upper-left
+edge of a `9067-0404` motherboard. It does not label the four cavities or any
+voltage level. Serial 5215's board is owner-reported as `9067-0604`, so even the
+illustrated physical placement remains revision-family evidence rather than an
+exact pinout.
+
 ## Earlier project hardware proposal
 
 Prior research proposed a 5 V TTL USB-UART adapter and a Molex-SL-compatible four-pin connector for the J3 side. This was a procurement/interface hypothesis, not a measured pinout. The ordered cable/connector hardware had not arrived by 2026-08-20.

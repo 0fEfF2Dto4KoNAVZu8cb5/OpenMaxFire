@@ -14,7 +14,11 @@
 - [x] Execute CR00-CR0E on all three application generations with handler-level
   RAM/SFR traces, watchpoints, and response artifacts.
 - [x] Model synthetic GPIO/ADC inputs and map door, drawer, thermostat, and both
-  potentiometers offline; retain fuel-select as provisional.
+  potentiometers offline.
+- [x] Recover both RD3 input-multiplexer banks and map the panel buttons,
+  burn-drive limit switch, and fuel selector (`1`=Fuel A/corn, `0`=Fuel B/wood).
+- [x] Preserve and revision-check the online-found 9067-0404 MaxFire motherboard
+  diagram against serial 5215's owner-reported 9067-0604 controller.
 - [x] Model PIC internal data EEPROM and verify AR00-ARFF across all three
   generations with checksum-valid format-05/07 fixtures.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
@@ -24,6 +28,8 @@
 ## Phase 1 - electrical and read-only bench validation
 
 - [ ] Photograph both ends of the received cable and record all labels/part numbers.
+- [ ] Photograph both sides of the installed 9067-0604 board and compare its
+  connector layout with the preserved 9067-0404 diagram.
 - [ ] Identify J3 ground and supply pins without assuming standard RS-232 pinout.
 - [ ] Measure idle voltage and polarity through a protected interface.
 - [ ] Confirm controller oscillator frequency.
@@ -33,6 +39,7 @@
 - [ ] Record exact request bytes, response bytes, timing, and line termination.
 - [ ] Poll CR00-CR0E with the stove safely off.
 - [ ] Repeat polling while operating the fire door, ash drawer, thermostat, fuel switch, trim pots, and panel buttons.
+- [ ] Identify the physical function of CR02.1 by cold/off correlation.
 
 ## Phase 2 - read-only Linux monitor
 

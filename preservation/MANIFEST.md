@@ -32,6 +32,12 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 | `original/photos/safety-labels.png` | `chart-2.png` | `89765674d0324f6c7c7d5c9bc0469d62343914cfb21d20cf7f886e63a9b1846a` | Side-panel/electrical warnings |
 | `original/photos/front-control-panel.jpg` | `IMG_20260527_194238_134.jpg` | `a768c82119606b59bc1c4479a9019d0d659df352f21757c793fd79d7a5752cdc` | Four-button panel and LEDs |
 
+## Hardware diagrams
+
+| Current path | Earlier upload name | Bytes | SHA-256 | Note |
+| --- | --- | ---: | --- | --- |
+| `original/diagrams/maxfire-mother-board-pinout.jpg` | `1000000387.jpg` | 321847 | `22dad1271b3780b5867a4be6bf9875495aa4fe39b218352a9121097920145975` | User-supplied online-found diagram; visibly depicts PCB `9067-0404`, not serial 5215's owner-reported `9067-0604`; authorship/date/vendor status unverified |
+
 ## Derived firmware and project bundles
 
 | Path | SHA-256 | Relationship |

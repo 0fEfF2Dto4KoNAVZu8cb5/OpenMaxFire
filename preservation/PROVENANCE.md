@@ -35,3 +35,19 @@
 `tools/firmware_pipeline.py` reads the three preserved ZIP packages, inventories every member, extracts four firmware delivery images, validates all Intel HEX checksums, parses sparse PIC memory, disassembles the PIC14 instruction words, and produces comparison tables. Generated outputs are reproducible and contain no device-communication path.
 
 Derived work must always point back to one of these preserved sources and record the exact source SHA-256.
+
+## Motherboard-diagram line
+
+`1000000387.jpg`
+
+- was supplied by the stove owner on 2026-08-20 after being found online;
+- is preserved byte-for-byte as `original/diagrams/maxfire-mother-board-pinout.jpg`;
+- visibly identifies the pictured PCB as `9067-0404`;
+- has an indexed public match titled `115 110 Mother Board Pin Out` on Scribd;
+- has no verified original author, issue date, or vendor-publication status; and
+- is used only as related-family corroboration because serial 5215's installed
+  board is owner-reported as `9067-0604`.
+
+The hardware cross-reference records which labels agree with independently
+recovered firmware and BixCheck behavior. It does not promote the image to an
+exact revision-specific schematic or J3 electrical pinout.

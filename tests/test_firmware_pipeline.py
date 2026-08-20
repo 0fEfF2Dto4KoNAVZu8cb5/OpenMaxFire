@@ -58,6 +58,34 @@ class FirmwarePipelineTests(unittest.TestCase):
         for word, mnemonic in cases.items():
             self.assertEqual(firmware_pipeline.decode_pic14(word).mnemonic, mnemonic)
 
+    def test_button_and_sensor_mux_signatures_match_all_generations(self):
+        application_variants = {
+            "2.06": "downloader",
+            "2.70": "embedded",
+            "2.71": "embedded",
+        }
+        for version, variant in application_variants.items():
+            image_spec = next(
+                item for item in firmware_pipeline.IMAGE_SPECS
+                if item.version == version and item.variant == variant
+            )
+            image = firmware_pipeline.parse_ihex(
+                (ROOT / image_spec.extracted_path).read_bytes()
+            )
+            expected = firmware_pipeline.MUX_SCAN_EXPECTED[version]
+            self.assertEqual(
+                firmware_pipeline.find_word_sequence(
+                    image.words, firmware_pipeline.BUTTON_MUX_PATTERN
+                ),
+                [expected["front_panel"]],
+            )
+            self.assertEqual(
+                firmware_pipeline.find_word_sequence(
+                    image.words, firmware_pipeline.SENSOR_MUX_PATTERN
+                ),
+                [expected["external_sensors"]],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
