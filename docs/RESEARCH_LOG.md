@@ -15,7 +15,6 @@
 - Reconstructed remote OFF/ON/UP/DOWN writes to controller register 0x0E.
 - Recorded the owner's stove/PCB identification details.
 - Investigated door-state feasibility and automatic heating-source coordination.
-- Attempted to prepare a Windows XP environment for BixCheck; the preserved screenshots show installation and a domain-logon failure, not a successful BixCheck run.
 
 ## 2026-08-20
 

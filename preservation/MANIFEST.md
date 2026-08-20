@@ -9,8 +9,8 @@ The five files listed in `PENDING_UPLOADS.md` are catalogued below but are await
 | Path | Bytes | SHA-256 | Provenance |
 | --- | ---: | --- | --- |
 | `original/vendor-packages/BixCheck_080206.zip` | 155241 | `37137f99cb6090e7168ae91483a44dadea2ca2cebf5720495cbad186b271d8d5` | User-supplied factory package; contains BixCheck 5.5.00 / firmware 2.70 generation executable |
-| `original/vendor-packages/BixCheck_080315 (1).zip` | 156146 | `ffbfbbc29b2ebd4bd6d6e2ebddb4b1c3e23358a120f7506588b2c03390b1c344` | User-supplied factory package; contains BixCheck 5.5.01 / firmware 2.71 generation executable |
-| `original/vendor-packages/Bixby110_115_02060021_and_manual (1).zip` | 1487366 | `140ca903bb23667f831a28a4b0f1966bc856a9584c5b897ffecec1890f5222ac` | User-supplied Bixby 2.06/BixCheck 5.0.21 release package |
+| `original/vendor-packages/BixCheck_080315.zip` | 156146 | `ffbfbbc29b2ebd4bd6d6e2ebddb4b1c3e23358a120f7506588b2c03390b1c344` | User-supplied factory package; contains BixCheck 5.5.01 / firmware 2.71 generation executable |
+| `original/vendor-packages/Bixby110_115_02060021_and_manual.zip` | 1487366 | `140ca903bb23667f831a28a4b0f1966bc856a9584c5b897ffecec1890f5222ac` | User-supplied Bixby 2.06/BixCheck 5.0.21 release package |
 | `original/binaries/BixCheck_080315.exe` | 464650 | `b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792` | Separately recovered executable; byte-identical to ZIP member |
 | `original/manuals/1394047.pdf` | 1729968 | `0e8918ed62ae34d0984957ba466f3cee0adb07c69539a5348f305ba0f2c40739` | BixCheck How-To Guide, 2023480 Rev. A; byte-identical to `2023480-A.pdf` in the 2.06 package |
 
@@ -26,18 +26,13 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 | `2023480-A.pdf` | 1729968 | `0e8918ed62ae34d0984957ba466f3cee0adb07c69539a5348f305ba0f2c40739` |
 | `Bixby_02060021_Notes.txt` | 6515 | `c0086fadd9ea2c11f3ae671c6c4062580a5e59b949e4dd08a2835650d2a3d49c` |
 
-## Photographs and lab screenshots
+## Photographs
 
 | Current path | Earlier upload name | SHA-256 | Note |
 | --- | --- | --- | --- |
 | `original/photos/nameplate-serial-5215.png` | `chart-1.png` | `db3fb1bad3e1138aa914d8e6f28816737f2f1917114de21ec97d82a41bfa5170` | Stove nameplate and serial |
 | `original/photos/safety-labels.png` | `chart-2.png` | `89765674d0324f6c7c7d5c9bc0469d62343914cfb21d20cf7f886e63a9b1846a` | Side-panel/electrical warnings |
 | `original/photos/front-control-panel.jpg` | `IMG_20260527_194238_134.jpg` | `a768c82119606b59bc1c4479a9019d0d659df352f21757c793fd79d7a5752cdc` | Four-button panel and LEDs |
-| `original/lab-screenshots/windows-xp-domain-logon-failure-1.png` | UUID upload | `450f21bea905205d95f47d7a86b6daff3c4fc34edcf8b7bf435dce1442e5543b` | Failed XP domain logon attempt |
-| `original/lab-screenshots/windows-xp-domain-logon-failure-2.png` | UUID upload | `8dffb3ca15787759d0671098a3f4a637339272c268c24becbd3481be444ad3ad` | Failed XP domain logon attempt |
-| `original/lab-screenshots/windows-xp-installation.png` | UUID upload | `a12238651c2dea703e7a93b59176b0500d0f41ffc3def620ceafae137fd2930e` | XP installation progress |
-
-The screenshots document an unsuccessful compatibility-environment attempt. They do not prove that BixCheck ran successfully.
 
 ## Derived firmware and project bundles
 
