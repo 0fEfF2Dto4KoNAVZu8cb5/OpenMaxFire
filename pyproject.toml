@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmaxfire"
+version = "0.1.1"
+description = "Open-source protocol library and service-tool replacement for Bixby MaxFire 110/115 BixCheck"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "OpenMaxFire contributors"}]
+dependencies = ["pyserial>=3.5"]
+
+[project.scripts]
+maxfirectl = "openmaxfire.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,12 @@
+Intel HEX record types:
+;PIC16F877A
+Type 00 : 973 records
+Type 01 : 1 records
+;PIC16F877A
+Record type meanings:
+00 = Data
+01 = End Of File
+02 = Extended Segment Address
+03 = Start Segment Address
+04 = Extended Linear Address
+05 = Start Linear Address

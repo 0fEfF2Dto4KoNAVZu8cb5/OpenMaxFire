@@ -1,29 +1,22 @@
-# J3 serial interface
+# J3 hardware interface
 
-## Current understanding
+## Vendor evidence
 
-BixCheck documentation describes a custom Bixby cable, P/N 2013324, used between the stove and a PC. It states that standard PC serial ports and USB-to-RS-232 converters work on the PC side of that custom cable.
+The BixCheck manual calls for custom Bixby PC cable P/N 2013324. The 2.06 release notes identify J3 as a black four-pin connector behind the exhaust-fan/feed-rate trim-control tab. Standard PC serial ports or USB-to-RS-232 converters connect on the PC side of the custom cable.
 
-Firmware analysis confirms that the PIC hardware UART is used internally. The original custom cable therefore should not be assumed to be a passive DB9 adapter.
+The custom cable should not be assumed to be passive, and the J3 side should not be assumed to use standard RS-232 voltages.
 
-For OpenMaxFire development, the planned interface is a **5 V TTL USB-UART adapter** connected to the J3-side UART, with a Molex-SL-compatible 4-pin connector.
+## Earlier project hardware proposal
 
-## Initial hookup policy
+Prior research proposed a 5 V TTL USB-UART adapter and a Molex-SL-compatible four-pin connector for the J3 side. This was a procurement/interface hypothesis, not a measured pinout. The ordered cable/connector hardware had not arrived by 2026-08-20.
 
-Until J3 is measured/verified on the actual board:
+Until measurement proves that proposal:
 
-- Identify J3 ground first.
-- Identify stove TX and RX before connection.
-- Connect UART ground, TX, and RX only.
-- **Do not connect USB-UART VCC/+5 V to J3.**
-- Cross TX/RX: adapter TX -> stove RX, adapter RX -> stove TX.
+- identify ground first;
+- identify stove TX and RX from protected measurements;
+- do not connect adapter VCC/+5 V to J3;
+- do not assume wire colors or connector position;
+- cross TX/RX only after polarity and voltage compatibility are known;
+- prefer isolation and current limiting.
 
-## Expected serial configuration
-
-Firmware startup writes:
-
-- `SPBRG = 0x20`
-- `TXSTA = 0x26`
-- `RCSTA = 0x90`
-
-With a 20 MHz oscillator, this is approximately **38400 baud, 8N1, asynchronous**. Oscillator frequency still needs hardware confirmation, so 38400 should be treated as strongly supported rather than physically measured.
+The firmware-derived baud candidates and first live-test order are documented in [the J3 protocol specification](../protocol/j3-protocol.md).

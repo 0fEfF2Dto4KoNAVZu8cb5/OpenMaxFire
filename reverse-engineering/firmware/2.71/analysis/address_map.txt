@@ -1,0 +1,12 @@
+SREC_INFO
+=========
+
+Format: Intel Hexadecimal (MCS-86)
+srec_info: Bixby_0271_080315.hex: 973: warning: data records not in strictly
+    ascending order (expected >= 0x4010, got 0x4000)
+Data:   0000 - 0FF7
+        1000 - 1FF9
+        2000 - 2FE5
+        3000 - 3CBD
+        4000 - 4007
+        400E - 400F

@@ -1,14 +1,19 @@
 firmware:
   image: Bixby_0271_080315.hex
+  sha256: dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b
   mcu: PIC16F877A
   protocol: ascii_hex
 
 serial:
-  baud_candidate: 38400
   data_bits: 8
   parity: none
   stop_bits: 1
-  confidence: high_if_fosc_20mhz
+  baud_candidates:
+    - rate: 38400
+      condition: Fosc_20MHz
+    - rate: 19200
+      condition: Fosc_10MHz
+  physically_verified: false
 
 commands:
   read:
@@ -17,13 +22,21 @@ commands:
     format: "CW{register:02X}{value:02X}"
   response_terminator: 0x0A
 
+remote_buttons:
+  register: 0x0E
+  values:
+    off: 0x11
+    on: 0x12
+    up: 0x14
+    down: 0x18
+  live_verified: false
+
 registers:
-  CR00: {kind: constant, value: 0x00, confidence: confirmed}
-  CR01: {kind: ram, source: "bank1:0x53", meaning: unknown, confidence: confirmed_source}
+  CR00: {kind: constant, value: 0x00, confidence: confirmed_static}
+  CR01: {kind: ram, source: "bank1:0x53", meaning: unknown}
   CR02:
     kind: packed_bits
     meaning: physical_and_mux_inputs
-    confidence: confirmed_structure
     bits:
       0: {source: RD3_MUX_0, meaning: unknown}
       1: {source: RD3_MUX_1, meaning: unknown}
@@ -49,10 +62,10 @@ registers:
       1: {source: "RAM_0x2D.bit1", meaning: unknown}
       2: {source: RB4, meaning: unknown_physical_input}
   CR07: {kind: derived, source: "RAM_0x44/0x45", meaning: unknown}
-  CR08: {kind: constant, value: 0x07}
+  CR08: {kind: constant, value: 0x07, likely: database_format}
   CR09: {kind: ram, source: "0x2E", meaning: unknown}
   CR0A: {kind: ram, source: "0x2F", meaning: unknown}
-  CR0B: {kind: constant, value: 0x02}
-  CR0C: {kind: constant, value: 0x71}
-  CR0D: {kind: constant, value: 0x00}
-  CR0E: {kind: constant, value: 0x00}
+  CR0B: {kind: constant, value: 0x02, likely: firmware_major}
+  CR0C: {kind: constant, value: 0x71, likely: firmware_minor}
+  CR0D: {kind: constant, value: 0x00, meaning: unknown}
+  CR0E: {kind: constant_on_read, value: 0x00, write_role: remote_buttons}

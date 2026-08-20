@@ -1,0 +1,18 @@
+FILE
+====
+Bixby_0271_080315.hex
+
+SHA256
+======
+dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b  Bixby_0271_080315.hex
+
+FILE TYPE
+=========
+Bixby_0271_080315.hex: Intel hexadecimal object, 0x10 record length, 0x0000 offset, '00' type, data+checksum 18308A0025280000FF00030E8301A1009C, last line :00000001FF
+
+SIZE
+====
+-rwxr-x--- 1 droid users 42K Aug 20 13:36 Bixby_0271_080315.hex
+
+42740 Bixby_0271_080315.hex
+975 Bixby_0271_080315.hex

@@ -1,0 +1,6 @@
+BINARY FILE
+===========
+bixby_hex_analysis_20260820_133700/Bixby_0271_080315/firmware.bin: data
+-rw-r--r-- 1 droid users 17K Aug 20 13:37 bixby_hex_analysis_20260820_133700/Bixby_0271_080315/firmware.bin
+
+23c55678af7babfbc7bf46161dfea1b442f748676750b2ea6d8630dd7e0753da  bixby_hex_analysis_20260820_133700/Bixby_0271_080315/firmware.bin
