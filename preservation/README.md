@@ -1,6 +1,9 @@
 # Preservation archive
 
-`original/` contains recovered Bixby vendor files and user-supplied photographs without modifying their bytes. Renaming a photograph for clarity does not change its contents; the provenance manifest records its earlier upload name.
+`original/` contains recovered Bixby vendor files, user-supplied photographs,
+and an online-found motherboard diagram without modifying their bytes. Renaming
+an artifact for clarity does not change its contents; the provenance manifest
+records its earlier upload name and evidence limits.
 
 OpenMaxFire's MIT License does not apply to these vendor artifacts or photographs. They are retained for research, interoperability, appliance maintenance, and historical preservation. Review rights and privacy before making the repository public or mirroring it elsewhere.
 

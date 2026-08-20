@@ -1,6 +1,9 @@
 # BixCheck factory Checkout inventory
 
-The vendor manual documents 37 interactive tests followed by eight automatic tests. Checkout directly actuates appliance hardware and must remain isolated from normal monitoring/control.
+The vendor manual documents 37 interactive/verification tests followed by eight
+automatic tests. Static extraction finds 46 data records, but the ninth
+automatic record is unreachable. Checkout directly actuates appliance hardware
+and must remain isolated from normal monitoring/control.
 
 ## Interactive tests
 
@@ -57,6 +60,87 @@ The vendor manual documents 37 interactive tests followed by eight automatic tes
 | 44 | Right/#2 igniter follow-up check |
 | 45 | Feed motor and sensor |
 
+## Reconstructed action map
+
+The first three interactive/verification results establish communications,
+checksum, and data-format compatibility. The remaining 34-record interactive
+table uses these direct serial actions (numbers are the manual/display numbers):
+
+| Test(s) | Direct action |
+| --- | --- |
+| 04-08 front-panel buttons | Read `CR01`; none/ON/OFF/UP/DOWN are `00/02/01/04/08` |
+| 09 LEDs on | `CW04FF` |
+| 10 LEDs off | `CW0400` |
+| 11-14 door/drawer switch states | Read `CR02`; door is bit 5/RD1, drawer bit 6/RD4 |
+| 15 plate motor on | `CW0500` |
+| 16 plate motor off | No direct write; result checks `CR02.0` (burn-drive limit switch) and `CR03.1` |
+| 17 plates in burn position | No direct write; wait/observe |
+| 18 air pump on | `CW0600` |
+| 19 air pump off | `CW0700` |
+| 20 convection level 1 | `CW0801` on old format; `CW0819` on newer format |
+| 21 convection level 2 | `CW0802` / `CW0832` |
+| 22 convection level 3 | `CW0803` / `CW084B` |
+| 23 convection level 4 | `CW0804` / `CW0864` |
+| 24 convection fan off | `CW0800` |
+| 25 thermometer | Read `CR04` |
+| 26-28 fan potentiometer | Read `CR09` (AN3) |
+| 29-31 feed potentiometer | Read `CR0A` (AN4) |
+| 33-34 thermostat | Read `CR06` bit 2 (RB4) |
+| 32, 35-37 remaining inputs | No direct actuation; observe operator/input state |
+
+The pin/register assignments above are emulator- or static-firmware-confirmed
+and cross-referenced to BixCheck masks. They are not yet validated on serial
+5215. The controller's shared input scanner plus its Fuel A/B configuration
+bank selection establish `CR02.2`: `1` is Fuel A/corn and `0` is Fuel B/wood.
+Retained BixCheck predicates agree, but the reachable 5.5 fuel-test rows omit
+the machine check and rely on the operator. The preserved 9067-0404 diagram
+independently labels this physical input `Fuel Switch`.
+
+Automatic sender actions are identical across all three EXEs:
+
+| Test | Direct action |
+| ---: | --- |
+| 38 | `CW0980` exhaust full |
+| 39 | `CW0940` exhaust half |
+| 40 | `CW0900` exhaust off |
+| 41 | no direct sender write; timed igniter-1 workflow |
+| 42 | `CW0D00` igniter-2 workflow |
+| 43 | no direct sender write; igniter-1 follow-up |
+| 44 | `CW0A00` igniter-2 follow-up |
+| 45 | `CW0B20` feed motor/sensor workflow |
+
+These commands are documentation, not a supported control surface. Several
+values directly energize motors, fans, pumps, or igniters.
+
+`AnalyzeAutomaticResult()` also exposes the exact sensor predicates. The
+corresponding firmware producer paths are identical across 2.06, 2.70, and
+2.71, although the BixCheck 5.0.21 exhaust-off tolerance is slightly wider:
+
+| Test | Register | BixCheck 5.0.21 | BixCheck 5.5.00/5.5.01 |
+| ---: | --- | ---: | ---: |
+| 38 exhaust full | `CR05` | `>= 0x78` | `>= 0x78` |
+| 39 exhaust half | `CR05` | `0x38`-`0x48` | `0x38`-`0x48` |
+| 40 exhaust off | `CR05` | `<= 0x03` | `== 0x00` |
+| 45 feed motor/sensor | `CR07` | `0x10`-`0x68` | `0x10`-`0x68` |
+
+The 9067-0404 board diagram names these physical connections J10 exhaust-fan
+sensor and J9 feeder-wheel sensor. Firmware maps J10 through RA4/T0CKI and
+TMR0 to `CR05`; it maps J9 through RD0 and a motor-gated interval counter to
+`CR02.4`/`CR07`. These are raw Checkout thresholds, not proven RPM, seconds,
+or another engineering unit.
+
+## Dormant record
+
+All three EXEs contain a ninth automatic record labeled `Plate motor cycle
+test`, with instruction `Testing the plate motor` and failure hint `Plate
+motor`. Both `Bixby110SetupCheckoutAutomaticTests()` and the action dispatcher
+iterate only indices 0-7, so index 8 is never presented or executed. The
+operational count therefore remains 45, not 46.
+
 ## Report requirements
 
 A replacement report should preserve stove identity, firmware/data format, checksums, serial number, production date, model, both fuel tables, operator identity, timestamp, every result, diagnostic hints, and an immutable configuration backup.
+
+The complete 0x122-byte record tables and reachability flag are exported in
+each version's `checkout-tests.csv`; the exact sender assembly is in
+`checkout-core.asm`.

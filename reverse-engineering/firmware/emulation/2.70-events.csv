@@ -1,0 +1,16 @@
+step,kind,pc,value,detail
+250000,interrupt,0x0CAF,,enabled interrupt source
+250033,uart_rx,0x00B1,0x43,RCREG read
+250054,uart_rx,0x00B1,0x52,RCREG read
+250075,uart_rx,0x00B1,0x30,RCREG read
+250096,uart_rx,0x00B1,0x30,RCREG read
+250178,interrupt,0x189C,,enabled interrupt source
+250434,interrupt,0x0F96,,enabled interrupt source
+250576,uart_tx,0x1359,0x43,TXREG write
+250582,uart_tx,0x1361,0x52,TXREG write
+250612,uart_tx,0x02AC,0x30,TXREG write
+250633,uart_tx,0x02AC,0x30,TXREG write
+250666,uart_tx,0x02AC,0x30,TXREG write
+250687,uart_tx,0x02AC,0x30,TXREG write
+250690,interrupt,0x136F,,enabled interrupt source
+250758,uart_tx,0x1373,0x0A,TXREG write

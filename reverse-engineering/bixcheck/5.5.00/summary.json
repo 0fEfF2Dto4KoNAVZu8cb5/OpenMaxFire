@@ -1,0 +1,146 @@
+{
+  "analysis_type": "static-only; executable was not run",
+  "extracted": {
+    "call_edges": 1798,
+    "checkout_records": 46,
+    "checkout_ui_reachable": 45,
+    "combustion_adjustment_bytes": 352,
+    "data_elements": 160,
+    "selected_strings": 170
+  },
+  "generated_by": "tools/analyze_bixcheck.py",
+  "pe": {
+    "characteristics": "0x0307",
+    "entry_rva": "0x00001270",
+    "entry_va": "0x00401270",
+    "image_base": "0x00400000",
+    "machine": "0x014C",
+    "path": "BixCheck_080206.exe",
+    "sections": [
+      {
+        "characteristics": 1610612832,
+        "index": 1,
+        "name": ".text",
+        "raw_pointer": 1024,
+        "raw_size": 226304,
+        "virtual_address": 4096,
+        "virtual_size": 226184
+      },
+      {
+        "characteristics": 3221225536,
+        "index": 2,
+        "name": ".data",
+        "raw_pointer": 227328,
+        "raw_size": 32768,
+        "virtual_address": 233472,
+        "virtual_size": 32560
+      },
+      {
+        "characteristics": 1073741888,
+        "index": 3,
+        "name": ".rdata",
+        "raw_pointer": 260096,
+        "raw_size": 104448,
+        "virtual_address": 266240,
+        "virtual_size": 104184
+      },
+      {
+        "characteristics": 3221225600,
+        "index": 4,
+        "name": ".bss",
+        "raw_pointer": 0,
+        "raw_size": 0,
+        "virtual_address": 372736,
+        "virtual_size": 20832
+      },
+      {
+        "characteristics": 3221225536,
+        "index": 5,
+        "name": ".idata",
+        "raw_pointer": 364544,
+        "raw_size": 4096,
+        "virtual_address": 397312,
+        "virtual_size": 3708
+      }
+    ],
+    "sha256": "12dd738a10f72f18a672aeec6ec5e1456ff478103ca84fc154c4f73594aac3d6",
+    "size_bytes": 462052,
+    "subsystem": 2,
+    "timestamp_unix": 1202355452,
+    "timestamp_utc": "2008-02-07T03:37:32+00:00"
+  },
+  "retained_coff": {
+    "function_count": 655,
+    "source_files": [
+      "Bixby110DataElements.cpp",
+      "Bixby110Downloader.cpp",
+      "Bixby110chkdlg.cpp",
+      "Bixby110dlg.cpp",
+      "CRT_fp10.c",
+      "FindFile.cpp",
+      "PocketCalculator.cpp",
+      "async.cpp",
+      "atomicity.cc",
+      "crt1.c",
+      "crtstuff.c",
+      "del_op.cc",
+      "del_opv.cc",
+      "dlgctrl.cpp",
+      "eh_alloc.cc",
+      "eh_catch.cc",
+      "eh_exception.cc",
+      "eh_globals.cc",
+      "eh_personality.cc",
+      "eh_terminate.cc",
+      "eh_throw.cc",
+      "functexcept.cc",
+      "gccmain.c",
+      "ios_failure.cc",
+      "main.c",
+      "main.cpp",
+      "mthr_stub.c",
+      "new_handler.cc",
+      "new_op.cc",
+      "new_opv.cc",
+      "pseudo-reloc-list.c",
+      "pseudo-reloc.c",
+      "stdexcept.cc",
+      "string-inst.cc",
+      "tinfo.cc",
+      "wildcard.cpp"
+    ],
+    "symbol_count": 2132,
+    "unique_function_offsets": 654
+  },
+  "schema": 1,
+  "serial": {
+    "baudrates_selected_by_pc_software": [
+      9600,
+      19200
+    ],
+    "downloader_protocol": "separate binary bootloader framing",
+    "framing": "8N1",
+    "normal_protocol": "ASCII CRxx/CWxxyy family",
+    "request_terminator": null,
+    "response_terminators_accepted": [
+      "CR",
+      "LF"
+    ]
+  },
+  "version": {
+    "adjustment_count": 82,
+    "application_version": "5.5.00",
+    "archive": "BixCheck_080206.zip",
+    "database_format": 7,
+    "downloader_version": "2.70",
+    "member": "BixCheck_080206.exe",
+    "sha256": "12dd738a10f72f18a672aeec6ec5e1456ff478103ca84fc154c4f73594aac3d6",
+    "stove_software": "02.70",
+    "supported_baudrates": [
+      9600,
+      19200
+    ],
+    "telemetry_count": 30,
+    "version": "5.5.00"
+  }
+}

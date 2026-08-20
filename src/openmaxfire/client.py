@@ -10,7 +10,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .protocol import RemoteButton, encode_read_register, encode_remote_button, encode_write_register
+from .protocol import (
+    ResponseFrame,
+    RemoteButton,
+    encode_read_register,
+    encode_remote_button,
+    encode_write_register,
+    parse_response_line,
+)
 from .transport import Transport
 
 
@@ -30,13 +37,24 @@ class MaxFireClient:
         return CommandReceipt(request=command)
 
     def read_register(self, address: int) -> CommandReceipt:
-        """Send a register-read request.
-
-        Response parsing is intentionally not claimed yet; the BixCheck receive
-        state machine is the next reverse-engineering milestone.
-        """
+        """Send a register-read request without waiting for a response."""
 
         return self.send_raw(encode_read_register(address))
+
+    def receive_response(self, max_bytes: int = 255) -> ResponseFrame:
+        """Read and strictly parse one CR/LF-terminated response line."""
+
+        line = bytearray()
+        while len(line) <= max_bytes:
+            value = self.transport.read(1)
+            if not value:
+                raise TimeoutError("serial response timed out")
+            if value in (b"\r", b"\n"):
+                if line:
+                    return parse_response_line(line)
+                continue
+            line.extend(value)
+        raise ValueError("serial response exceeded receive limit")
 
     def write_register(self, address: int, value: int) -> CommandReceipt:
         """Research-level raw register write. Use only with a documented map."""

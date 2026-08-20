@@ -1,0 +1,161 @@
+version,table,index,symbol,section_offset,type,label,units_or_description,value_or_default,unit,address,address_hex,maximum,minimum,length_or_mask,display_mode
+5.5.00,utility,0,Bixby110UtilityWindowData,0x4220,1,Flue Monitor,,0,,0,0x00,0,0,1,2
+5.5.00,utility,1,Bixby110UtilityWindowData,0x4278,1,Fuel A Data,,0,,0,0x00,0,0,1,2
+5.5.00,utility,2,Bixby110UtilityWindowData,0x42D0,1,Fuel B Data,,0,,0,0x00,0,0,1,2
+5.5.00,utility,3,Bixby110UtilityWindowData,0x4328,1,Telemetry,,0,,0,0x00,0,0,1,2
+5.5.00,remote_buttons,0,Bixby110RCButtonData,0x4380,1,Off,,17,,0,0x00,0,0,1,2
+5.5.00,remote_buttons,1,Bixby110RCButtonData,0x43D8,1,On,,18,,0,0x00,0,0,1,2
+5.5.00,remote_buttons,2,Bixby110RCButtonData,0x4430,1,Up,,20,,0,0x00,0,0,1,2
+5.5.00,remote_buttons,3,Bixby110RCButtonData,0x4488,1,Down,,24,,0,0x00,0,0,1,2
+5.5.00,feedwheel_settings,0,Bixby110FeedwheelSettingData,0x44E0,1,Regular wheel; 4.0 ci,,0,,0,0x00,0,0,1,4
+5.5.00,feedwheel_settings,1,Bixby110FeedwheelSettingData,0x4538,1,Beveled wheel; 5.3 ci,,0,,0,0x00,0,0,1,4
+5.5.00,fan_curve_settings,0,Bixby110FancurveSettingData,0x45A0,1,High output fan,,0,,0,0x00,0,0,1,4
+5.5.00,fan_curve_settings,1,Bixby110FancurveSettingData,0x45F8,1,Regular fan,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,0,Bixby110FueltypeSettingData,0x4660,1,Corn,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,1,Bixby110FueltypeSettingData,0x46B8,1,5% ash Biomass,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,2,Bixby110FueltypeSettingData,0x4710,1,2% ash Biomass,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,3,Bixby110FueltypeSettingData,0x4768,1,Wood - Lean,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,4,Bixby110FueltypeSettingData,0x47C0,1,Wood - Rich,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,5,Bixby110FueltypeSettingData,0x4818,1,Corn,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,6,Bixby110FueltypeSettingData,0x4870,1,5% ash Biomass,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,7,Bixby110FueltypeSettingData,0x48C8,1,2% ash Biomass,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,8,Bixby110FueltypeSettingData,0x4920,1,Wood - Lean,,0,,0,0x00,0,0,1,4
+5.5.00,fuel_settings,9,Bixby110FueltypeSettingData,0x4978,1,Wood - Rich,,0,,0,0x00,0,0,1,4
+5.5.00,altitude_settings,0,Bixby110AltitudeSettingData,0x49E0,1,Low altitude,,0,,0,0x00,0,0,1,4
+5.5.00,altitude_settings,1,Bixby110AltitudeSettingData,0x4A38,1,Medium altitude,,0,,0,0x00,0,0,1,4
+5.5.00,altitude_settings,2,Bixby110AltitudeSettingData,0x4A90,1,High altitude,,0,,0,0x00,0,0,1,4
+5.5.00,model_settings,0,Bixby110ModelSettingData,0x4B00,1,Bixby Model 115,,0,,0,0x00,0,0,1,4
+5.5.00,model_settings,1,Bixby110ModelSettingData,0x4B58,1,Bixby Model 110,,0,,0,0x00,0,0,1,4
+5.5.00,test_settings,0,Bixby110TestData,0x4BC0,1,Data Out,,0,,0,0x00,0,0,1,3
+5.5.00,test_settings,1,Bixby110TestData,0x4C18,1,Data In,,0,,0,0x00,0,0,1,3
+5.5.00,test_settings,2,Bixby110TestData,0x4C70,1,Status,,0,,0,0x00,0,0,1,3
+5.5.00,individualization,0,Bixby110IndividualizationData,0x6920,6,Stove software version,,0,C,11,0x0B,0,0,2,1
+5.5.00,individualization,1,Bixby110IndividualizationData,0x6978,3,Stove checksum,,0,A,0,0x00,0,0,2,3
+5.5.00,individualization,2,Bixby110IndividualizationData,0x69D0,3,BixCheck checksum,,0,,0,0x00,0,0,2,3
+5.5.00,individualization,3,Bixby110IndividualizationData,0x6A28,1,Stove data format,,0,C,8,0x08,0,0,1,1
+5.5.00,individualization,4,Bixby110IndividualizationData,0x6A80,1,BixCheck data format,,0,A,2,0x02,0,0,1,1
+5.5.00,individualization,5,Bixby110IndividualizationData,0x6AD8,7,Serial number,,0,A,3,0x03,0,0,8,2
+5.5.00,individualization,6,Bixby110IndividualizationData,0x6B30,7,Production date,,0,A,11,0x0B,0,0,8,2
+5.5.00,individualization,7,Bixby110IndividualizationData,0x6B88,7,Model name,,0,A,19,0x13,0,0,16,2
+5.5.00,individualization,8,Bixby110IndividualizationData,0x6BE0,1,Spare,,0,A,35,0x23,0,0,13,1
+5.5.00,adjustment_descriptions,0,Bixby110AdjustmentDescriptions,0x6C40,1,Fan,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,1,Bixby110AdjustmentDescriptions,0x6C98,1,Fuel A,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,2,Bixby110AdjustmentDescriptions,0x6CF0,1,Fuel B,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,3,Bixby110AdjustmentDescriptions,0x6D48,1,Feed,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,4,Bixby110AdjustmentDescriptions,0x6DA0,1,Fuel A,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,5,Bixby110AdjustmentDescriptions,0x6DF8,1,Fuel B,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,6,Bixby110AdjustmentDescriptions,0x6E50,1,Ash,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,7,Bixby110AdjustmentDescriptions,0x6EA8,1,Fuel A,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustment_descriptions,8,Bixby110AdjustmentDescriptions,0x6F00,1,Fuel B,,0,X,0,0x00,0,0,1,1
+5.5.00,adjustments,0,Bixby110AdjustmentData,0x4CE0,1,L1,,0,A,64,0x40,255,0,1,2
+5.5.00,adjustments,1,Bixby110AdjustmentData,0x4D38,1,L2,,0,A,65,0x41,255,0,1,2
+5.5.00,adjustments,2,Bixby110AdjustmentData,0x4D90,1,L3,,0,A,66,0x42,255,0,1,2
+5.5.00,adjustments,3,Bixby110AdjustmentData,0x4DE8,1,L4,,0,A,67,0x43,255,0,1,2
+5.5.00,adjustments,4,Bixby110AdjustmentData,0x4E40,1,L5,,0,A,68,0x44,255,0,1,2
+5.5.00,adjustments,5,Bixby110AdjustmentData,0x4E98,1,L6,,0,A,69,0x45,255,0,1,2
+5.5.00,adjustments,6,Bixby110AdjustmentData,0x4EF0,1,L7,,0,A,70,0x46,255,0,1,2
+5.5.00,adjustments,7,Bixby110AdjustmentData,0x4F48,1,L8,,0,A,71,0x47,255,0,1,2
+5.5.00,adjustments,8,Bixby110AdjustmentData,0x4FA0,1,L1,,0,A,72,0x48,255,0,1,2
+5.5.00,adjustments,9,Bixby110AdjustmentData,0x4FF8,1,L2,,0,A,73,0x49,255,0,1,2
+5.5.00,adjustments,10,Bixby110AdjustmentData,0x5050,1,L3,,0,A,74,0x4A,255,0,1,2
+5.5.00,adjustments,11,Bixby110AdjustmentData,0x50A8,1,L4,,0,A,75,0x4B,255,0,1,2
+5.5.00,adjustments,12,Bixby110AdjustmentData,0x5100,1,L5,,0,A,76,0x4C,255,0,1,2
+5.5.00,adjustments,13,Bixby110AdjustmentData,0x5158,1,L6,,0,A,77,0x4D,255,0,1,2
+5.5.00,adjustments,14,Bixby110AdjustmentData,0x51B0,1,L7,,0,A,78,0x4E,255,0,1,2
+5.5.00,adjustments,15,Bixby110AdjustmentData,0x5208,1,L8,,0,A,79,0x4F,255,0,1,2
+5.5.00,adjustments,16,Bixby110AdjustmentData,0x5260,1,L1,,0,A,80,0x50,255,0,1,2
+5.5.00,adjustments,17,Bixby110AdjustmentData,0x52B8,1,L2,,0,A,81,0x51,255,0,1,2
+5.5.00,adjustments,18,Bixby110AdjustmentData,0x5310,1,L3,,0,A,82,0x52,255,0,1,2
+5.5.00,adjustments,19,Bixby110AdjustmentData,0x5368,1,L4,,0,A,83,0x53,255,0,1,2
+5.5.00,adjustments,20,Bixby110AdjustmentData,0x53C0,1,L5,,0,A,84,0x54,255,0,1,2
+5.5.00,adjustments,21,Bixby110AdjustmentData,0x5418,1,L6,,0,A,85,0x55,255,0,1,2
+5.5.00,adjustments,22,Bixby110AdjustmentData,0x5470,1,L7,,0,A,86,0x56,255,0,1,2
+5.5.00,adjustments,23,Bixby110AdjustmentData,0x54C8,1,L8,,0,A,87,0x57,255,0,1,2
+5.5.00,adjustments,24,Bixby110AdjustmentData,0x5520,1,Startup fan,,0,A,88,0x58,255,0,1,2
+5.5.00,adjustments,25,Bixby110AdjustmentData,0x5578,1,Startup feed,,0,A,89,0x59,255,0,1,2
+5.5.00,adjustments,26,Bixby110AdjustmentData,0x55D0,1,Startup time %,,0,A,90,0x5A,255,0,1,2
+5.5.00,adjustments,27,Bixby110AdjustmentData,0x5628,1,Igniter time %,,0,A,91,0x5B,255,0,1,2
+5.5.00,adjustments,28,Bixby110AdjustmentData,0x5680,1,Ash dump fan,,0,A,96,0x60,255,0,1,2
+5.5.00,adjustments,29,Bixby110AdjustmentData,0x56D8,1,Ash dump feed,,0,A,97,0x61,255,0,1,2
+5.5.00,adjustments,30,Bixby110AdjustmentData,0x5730,1,Ash dump time %,,0,A,98,0x62,255,0,1,2
+5.5.00,adjustments,31,Bixby110AdjustmentData,0x5788,1,Ash dump heat level,,0,A,99,0x63,8,0,1,2
+5.5.00,adjustments,32,Bixby110AdjustmentData,0x57E0,1,Ash dump target %,,0,A,100,0x64,255,0,1,2
+5.5.00,adjustments,33,Bixby110AdjustmentData,0x5838,1,TC for 25% fan,,0,A,104,0x68,255,0,1,2
+5.5.00,adjustments,34,Bixby110AdjustmentData,0x5890,1,TC for 100% fan,,0,A,105,0x69,255,0,1,2
+5.5.00,adjustments,35,Bixby110AdjustmentData,0x58E8,1,Thermostat heat level,,0,A,106,0x6A,8,0,1,2
+5.5.00,adjustments,36,Bixby110AdjustmentData,0x5940,1,LB threshold %,,0,A,107,0x6B,100,0,1,2
+5.5.00,adjustments,37,Bixby110AdjustmentData,0x5998,2,LB fan adjustment,,0,A,108,0x6C,30,-30,1,2
+5.5.00,adjustments,38,Bixby110AdjustmentData,0x59F0,2,LB feed adjustment,,0,A,109,0x6D,30,-30,1,2
+5.5.00,adjustments,39,Bixby110AdjustmentData,0x5A48,10,Ratio / Ash trimpot mode,Send,0,A,110,0x6E,0,0,1,8
+5.5.00,adjustments,40,Bixby110AdjustmentData,0x5AA0,10,Disable auto restart,Send,0,A,110,0x6E,0,0,2,8
+5.5.00,adjustments,41,Bixby110AdjustmentData,0x5AF8,1,L1,,0,A,112,0x70,255,0,1,2
+5.5.00,adjustments,42,Bixby110AdjustmentData,0x5B50,1,L2,,0,A,113,0x71,255,0,1,2
+5.5.00,adjustments,43,Bixby110AdjustmentData,0x5BA8,1,L3,,0,A,114,0x72,255,0,1,2
+5.5.00,adjustments,44,Bixby110AdjustmentData,0x5C00,1,L4,,0,A,115,0x73,255,0,1,2
+5.5.00,adjustments,45,Bixby110AdjustmentData,0x5C58,1,L5,,0,A,116,0x74,255,0,1,2
+5.5.00,adjustments,46,Bixby110AdjustmentData,0x5CB0,1,L6,,0,A,117,0x75,255,0,1,2
+5.5.00,adjustments,47,Bixby110AdjustmentData,0x5D08,1,L7,,0,A,118,0x76,255,0,1,2
+5.5.00,adjustments,48,Bixby110AdjustmentData,0x5D60,1,L8,,0,A,119,0x77,255,0,1,2
+5.5.00,adjustments,49,Bixby110AdjustmentData,0x5DB8,1,L1,,0,A,120,0x78,255,0,1,2
+5.5.00,adjustments,50,Bixby110AdjustmentData,0x5E10,1,L2,,0,A,121,0x79,255,0,1,2
+5.5.00,adjustments,51,Bixby110AdjustmentData,0x5E68,1,L3,,0,A,122,0x7A,255,0,1,2
+5.5.00,adjustments,52,Bixby110AdjustmentData,0x5EC0,1,L4,,0,A,123,0x7B,255,0,1,2
+5.5.00,adjustments,53,Bixby110AdjustmentData,0x5F18,1,L5,,0,A,124,0x7C,255,0,1,2
+5.5.00,adjustments,54,Bixby110AdjustmentData,0x5F70,1,L6,,0,A,125,0x7D,255,0,1,2
+5.5.00,adjustments,55,Bixby110AdjustmentData,0x5FC8,1,L7,,0,A,126,0x7E,255,0,1,2
+5.5.00,adjustments,56,Bixby110AdjustmentData,0x6020,1,L8,,0,A,127,0x7F,255,0,1,2
+5.5.00,adjustments,57,Bixby110AdjustmentData,0x6078,1,L1,,0,A,128,0x80,255,0,1,2
+5.5.00,adjustments,58,Bixby110AdjustmentData,0x60D0,1,L2,,0,A,129,0x81,255,0,1,2
+5.5.00,adjustments,59,Bixby110AdjustmentData,0x6128,1,L3,,0,A,130,0x82,255,0,1,2
+5.5.00,adjustments,60,Bixby110AdjustmentData,0x6180,1,L4,,0,A,131,0x83,255,0,1,2
+5.5.00,adjustments,61,Bixby110AdjustmentData,0x61D8,1,L5,,0,A,132,0x84,255,0,1,2
+5.5.00,adjustments,62,Bixby110AdjustmentData,0x6230,1,L6,,0,A,133,0x85,255,0,1,2
+5.5.00,adjustments,63,Bixby110AdjustmentData,0x6288,1,L7,,0,A,134,0x86,255,0,1,2
+5.5.00,adjustments,64,Bixby110AdjustmentData,0x62E0,1,L8,,0,A,135,0x87,255,0,1,2
+5.5.00,adjustments,65,Bixby110AdjustmentData,0x6338,1,Startup fan,,0,A,136,0x88,255,0,1,2
+5.5.00,adjustments,66,Bixby110AdjustmentData,0x6390,1,Startup feed,,0,A,137,0x89,255,0,1,2
+5.5.00,adjustments,67,Bixby110AdjustmentData,0x63E8,1,Startup time %,,0,A,138,0x8A,255,0,1,2
+5.5.00,adjustments,68,Bixby110AdjustmentData,0x6440,1,Igniter time %,,0,A,139,0x8B,255,0,1,2
+5.5.00,adjustments,69,Bixby110AdjustmentData,0x6498,1,Ash dump fan,,0,A,144,0x90,255,0,1,2
+5.5.00,adjustments,70,Bixby110AdjustmentData,0x64F0,1,Ash dump feed,,0,A,145,0x91,255,0,1,2
+5.5.00,adjustments,71,Bixby110AdjustmentData,0x6548,1,Ash dump time %,,0,A,146,0x92,255,0,1,2
+5.5.00,adjustments,72,Bixby110AdjustmentData,0x65A0,1,Ash dump heat level,,0,A,147,0x93,8,0,1,2
+5.5.00,adjustments,73,Bixby110AdjustmentData,0x65F8,1,Ash dump target %,,0,A,148,0x94,255,0,1,2
+5.5.00,adjustments,74,Bixby110AdjustmentData,0x6650,1,TC for 25% fan,,0,A,152,0x98,255,0,1,2
+5.5.00,adjustments,75,Bixby110AdjustmentData,0x66A8,1,TC for 100% fan,,0,A,153,0x99,255,0,1,2
+5.5.00,adjustments,76,Bixby110AdjustmentData,0x6700,1,Thermostat heat level,,0,A,154,0x9A,8,0,1,2
+5.5.00,adjustments,77,Bixby110AdjustmentData,0x6758,1,LB threshold %,,0,A,155,0x9B,100,0,1,2
+5.5.00,adjustments,78,Bixby110AdjustmentData,0x67B0,2,LB fan adjustment,,0,A,156,0x9C,30,-30,1,2
+5.5.00,adjustments,79,Bixby110AdjustmentData,0x6808,2,LB feed adjustment,,0,A,157,0x9D,30,-30,1,2
+5.5.00,adjustments,80,Bixby110AdjustmentData,0x6860,10,Ratio / Ash trimpot mode,Send,0,A,158,0x9E,0,0,1,8
+5.5.00,adjustments,81,Bixby110AdjustmentData,0x68B8,10,Disable auto restart,Send,0,A,158,0x9E,0,0,2,8
+5.5.00,telemetry,0,Bixby110TelemetryData,0x7120,2,Temperature,"Temp C, Temp F",0,T,0,0x00,0,0,1,1
+5.5.00,telemetry,1,Bixby110TelemetryData,0x7178,1,Thermocouple,TC Points,0,T,1,0x01,0,0,1,1
+5.5.00,telemetry,2,Bixby110TelemetryData,0x71D0,1,Fan potentiometer,"Fan units, Fan %",0,T,2,0x02,0,0,1,1
+5.5.00,telemetry,3,Bixby110TelemetryData,0x7228,1,Feed potentiometer,"Feed units, Feed %",0,T,3,0x03,0,0,1,1
+5.5.00,telemetry,4,Bixby110TelemetryData,0x7280,1,Exhaust fan speed,"Exh speed cnt, Exh RPM",0,T,4,0x04,0,0,1,1
+5.5.00,telemetry,5,Bixby110TelemetryData,0x72D8,1,Exhaust fan phase,"Exh ph cnt, Exh ph us",0,T,5,0x05,0,0,1,1
+5.5.00,telemetry,6,Bixby110TelemetryData,0x7330,1,Convection fan level,Convection %,0,T,6,0x06,0,0,1,1
+5.5.00,telemetry,7,Bixby110TelemetryData,0x7388,1,Display LED,LED display,0,T,7,0x07,0,0,1,1
+5.5.00,telemetry,8,Bixby110TelemetryData,0x73E0,5,Igniter state,"Igniter code, Igniter state",0,T,8,0x08,0,0,1,1
+5.5.00,telemetry,9,Bixby110TelemetryData,0x7438,1,Current heat level,Current level,0,C,0,0x00,0,0,1,1
+5.5.00,telemetry,10,Bixby110TelemetryData,0x7490,1,Target heat level,Target level,0,C,0,0x00,0,0,1,1
+5.5.00,telemetry,11,Bixby110TelemetryData,0x74E8,5,State control,"State ctrl, State mode",0,T,9,0x09,0,0,1,1
+5.5.00,telemetry,12,Bixby110TelemetryData,0x7540,3,Ash level,Ash level,0,T,10,0x0A,0,0,2,1
+5.5.00,telemetry,13,Bixby110TelemetryData,0x7598,3,Ash target,Ash target,0,T,12,0x0C,0,0,2,1
+5.5.00,telemetry,14,Bixby110TelemetryData,0x75F0,3,Feed on time,"Feed on 1/120, Feed on s",0,T,14,0x0E,0,0,2,1
+5.5.00,telemetry,15,Bixby110TelemetryData,0x7648,3,Feed off time,"Feed off 1/120, Feed off s",0,T,16,0x10,0,0,2,1
+5.5.00,telemetry,16,Bixby110TelemetryData,0x76A0,3,Feed cycle time,"Feed cycle 1/120, Feed cycle s",0,C,0,0x00,0,0,2,1
+5.5.00,telemetry,17,Bixby110TelemetryData,0x76F8,5,IIC status,IIC mode,0,T,18,0x12,0,0,1,1
+5.5.00,telemetry,18,Bixby110TelemetryData,0x7750,5,Alarm status,Alarm mode,0,T,19,0x13,0,0,1,1
+5.5.00,telemetry,19,Bixby110TelemetryData,0x77A8,5,Flag status,Flag mode,0,T,20,0x14,0,0,1,1
+5.5.00,telemetry,20,Bixby110TelemetryData,0x7800,1,Igniter current,Igniter current,0,T,21,0x15,0,0,1,1
+5.5.00,telemetry,21,Bixby110TelemetryData,0x7858,1,Firedoor timer,Firedoor units,0,T,22,0x16,0,0,1,1
+5.5.00,telemetry,22,Bixby110TelemetryData,0x78B0,1,Ash drawer timer,Ash drawer units,0,T,23,0x17,0,0,1,1
+5.5.00,telemetry,23,Bixby110TelemetryData,0x7908,1,Exhaust fan target,"Exh target cnt, Exh tgt RPM",0,T,24,0x18,0,0,1,1
+5.5.00,telemetry,24,Bixby110TelemetryData,0x7960,1,Drop limit,TC drop limit,0,T,25,0x19,0,0,1,1
+5.5.00,telemetry,25,Bixby110TelemetryData,0x79B8,3,Feed cycle table,"Feed table 1/120, Feed table s",0,T,26,0x1A,0,0,2,1
+5.5.00,telemetry,26,Bixby110TelemetryData,0x7A10,3,Feed cycle cal,"Feed cal 1/120, Feed cal s",0,T,28,0x1C,0,0,2,1
+5.5.00,telemetry,27,Bixby110TelemetryData,0x7A68,3,Time to ash dump,TtAD,0,V,27,0x1B,0,0,2,1
+5.5.00,telemetry,28,Bixby110TelemetryData,0x7AC0,1,Telemetry Mode,,0,C,0,0x00,0,0,1,3
+5.5.00,telemetry,29,Bixby110TelemetryData,0x7B18,1,LED No Log,,0,C,32,0x20,0,0,1,3

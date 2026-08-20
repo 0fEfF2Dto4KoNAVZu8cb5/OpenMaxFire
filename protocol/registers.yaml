@@ -8,19 +8,36 @@ serial:
   data_bits: 8
   parity: none
   stop_bits: 1
-  baud_candidates:
-    - rate: 38400
-      condition: Fosc_20MHz
-    - rate: 19200
-      condition: Fosc_10MHz
+  pc_software:
+    BixCheck_5.0.21: [9600]
+    BixCheck_5.5.00: [9600, 19200]
+    BixCheck_5.5.01: [9600, 19200]
+  expected_pairing:
+    firmware_2.06: 9600
+    firmware_2.70: 19200
+    firmware_2.71: 19200
+  oscillator_inference: 10MHz
+  oscillator_physically_verified: false
   physically_verified: false
 
 commands:
   read:
     format: "CR{register:02X}"
+    length: 4
   write:
     format: "CW{register:02X}{value:02X}"
-  response_terminator: 0x0A
+    length: 6
+  request_terminator: null
+  outgoing_hex_case: uppercase
+
+responses:
+  addressed: "{unit}{opcode}{address:02X}{value:02X}"
+  telemetry_one_byte: "T{index:02X}{value:02X}"
+  telemetry_two_bytes: "T{index:02X}{value0:02X}{value1:02X}"
+  accepted_terminators: [0x0D, 0x0A]
+  incoming_hex_case: either
+  leading_control_bytes_stripped: [0x01, 0x02, 0x03]
+  live_verified: false
 
 remote_buttons:
   register: 0x0E
@@ -33,18 +50,23 @@ remote_buttons:
 
 registers:
   CR00: {kind: constant, value: 0x00, confidence: confirmed_static}
-  CR01: {kind: ram, source: "bank1:0x53", meaning: unknown}
+  CR01:
+    kind: ram
+    source: "bank1:0x53"
+    meaning: front_panel_button_code
+    values: {none_pressed: 0x00, off_button: 0x01, on_button: 0x02, up_button: 0x04, down_button: 0x08}
+    confidence: confirmed_static_not_live
   CR02:
     kind: packed_bits
     meaning: physical_and_mux_inputs
     bits:
-      0: {source: RD3_MUX_0, meaning: unknown}
+      0: {source: RD3_MUX_0, meaning: burn_drive_limit_switch, polarity: unverified}
       1: {source: RD3_MUX_1, meaning: unknown}
-      2: {source: RD3_MUX_2, meaning: unknown}
+      2: {source: RD3_MUX_2, meaning: fuel_select_switch, set: fuel_A_corn, clear: fuel_B_wood}
       3: {source: mux_internal_state, meaning: unknown}
-      4: {source: RD0, meaning: unknown_physical_input}
-      5: {source: RD1, meaning: unknown_physical_input}
-      6: {source: RD4, meaning: unknown_physical_input}
+      4: {source: RD0, meaning: feeder_wheel_sensor_current_state, connector: J9, polarity: unverified}
+      5: {source: RD1, meaning: firebox_door_safety_switch, set: open, clear: closed}
+      6: {source: RD4, meaning: ash_bin_door_switch, set: open, clear: closed}
       7: {source: RE1, meaning: unknown_physical_input}
   CR03:
     kind: packed_bits
@@ -53,19 +75,37 @@ registers:
       1: {source: RB5, meaning: output_state}
       2: {source: "RAM_0x56.bit5", meaning: unknown}
       3: {source: "RAM_0x56.bit7", meaning: unknown}
-  CR04: {kind: ram, source: "0x22", meaning: unknown}
-  CR05: {kind: ram, source: "0x34", meaning: unknown}
+  CR04: {kind: ram, source: "bank1:0xA2", meaning: motherboard_thermometer, conversion: unresolved}
+  CR05:
+    kind: counter
+    source: "RA4/T0CKI -> TMR0 -> RAM_0x34"
+    meaning: exhaust_fan_sensor_count
+    connector: J10
+    sampling: "every 30 RB0 external-interrupt ticks"
+    edge: high_to_low
+    prescaler: none
+    overflow_value: 0xFF
+    engineering_units: unresolved
+    confidence: confirmed_static_not_live
   CR06:
     kind: packed_bits
     bits:
       0: {source: "RAM_0x2D.bit0", meaning: unknown}
       1: {source: "RAM_0x2D.bit1", meaning: unknown}
-      2: {source: RB4, meaning: unknown_physical_input}
-  CR07: {kind: derived, source: "RAM_0x44/0x45", meaning: unknown}
-  CR08: {kind: constant, value: 0x07, likely: database_format}
-  CR09: {kind: ram, source: "0x2E", meaning: unknown}
-  CR0A: {kind: ram, source: "0x2F", meaning: unknown}
-  CR0B: {kind: constant, value: 0x02, likely: firmware_major}
-  CR0C: {kind: constant, value: 0x71, likely: firmware_minor}
+      2: {source: RB4, meaning: thermostat_input, polarity: unverified}
+  CR07:
+    kind: derived
+    source: "RD0 cycle -> RAM_0x47:0x46 -> RAM_0x45:0x44"
+    meaning: feeder_wheel_sensor_period
+    connector: J9
+    transform: "low_byte((RAM_0x45:0x44) >> 4)"
+    timebase: "RB0 external-interrupt ticks while RB1 feed-motor output is active"
+    engineering_units: unresolved
+    confidence: confirmed_static_not_live
+  CR08: {kind: constant, value: 0x07, meaning: stove_data_format, confidence: confirmed_static}
+  CR09: {kind: ram, source: "AN3 -> 0x2E", meaning: fan_potentiometer}
+  CR0A: {kind: ram, source: "AN4 -> 0x2F", meaning: feed_potentiometer}
+  CR0B: {kind: constant, value: 0x02, meaning: firmware_major, confidence: confirmed_static}
+  CR0C: {kind: constant, value: 0x71, meaning: firmware_minor, confidence: confirmed_static}
   CR0D: {kind: constant, value: 0x00, meaning: unknown}
   CR0E: {kind: constant_on_read, value: 0x00, write_role: remote_buttons}

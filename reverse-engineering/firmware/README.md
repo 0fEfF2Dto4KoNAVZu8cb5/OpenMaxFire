@@ -31,6 +31,24 @@ Each image has:
 - a sparse-aware program binary, padded with `0xFF` only between mapped program addresses;
 - portable raw and annotated PIC14 assembly listings.
 
+`comparison/multiplexed-inputs.csv` records the common front-panel and
+external-switch mux selectors across 2.06, 2.70, and 2.71, including exact
+routine addresses, PORTD selector values, CR mappings, interpretations, and
+confidence boundaries.
+
+`comparison/sensor-signal-paths.csv` records the complete J10 exhaust-sensor
+and J9 feeder-wheel producer chains in every application generation. The
+pipeline verifies masked opcode signatures for T0CKI setup, counter latching,
+RD0 cycle detection, interval capture, and CR07 scaling before emitting it.
+
+`emulation/` contains experimental execution evidence from
+`tools/pic14_emulator.py`: per-image summaries, UART/peripheral events, and
+recent instruction traces. Its `deep/` subtree contains the exhaustive 45-read
+CR matrix, handler RAM/SFR dependencies, watchpoints, GPIO/ADC differentials,
+and 768 verified synthetic internal-EEPROM reads. It also corroborates the
+PICkit loader's reset-time `EA`→`EB` identify pair. See the
+[deep-pass report](../../docs/reverse-engineering/emulator-deep-pass.md).
+
 The earlier gpdasm-based 2.71 bundle is retained as independent prior work. The portable decoder was checked against it and produced zero mnemonic/word mismatches over all 7,755 mapped 2.71 program words.
 
 ## Regeneration
@@ -39,6 +57,7 @@ From the repository root:
 
 ```bash
 python3 tools/firmware_pipeline.py project --repo-root .
+python3 tools/pic14_emulator.py project --repo-root .
 ```
 
 The pipeline uses only Python's standard library, verifies every Intel HEX checksum, rejects conflicting/partial words, and emits deterministic outputs. It does not contain any device-write or serial communication path.

@@ -8,6 +8,21 @@
 - [x] Preserve the earlier 2.71 analysis bundle and independent gpdasm disassembly.
 - [x] Add a dependency-free Intel HEX parser/PIC14 disassembler and deterministic analysis for all images.
 - [x] Map cross-version protocol anchors, constant CR responses, UART changes, and the 2.06 bootloader/EEPROM delta.
+- [x] Deep-analyze all three BixCheck EXEs and export symbols, call graphs,
+  configuration/telemetry/Checkout tables, focused assembly, and semantic diffs.
+- [x] Build a read-only virtual serial lab and experimental PIC execution harness.
+- [x] Execute CR00-CR0E on all three application generations with handler-level
+  RAM/SFR traces, watchpoints, and response artifacts.
+- [x] Model synthetic GPIO/ADC inputs and map door, drawer, thermostat, and both
+  potentiometers offline.
+- [x] Recover both RD3 input-multiplexer banks and map the panel buttons,
+  burn-drive limit switch, and fuel selector (`1`=Fuel A/corn, `0`=Fuel B/wood).
+- [x] Trace J10 exhaust-sensor pulses through RA4/T0CKI/TMR0 to CR05 and J9
+  feeder-wheel transitions through RD0 and the interval counter to CR02.4/CR07.
+- [x] Preserve and revision-check the online-found 9067-0404 MaxFire motherboard
+  diagram against serial 5215's owner-reported 9067-0604 controller.
+- [x] Model PIC internal data EEPROM and verify AR00-ARFF across all three
+  generations with checksum-valid format-05/07 fixtures.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
 - [x] Preserve the prior OpenMaxFire v0.1 snapshot.
 - [ ] Publish a public preservation copy to Archive.org after reviewing redistribution and privacy.
@@ -15,20 +30,27 @@
 ## Phase 1 - electrical and read-only bench validation
 
 - [ ] Photograph both ends of the received cable and record all labels/part numbers.
+- [ ] Photograph both sides of the installed 9067-0604 board and compare its
+  connector layout with the preserved 9067-0404 diagram.
 - [ ] Identify J3 ground and supply pins without assuming standard RS-232 pinout.
 - [ ] Measure idle voltage and polarity through a protected interface.
 - [ ] Confirm controller oscillator frequency.
 - [ ] Capture BixCheck startup traffic if the Windows application can run.
-- [ ] Test read-only commands first at 38,400 baud, then 19,200 only if necessary.
+- [ ] Test only `CR00` at 9,600 for likely 2.06; try 19,200 only if the
+  protected electrical capture shows no valid response.
 - [ ] Record exact request bytes, response bytes, timing, and line termination.
 - [ ] Poll CR00-CR0E with the stove safely off.
 - [ ] Repeat polling while operating the fire door, ash drawer, thermostat, fuel switch, trim pots, and panel buttons.
+- [ ] Correlate CR05 and CR07 with passive J10/J9 observations; do not run
+  factory actuator tests through the unfinished interface.
+- [ ] Identify the physical function of CR02.1 by cold/off correlation.
 
 ## Phase 2 - read-only Linux monitor
 
-- [ ] Decode acknowledgements and response framing.
+- [x] Decode addressed/telemetry response framing statically and in emulation.
 - [ ] Implement robust timeouts, resynchronization, and stale-data detection.
-- [ ] Map firmware register values to the vendor telemetry field list.
+- [x] Map BixCheck T-stream indexes and widths to the vendor telemetry fields.
+- [ ] Complete unresolved numeric conversions and M/I status payload semantics.
 - [ ] Expose stove identity, state, heat level, alarms, temperatures, fan values, door timers, and ash values.
 - [ ] Add CSV/JSON logging and replayable capture fixtures.
 - [ ] Back up complete configuration/EEPROM before enabling any write.
@@ -43,7 +65,7 @@
 
 ## Phase 4 - BixCheck configuration parity
 
-- [ ] Decode identification, checksum, data-format, serial-number, production-date, and model fields.
+- [x] Decode identification, checksum, data-format, serial-number, production-date, and model addresses statically.
 - [ ] Implement readback and backups.
 - [ ] Map fuel A/B fan, feed, ash, startup, igniter, ash-dump, and convection-fan calibration fields.
 - [ ] Add range validation, version/data-format checks, diff preview, verify-after-write, and restore.
@@ -59,7 +81,10 @@
 
 ## Phase 6 - firmware servicing
 
-- [ ] Decode the Downloader/PICkit serial boot protocol (its code region and reset entry are now mapped).
+- [x] Decode Downloader/PICkit identify and program-block framing; confirm
+  reset-time `EA`/`EB` in emulation.
+- [ ] Resolve erase/program acknowledgement semantics and validate recovery on
+  sacrificial bench hardware.
 - [x] Distinguish Downloader and PICkit firmware layouts and preserve their exact word-level delta.
 - [ ] Implement firmware identity and compatibility checks.
 - [ ] Add interrupted-transfer recovery and post-flash calibration guidance.

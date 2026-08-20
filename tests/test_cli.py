@@ -23,7 +23,7 @@ class CliTests(unittest.TestCase):
     def test_live_read_requires_explicit_unverified_io_ack(self):
         error = io.StringIO()
         with contextlib.redirect_stderr(error):
-            result = main(["--port", "/dev/null", "--baud", "38400", "read", "0x00"])
+            result = main(["--port", "/dev/null", "--baud", "9600", "read", "0x00"])
         self.assertEqual(result, 3)
         self.assertIn("Refusing live I/O", error.getvalue())
 

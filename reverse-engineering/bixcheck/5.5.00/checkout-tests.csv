@@ -1,0 +1,47 @@
+version,group,index,display_number,ui_reachable,symbol,section_offset,type,label,instruction,failure_hint
+5.5.00,automatic,0,38,True,Bixby110AutomaticCheckoutTests,0x0000,1,Exhaust fan full power,Testing the exhaust fan at full power,Fan wiring; check if R59 is removed
+5.5.00,automatic,1,39,True,Bixby110AutomaticCheckoutTests,0x0122,1,Exhaust fan 1/2 power,Testing the exhaust fan at half power,Fan wiring; check if R59 is removed
+5.5.00,automatic,2,40,True,Bixby110AutomaticCheckoutTests,0x0244,1,Exhaust fan off,Testing the exhaust fan off,Fan wiring; check if R59 is removed
+5.5.00,automatic,3,41,True,Bixby110AutomaticCheckoutTests,0x0366,1,'1' side igniter test,Testing the igniters,Igniter connections; fuse; igniter
+5.5.00,automatic,4,42,True,Bixby110AutomaticCheckoutTests,0x0488,1,'2' side igniter test,Testing the igniters,Igniter connections; fuse; igniter
+5.5.00,automatic,5,43,True,Bixby110AutomaticCheckoutTests,0x05AA,1,'1' side igniter check,Checking the igniters,Igniter connections; fuse; igniter
+5.5.00,automatic,6,44,True,Bixby110AutomaticCheckoutTests,0x06CC,1,'2' side igniter check,Checking the igniters,Igniter connections; fuse; igniter
+5.5.00,automatic,7,45,True,Bixby110AutomaticCheckoutTests,0x07EE,1,Feed motor / sensor,"Testing the feed motor, magnets, and sensor",Sensor; motor; magnets
+5.5.00,automatic,8,46,False,Bixby110AutomaticCheckoutTests,0x0910,1,Plate motor cycle test,Testing the plate motor,Plate motor
+5.5.00,interactive,0,1,True,Bixby110InteractiveCheckoutTests,0x0A40,1,Front panel buttons off,Don't press any front panel buttons,Control cable; don't press any buttons
+5.5.00,interactive,1,2,True,Bixby110InteractiveCheckoutTests,0x0B62,1,Front panel ON button,Press the On button,Control cable; press only the ON button
+5.5.00,interactive,2,3,True,Bixby110InteractiveCheckoutTests,0x0C84,1,Front panel OFF button,Press the Off button,Control cable; press only the OFF button
+5.5.00,interactive,3,4,True,Bixby110InteractiveCheckoutTests,0x0DA6,1,Front panel UP button,Press the Up button,Control cable; press only the UP button
+5.5.00,interactive,4,5,True,Bixby110InteractiveCheckoutTests,0x0EC8,1,Front panel DOWN button,Press the Down button,Control cable; press only the DOWN button
+5.5.00,interactive,5,6,True,Bixby110InteractiveCheckoutTests,0x0FEA,1,Front panel LEDs on,Are all LEDs on?,Control cable
+5.5.00,interactive,6,7,True,Bixby110InteractiveCheckoutTests,0x110C,1,Front panel LEDs off,Are all LEDs off?,Control cable
+5.5.00,interactive,7,8,True,Bixby110InteractiveCheckoutTests,0x122E,1,Door switch open,Open the front door,Switch wiring; circuitboard
+5.5.00,interactive,8,9,True,Bixby110InteractiveCheckoutTests,0x1350,1,Door switch closed,Close the front door,Switch wiring; switch tab
+5.5.00,interactive,9,10,True,Bixby110InteractiveCheckoutTests,0x1472,1,Ash drawer switch open,Open the ash drawer,Switch wiring
+5.5.00,interactive,10,11,True,Bixby110InteractiveCheckoutTests,0x1594,1,Ash drawer switch closed,Close the ash drawer,Switch wiring
+5.5.00,interactive,11,12,True,Bixby110InteractiveCheckoutTests,0x16B6,1,Plate motor on,Is the plate motor running?,Motor wiring
+5.5.00,interactive,12,13,True,Bixby110InteractiveCheckoutTests,0x17D8,2,Plate motor off,Wait for the plate motor to turn off,Limit switch
+5.5.00,interactive,13,14,True,Bixby110InteractiveCheckoutTests,0x18FA,1,Plates in burn position,Are the plates in burn position?,Limit switch; motor brake
+5.5.00,interactive,14,15,True,Bixby110InteractiveCheckoutTests,0x1A1C,1,Air pump on,Is the air pump on?,Pump wiring
+5.5.00,interactive,15,16,True,Bixby110InteractiveCheckoutTests,0x1B3E,1,Air pump off,Is the air pump off?,Pump wiring
+5.5.00,interactive,16,17,True,Bixby110InteractiveCheckoutTests,0x1C60,1,Convection fan level 1,Is the convection fan on level 1?,Fan wiring
+5.5.00,interactive,17,18,True,Bixby110InteractiveCheckoutTests,0x1D82,1,Convection fan level 2,Is the convection fan on level 2?,Fan wiring
+5.5.00,interactive,18,19,True,Bixby110InteractiveCheckoutTests,0x1EA4,1,Convection fan level 3,Is the convection fan on level 3?,Fan wiring
+5.5.00,interactive,19,20,True,Bixby110InteractiveCheckoutTests,0x1FC6,1,Convection fan level 4,Is the convection fan on level 4?,Fan wiring
+5.5.00,interactive,20,21,True,Bixby110InteractiveCheckoutTests,0x20E8,1,Convection fan off,Is the convection fan off?,Fan wiring
+5.5.00,interactive,21,22,True,Bixby110InteractiveCheckoutTests,0x220A,1,Thermometer,Temperature:,Igniter board wiring
+5.5.00,interactive,22,23,True,Bixby110InteractiveCheckoutTests,0x232C,1,Fan potentiometer low,Turn the fan potentiometer to the left,Circuitboard wiring
+5.5.00,interactive,23,24,True,Bixby110InteractiveCheckoutTests,0x244E,1,Fan potentiometer high,Turn the fan potentiometer to the right,Circuitboard wiring
+5.5.00,interactive,24,25,True,Bixby110InteractiveCheckoutTests,0x2570,1,Fan potentiometer detent,Turn the fan potentiometer to the detent position,Circuitboard wiring
+5.5.00,interactive,25,26,True,Bixby110InteractiveCheckoutTests,0x2692,1,Feed potentiometer low,Turn the feed potentiometer to the left,Circuitboard wiring
+5.5.00,interactive,26,27,True,Bixby110InteractiveCheckoutTests,0x27B4,1,Feed potentiometer high,Turn the feed potentiometer to the right,Circuitboard wiring
+5.5.00,interactive,27,28,True,Bixby110InteractiveCheckoutTests,0x28D6,1,Feed potentiometer detent,Turn the feed potentiometer to the detent position,Circuitboard wiring
+5.5.00,interactive,28,29,True,Bixby110InteractiveCheckoutTests,0x29F8,1,Thermocouple,Make sure the thermocouple is plugged in,Connection
+5.5.00,interactive,29,30,True,Bixby110InteractiveCheckoutTests,0x2B1A,1,Thermostat open,Unplug the thermostat block,"Circuitboard, connection"
+5.5.00,interactive,30,31,True,Bixby110InteractiveCheckoutTests,0x2C3C,1,Thermostat closed,Plug in the thermostat block,"Circuitboard, connection"
+5.5.00,interactive,31,32,True,Bixby110InteractiveCheckoutTests,0x2D5E,1,Power plug wiring,"Power plug wire order: If Green is considered to be at 12:00 in the middle, then White is at 9:00 and Red is at 3:00",Repair for proper wire order
+5.5.00,interactive,32,33,True,Bixby110InteractiveCheckoutTests,0x2E80,1,Fuel select switch wood / B,Switch to wood / setting B,"Circuitboard, connection"
+5.5.00,interactive,33,34,True,Bixby110InteractiveCheckoutTests,0x2FA2,1,Fuel select switch corn / A,Switch to corn / setting A,"Circuitboard, connection"
+5.5.00,iic_verification,0,35,True,Bixby110IICVerificationTests,0x30E0,1,Data communication link,Reading configuration data,Check connection; check software version
+5.5.00,iic_verification,1,36,True,Bixby110IICVerificationTests,0x3202,1,Checksum verified,Calculating checksum,Return to Monitor and recalculate checksum
+5.5.00,iic_verification,2,37,True,Bixby110IICVerificationTests,0x3324,1,Data format matched,Checking data format,Set the correct software version data format

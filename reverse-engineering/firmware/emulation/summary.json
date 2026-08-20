@@ -1,0 +1,446 @@
+[
+  {
+    "accelerated_delay_loops": 9288,
+    "boot_steps_requested": 250000,
+    "eeprom_read_events": 0,
+    "emulator": "tools/pic14_emulator.py",
+    "error": null,
+    "final_pc": "0x1289",
+    "image": "Bixby_02060021_Downloader.hex",
+    "interrupt_events": 4,
+    "label": "2.06-downloader",
+    "limitations": [
+      "Peripheral timing is synthetic and is not cycle-accurate.",
+      "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
+      "A successful software trace does not establish hardware safety or live compatibility."
+    ],
+    "probe_ascii": "CR00",
+    "probe_description": "ASCII read probe",
+    "probe_hex": "43 52 30 30",
+    "probe_steps_limit": 500000,
+    "rx_bytes_remaining": 0,
+    "schema": 1,
+    "status": "experimental",
+    "steps_executed": 250845,
+    "top_pc_hits": [
+      {
+        "count": 6960,
+        "pc": "0x05EA"
+      },
+      {
+        "count": 6960,
+        "pc": "0x05EB"
+      },
+      {
+        "count": 6960,
+        "pc": "0x05ED"
+      },
+      {
+        "count": 4640,
+        "pc": "0x05EE"
+      },
+      {
+        "count": 3852,
+        "pc": "0x01C3"
+      },
+      {
+        "count": 3852,
+        "pc": "0x01C4"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01C6"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01C7"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01C8"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01C9"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01CC"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01CD"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01CE"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01CF"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01D0"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01D1"
+      },
+      {
+        "count": 3424,
+        "pc": "0x01D2"
+      },
+      {
+        "count": 3389,
+        "pc": "0x01CA"
+      },
+      {
+        "count": 2320,
+        "pc": "0x05E8"
+      },
+      {
+        "count": 2320,
+        "pc": "0x05E9"
+      }
+    ],
+    "tx_ascii": "CR0000\\x0A",
+    "tx_hex": "43 52 30 30 30 30 0A",
+    "uart_rx_events": 4,
+    "uart_tx_events": 7
+  },
+  {
+    "accelerated_delay_loops": 0,
+    "boot_steps_requested": 0,
+    "eeprom_read_events": 0,
+    "emulator": "tools/pic14_emulator.py",
+    "error": null,
+    "final_pc": "0x1EEB",
+    "image": "Bixby_02060021_PICkit.hex",
+    "interrupt_events": 0,
+    "label": "2.06-pickit-bootloader",
+    "limitations": [
+      "Peripheral timing is synthetic and is not cycle-accurate.",
+      "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
+      "A successful software trace does not establish hardware safety or live compatibility."
+    ],
+    "probe_ascii": "\\xEA",
+    "probe_description": "binary bootloader identify probe",
+    "probe_hex": "EA",
+    "probe_steps_limit": 500000,
+    "rx_bytes_remaining": 0,
+    "schema": 1,
+    "status": "experimental",
+    "steps_executed": 43,
+    "top_pc_hits": [
+      {
+        "count": 1,
+        "pc": "0x0000"
+      },
+      {
+        "count": 1,
+        "pc": "0x0001"
+      },
+      {
+        "count": 1,
+        "pc": "0x0002"
+      },
+      {
+        "count": 1,
+        "pc": "0x0003"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E88"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E8A"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E8B"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E8C"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E8D"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E8E"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E8F"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E90"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E91"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E92"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E93"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E94"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E95"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E96"
+      },
+      {
+        "count": 1,
+        "pc": "0x1E97"
+      },
+      {
+        "count": 1,
+        "pc": "0x1EEC"
+      }
+    ],
+    "tx_ascii": "\\xEB",
+    "tx_hex": "EB",
+    "uart_rx_events": 1,
+    "uart_tx_events": 1
+  },
+  {
+    "accelerated_delay_loops": 9287,
+    "boot_steps_requested": 250000,
+    "eeprom_read_events": 0,
+    "emulator": "tools/pic14_emulator.py",
+    "error": null,
+    "final_pc": "0x1373",
+    "image": "Bixby_0270_070206.hex",
+    "interrupt_events": 4,
+    "label": "2.70",
+    "limitations": [
+      "Peripheral timing is synthetic and is not cycle-accurate.",
+      "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
+      "A successful software trace does not establish hardware safety or live compatibility."
+    ],
+    "probe_ascii": "CR00",
+    "probe_description": "ASCII read probe",
+    "probe_hex": "43 52 30 30",
+    "probe_steps_limit": 500000,
+    "rx_bytes_remaining": 0,
+    "schema": 1,
+    "status": "experimental",
+    "steps_executed": 250758,
+    "top_pc_hits": [
+      {
+        "count": 6960,
+        "pc": "0x05D3"
+      },
+      {
+        "count": 6960,
+        "pc": "0x05D4"
+      },
+      {
+        "count": 6960,
+        "pc": "0x05D6"
+      },
+      {
+        "count": 4640,
+        "pc": "0x05D7"
+      },
+      {
+        "count": 3744,
+        "pc": "0x01A6"
+      },
+      {
+        "count": 3744,
+        "pc": "0x01A7"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01A9"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AA"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AB"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AC"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AF"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B0"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B1"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B2"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B3"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B4"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B5"
+      },
+      {
+        "count": 3292,
+        "pc": "0x01AD"
+      },
+      {
+        "count": 2320,
+        "pc": "0x05D1"
+      },
+      {
+        "count": 2320,
+        "pc": "0x05D2"
+      }
+    ],
+    "tx_ascii": "CR0000\\x0A",
+    "tx_hex": "43 52 30 30 30 30 0A",
+    "uart_rx_events": 4,
+    "uart_tx_events": 7
+  },
+  {
+    "accelerated_delay_loops": 9287,
+    "boot_steps_requested": 250000,
+    "eeprom_read_events": 0,
+    "emulator": "tools/pic14_emulator.py",
+    "error": null,
+    "final_pc": "0x1350",
+    "image": "Bixby_0271_080315.hex",
+    "interrupt_events": 4,
+    "label": "2.71",
+    "limitations": [
+      "Peripheral timing is synthetic and is not cycle-accurate.",
+      "Tight DECFSZ/GOTO-self delay loops are fast-forwarded while preserving their terminal register state.",
+      "GPIO and ADC inputs are synthetic; external mux hardware, motors, watchdog, and electrical behavior are not modeled.",
+      "A successful software trace does not establish hardware safety or live compatibility."
+    ],
+    "probe_ascii": "CR00",
+    "probe_description": "ASCII read probe",
+    "probe_hex": "43 52 30 30",
+    "probe_steps_limit": 500000,
+    "rx_bytes_remaining": 0,
+    "schema": 1,
+    "status": "experimental",
+    "steps_executed": 250758,
+    "top_pc_hits": [
+      {
+        "count": 6960,
+        "pc": "0x05D3"
+      },
+      {
+        "count": 6960,
+        "pc": "0x05D4"
+      },
+      {
+        "count": 6960,
+        "pc": "0x05D6"
+      },
+      {
+        "count": 4640,
+        "pc": "0x05D7"
+      },
+      {
+        "count": 3744,
+        "pc": "0x01A6"
+      },
+      {
+        "count": 3744,
+        "pc": "0x01A7"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01A9"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AA"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AB"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AC"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01AF"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B0"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B1"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B2"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B3"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B4"
+      },
+      {
+        "count": 3328,
+        "pc": "0x01B5"
+      },
+      {
+        "count": 3291,
+        "pc": "0x01AD"
+      },
+      {
+        "count": 2320,
+        "pc": "0x05D1"
+      },
+      {
+        "count": 2320,
+        "pc": "0x05D2"
+      }
+    ],
+    "tx_ascii": "CR0000\\x0A",
+    "tx_hex": "43 52 30 30 30 30 0A",
+    "uart_rx_events": 4,
+    "uart_tx_events": 7
+  }
+]

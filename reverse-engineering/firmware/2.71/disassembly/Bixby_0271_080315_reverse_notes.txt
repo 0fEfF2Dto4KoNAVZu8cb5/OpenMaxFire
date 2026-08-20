@@ -11,7 +11,8 @@ Startup at 0x1825 configures:
   SPBRG = 0x20
   TXSTA = 0x26
   RCSTA = 0x90
-If Fosc is 20 MHz, this corresponds closely to 38400 baud, 8N1 async serial.
+The paired BixCheck 5.5.01 host code selects 19200 baud, 8N1. Together with
+SPBRG=0x20 this strongly implies Fosc=10 MHz; physical confirmation is pending.
 
 Protocol parser
 ---------------
@@ -26,6 +27,8 @@ where xx and YY are ASCII hexadecimal.
 
 The firmware includes an ASCII-hex decoder around 0x0F60 and a two-digit byte parser at 0x0F7C.
 Responses are transmitted as ASCII hex and terminated with LF (0x0A).
+The formatter emits lowercase a-f nibbles in responses (for example CR0A is
+returned as CR0a); the BixCheck receiver accepts either case.
 
 CR register map - confirmed static handlers
 -------------------------------------------
@@ -43,7 +46,7 @@ CR03 -> packed status/output byte:
         bit1 = RB5
         bit2 = internal state bit (RAM 0x56 bit5)
         bit3 = internal state bit (RAM 0x56 bit7)
-CR04 -> RAM byte 0x22
+CR04 -> bank1 RAM byte 0x0A2
 CR05 -> RAM byte 0x34
 CR06 -> packed flags:
         bit0 = RAM 0x2D bit0
@@ -51,8 +54,8 @@ CR06 -> packed flags:
         bit2 = RB4
 CR07 -> derived/scaled value from RAM 0x44/0x45
 CR08 -> constant 0x07
-CR09 -> RAM byte 0x2E
-CR0A -> RAM byte 0x2F
+CR09 -> RAM byte 0x2E; fan potentiometer sampled from AN3
+CR0A -> RAM byte 0x2F; feed potentiometer sampled from AN4
 CR0B -> constant 0x02
 CR0C -> constant 0x71
 CR0D -> constant 0x00
@@ -62,6 +65,20 @@ Important hardware observation
 ------------------------------
 TRIS configuration shows RD0, RD1, RD3, RD4, RE0, RE1, RB0, RB4, RB6, RB7 and RA0..RA5 are inputs at startup. RB1 and RB5 are outputs, even though CR03 reports their current states.
 
-Door-state investigation
-------------------------
-The best direct digital-input candidates exposed through the existing CR interface are CR02 bits 4-7 (RD0/RD1/RD4/RE1) and CR06 bit2 (RB4). Static analysis does NOT yet prove which physical input is the firebox/hopper door switch. The next step is to trace these pins through the stove state machine and/or observe CR02/CR06 while physically operating each switch.
+Input-state cross-reference
+---------------------------
+Handler-scoped emulator traces and synthetic GPIO/ADC sweeps agree across all
+three generations. Cross-referencing BixCheck's Checkout masks assigns:
+  firebox door -> CR02 bit5 / RD1 (open=1)
+  ash drawer   -> CR02 bit6 / RD4 (open=1)
+  thermostat   -> CR06 bit2 / RB4 (polarity needs live validation)
+  fan pot      -> CR09 / AN3
+  feed pot     -> CR0A / AN4
+Static scanner reconstruction further assigns:
+  panel buttons      -> CR01 via RD2/RD6:RD5 and active-low RD3 return
+  burn-drive switch  -> CR02 bit0 / external RD3 mux slot0
+  fuel selector      -> CR02 bit2 / external RD3 mux slot2
+The configuration-bank offset establishes fuel polarity: bit2 set is Fuel
+A/corn and clear is Fuel B/wood. CR02 bit1 remains physically unassigned. These
+are strong offline mappings, not proof of the PCB wiring on serial 5215;
+cold/off physical correlation remains required.

@@ -22,10 +22,11 @@ class SerialSettings:
 class SerialTransport:
     """Thin pyserial wrapper for controlled bench research.
 
-    The firmware configures a UART consistent with approximately 38,400 baud
-    if the controller oscillator is 20 MHz. Earlier project notes assumed
-    19,200 baud. Until a live capture resolves this conflict, callers must
-    choose the baud rate explicitly.
+    BixCheck 5.0.21 selects 9,600 baud. BixCheck 5.5.00/5.5.01 select either
+    9,600 or 19,200 baud and configure 8N1. These exact host settings imply a
+    10 MHz controller oscillator when paired with the recovered firmware UART
+    divisors, but the oscillator and J3 electrical interface still require
+    physical confirmation. Callers therefore choose the rate explicitly.
     """
 
     def __init__(self, settings: SerialSettings):

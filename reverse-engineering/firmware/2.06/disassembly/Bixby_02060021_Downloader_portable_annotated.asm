@@ -321,6 +321,8 @@
 0131: 1252  bcf     0x52, 4
 0132: 16D2  bsf     0x52, 5
 0133: 2948  goto    0x148 ; low-11 target; resolve page through PCLATH
+
+; RE: Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.
 0134: 3004  movlw   0x04
 0135: 0088  movwf   0x08
 0136: 1052  bcf     0x52, 0
@@ -382,6 +384,8 @@
 016E: 03F2  decf    0x72, F
 016F: 3002  movlw   0x02
 0170: 06B0  xorwf   0x30, F
+
+; RE: Increment the feeder elapsed counter while RB1 is active; this ISR path is driven by RB0 external-interrupt ticks.
 0171: 1C86  btfss   0x06, 1
 0172: 2976  goto    0x176 ; low-11 target; resolve page through PCLATH
 0173: 0AC6  incf    0x46, F
@@ -394,6 +398,8 @@
 017A: 2983  goto    0x183 ; low-11 target; resolve page through PCLATH
 017B: 3082  movlw   0x82
 017C: 00B5  movwf   0x35
+
+; RE: Latch the TMR0 exhaust-sensor count into RAM 0x34 every 30 RB0 external-interrupt ticks.
 017D: 0801  movf    0x01, W
 017E: 190B  btfsc   0x0B, 2
 017F: 30FF  movlw   0xFF
@@ -558,6 +564,8 @@
 021E: 1283  bcf     0x03, 5
 021F: 048B  iorwf   0x0B, F
 0220: 3400  retlw   0x00
+
+; RE: Configure TMR0 for unprescaled falling-edge counts on RA4/T0CKI (J10 exhaust-sensor path after cross-reference).
 0221: 30BF  movlw   0xBF
 0222: 1683  bsf     0x03, 5
 0223: 0081  movwf   0x01
@@ -1036,6 +1044,8 @@
 03FC: 2BED  goto    0x3ED ; low-11 target; resolve page through PCLATH
 03FD: 1283  bcf     0x03, 5
 03FE: 3400  retlw   0x00
+
+; RE: Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.
 03FF: 1951  btfsc   0x51, 2
 0400: 2C05  goto    0x405 ; low-11 target; resolve page through PCLATH
 0401: 3030  movlw   0x30
@@ -1961,6 +1971,8 @@
 0799: 1C20  btfss   0x20, 0
 079A: 2FB9  goto    0x7B9 ; low-11 target; resolve page through PCLATH
 079B: 1283  bcf     0x03, 5
+
+; RE: Second 2.06 fuel-table read path; a clear CR02.2 adds the same 0x30 Fuel-B offset.
 079C: 1951  btfsc   0x51, 2
 079D: 2FA2  goto    0x7A2 ; low-11 target; resolve page through PCLATH
 079E: 3030  movlw   0x30
@@ -2243,6 +2255,8 @@
 08B3: 118A  bcf     0x0A, 3
 08B4: 231F  call    0x31F ; low-11 target; resolve page through PCLATH
 08B5: 158A  bsf     0x0A, 3
+
+; RE: Detect an RD0 high-then-low feeder-wheel sensor cycle while the RB1 feed-motor output is active.
 08B6: 1C86  btfss   0x06, 1
 08B7: 28BF  goto    0x0BF ; low-11 target; resolve page through PCLATH
 08B8: 1808  btfsc   0x08, 0
@@ -2917,6 +2931,8 @@
 0B55: 118A  bcf     0x0A, 3
 0B56: 26B0  call    0x6B0 ; low-11 target; resolve page through PCLATH
 0B57: 158A  bsf     0x0A, 3
+
+; RE: Latch the feeder cycle interval from RAM 0x47:0x46 into 0x45:0x44 for CR07.
 0B58: 30F0  movlw   0xF0
 0B59: 05C3  andwf   0x43, F
 0B5A: 0847  movf    0x47, W
@@ -3862,6 +3878,8 @@
 0F00: 138B  bcf     0x0B, 7
 0F01: 1B8B  btfsc   0x0B, 7
 0F02: 2F00  goto    0x700 ; low-11 target; resolve page through PCLATH
+
+; RE: External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.
 0F03: 301F  movlw   0x1F
 0F04: 0588  andwf   0x08, F
 0F05: 3080  movlw   0x80
