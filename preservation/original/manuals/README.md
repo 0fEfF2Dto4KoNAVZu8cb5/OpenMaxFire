@@ -1,3 +1,3 @@
 # Manuals
 
-The recovered `1394047.pdf` BixCheck How-To Guide is awaiting direct upload. Its destination and expected checksum are recorded in [`../../PENDING_UPLOADS.md`](../../PENDING_UPLOADS.md).
+This directory contains the recovered `1394047.pdf` BixCheck How-To Guide. Its provenance and checksum are recorded in [`../../MANIFEST.md`](../../MANIFEST.md).

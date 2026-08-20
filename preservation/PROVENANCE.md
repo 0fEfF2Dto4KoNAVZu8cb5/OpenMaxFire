@@ -2,7 +2,7 @@
 
 ## BixCheck 5.5.01 line
 
-`BixCheck_080315 (1).zip`
+`BixCheck_080315.zip`
 
 - contains `BixCheck_080315.exe`
 - the executable embeds `Bixby_0271_080315.hex`
@@ -20,7 +20,7 @@
 
 ## BixCheck 5.0.21 / firmware 2.06 line
 
-`Bixby110_115_02060021_and_manual (1).zip`
+`Bixby110_115_02060021_and_manual.zip`
 
 - contains distinct Downloader and PICkit firmware images
 - contains BixCheck 5.0.21 and vendor release notes

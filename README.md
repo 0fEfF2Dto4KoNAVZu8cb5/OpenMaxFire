@@ -61,10 +61,6 @@ Live I/O is intentionally gated and requires an explicit port, baud rate, and ac
 
 Start with [the research status](docs/STATUS.md), [the project roadmap](docs/ROADMAP.md), and [the preservation manifest](preservation/MANIFEST.md).
 
-## Files pending direct upload
-
-Five original artifacts are intentionally omitted from the automated import and will be uploaded directly to GitHub without any transformation. Their exact destination paths, sizes, and expected SHA-256 values are recorded in [preservation/PENDING_UPLOADS.md](preservation/PENDING_UPLOADS.md).
-
 ## Licensing
 
 OpenMaxFire-authored code and documentation are released under the MIT License. Recovered Bixby vendor artifacts and user photographs retain their respective original rights and are not relicensed by this project. See [preservation/README.md](preservation/README.md).

@@ -13,4 +13,4 @@ OpenMaxFire's MIT License does not apply to these vendor artifacts or photograph
 - Original files should never be edited in place. Add a derived copy under `reverse-engineering/` instead.
 - Future Archive.org identifiers/URLs belong in the manifest; none has been assigned yet.
 
-Five larger originals are awaiting direct GitHub upload. See [PENDING_UPLOADS.md](PENDING_UPLOADS.md). No split, encoded, or reconstructed copies are used.
+All originals catalogued in `MANIFEST.md` are present in their normal binary form. No split, encoded, or reconstructed copies are used.
