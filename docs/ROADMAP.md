@@ -23,6 +23,15 @@
   diagram against serial 5215's owner-reported 9067-0604 controller.
 - [x] Model PIC internal data EEPROM and verify AR00-ARFF across all three
   generations with checksum-valid format-05/07 fixtures.
+- [x] Map every CW00-CW0F dispatcher/handler and execute safe synthetic probes
+  in disposable CPU/RAM/EEPROM clones without taking the CW0FC4 loader branch.
+- [x] Trace every periodic telemetry producer through the real UART sender,
+  resolve physical one-byte framing, adjacent-slot words, auxiliary D lines,
+  and core BixCheck display conversions.
+- [x] Reconstruct the cross-version T09 state-family dispatcher, 2.71
+  structural transitions, and exact BixCheck state labels.
+- [x] Recover BixCheck's configuration-write lifecycle, selected-field data
+  logging, report files, QuickCal/debug construction, and flue/fuel monitors.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
 - [x] Preserve the prior OpenMaxFire v0.1 snapshot.
 - [ ] Publish a public preservation copy to Archive.org after reviewing redistribution and privacy.
@@ -49,8 +58,10 @@
 
 - [x] Decode addressed/telemetry response framing statically and in emulation.
 - [ ] Implement robust timeouts, resynchronization, and stale-data detection.
-- [x] Map BixCheck T-stream indexes and widths to the vendor telemetry fields.
-- [ ] Complete unresolved numeric conversions and M/I status payload semantics.
+- [x] Map BixCheck T-stream indexes, physical slots, producer sources, widths,
+  and core numeric conversions to the vendor telemetry fields.
+- [ ] Complete remaining status/flag meanings, physical calibration, table-only
+  TFD-TFF provenance, and M/I payload semantics.
 - [ ] Expose stove identity, state, heat level, alarms, temperatures, fan values, door timers, and ash values.
 - [ ] Add CSV/JSON logging and replayable capture fixtures.
 - [ ] Back up complete configuration/EEPROM before enabling any write.

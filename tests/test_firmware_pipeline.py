@@ -107,6 +107,81 @@ class FirmwarePipelineTests(unittest.TestCase):
                     f"{version} {stage}",
                 )
 
+    def test_cw_dispatch_tables_match_all_sixteen_handlers(self):
+        application_variants = {
+            "2.06": "downloader",
+            "2.70": "embedded",
+            "2.71": "embedded",
+        }
+        for version, variant in application_variants.items():
+            image_spec = next(
+                item for item in firmware_pipeline.IMAGE_SPECS
+                if item.version == version and item.variant == variant
+            )
+            image = firmware_pipeline.parse_ihex(
+                (ROOT / image_spec.extracted_path).read_bytes()
+            )
+            dispatch = firmware_pipeline.CW_DISPATCH_PC[version]
+            handlers = firmware_pipeline.CW_HANDLER_MATRIX[version]
+            self.assertEqual(len(handlers), 16)
+            for register, handler in enumerate(handlers):
+                word = image.words[dispatch + 4 + register]
+                self.assertEqual(
+                    firmware_pipeline.decode_pic14(word).mnemonic,
+                    "goto",
+                    f"{version} CW{register:02X}",
+                )
+                self.assertEqual(word & 0x07FF, handler & 0x07FF)
+
+    def test_periodic_telemetry_sender_anchors(self):
+        application_variants = {
+            "2.06": "downloader",
+            "2.70": "embedded",
+            "2.71": "embedded",
+        }
+        for version, variant in application_variants.items():
+            image_spec = next(
+                item for item in firmware_pipeline.IMAGE_SPECS
+                if item.version == version and item.variant == variant
+            )
+            image = firmware_pipeline.parse_ihex(
+                (ROOT / image_spec.extracted_path).read_bytes()
+            )
+            path = firmware_pipeline.TELEMETRY_PATHS[version]
+            self.assertEqual(image.words[path["t_sender"]], 0x3054)
+            self.assertEqual(
+                firmware_pipeline.decode_pic14(image.words[path["t_call"]]).mnemonic,
+                "call",
+            )
+
+    def test_t09_state_family_dispatchers(self):
+        application_variants = {
+            "2.06": "downloader",
+            "2.70": "embedded",
+            "2.71": "embedded",
+        }
+        for version, variant in application_variants.items():
+            image_spec = next(
+                item for item in firmware_pipeline.IMAGE_SPECS
+                if item.version == version and item.variant == variant
+            )
+            image = firmware_pipeline.parse_ihex(
+                (ROOT / image_spec.extracted_path).read_bytes()
+            )
+            dispatch = firmware_pipeline.STATE_DISPATCH_PC[version]
+            self.assertEqual(image.words[dispatch], 0x084C)
+            self.assertEqual(image.words[dispatch + 1], 0x3970)
+            for offset, handler in zip(
+                (3, 6, 9, 12, 15, 18, 21, 24),
+                firmware_pipeline.STATE_FAMILY_HANDLERS[version],
+                strict=True,
+            ):
+                word = image.words[dispatch + offset]
+                self.assertEqual(
+                    firmware_pipeline.decode_pic14(word).mnemonic, "goto"
+                )
+                self.assertEqual(word & 0x07FF, handler & 0x07FF)
+
 
 if __name__ == "__main__":
     unittest.main()

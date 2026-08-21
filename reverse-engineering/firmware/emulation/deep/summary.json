@@ -16,6 +16,15 @@
   "cr_errors": 0,
   "cr_formatters_reached": 45,
   "cr_handlers_reached": 45,
+  "cw_commands_executed": 48,
+  "cw_eeprom_write_events": 6,
+  "cw_expected_modeled_nonreturns": 6,
+  "cw_handler_access_summaries": 2071,
+  "cw_handler_change_summaries": 658,
+  "cw_handler_net_change_records": 550,
+  "cw_handlers_reached": 48,
+  "cw_normal_exits_reached": 42,
+  "cw_unexpected_errors": 0,
   "firmware_versions": [
     "2.06",
     "2.70",
@@ -52,11 +61,21 @@
     "The RD3 multiplexer is represented only as a pin level; external selection-aware hardware is not modeled.",
     "Signal names come from cross-referencing BixCheck masks, firmware data flow, and a related-board 9067-0404 diagram; they remain unvalidated on serial 5215's reported 9067-0604 board.",
     "The EEPROM fixture is conspicuously synthetic and contains no owner or stove calibration data.",
-    "No write request is issued by this deep pass."
+    "C-unit writes execute only in disposable CPU clones with synthetic RAM/EEPROM; no source image or physical controller is modified.",
+    "CW0F is probed only with value 0x00. The state-changing 0xC4 reset/loader key is explicitly excluded.",
+    "CW05 and CW0A enter long actuator/timer paths that do not return in the bounded peripheral model; this is a model limitation, not a firmware failure.",
+    "Telemetry slots are entered directly after synthetic boot. Producer and UART code are real firmware, but periodic cadence/gating is not modeled.",
+    "TMR0 is advanced synthetically per modeled instruction; no timing or sensor-rate conclusion should be drawn from emulator step counts."
   ],
   "probe_step_limit": 500000,
   "schema": 1,
   "status": "experimental offline emulation",
   "synthetic_settle_steps": 50000,
-  "watchpoint_records": 197
+  "telemetry_errors": 0,
+  "telemetry_frames_completed": 91,
+  "telemetry_producer_access_summaries": 6566,
+  "telemetry_senders_reached": 91,
+  "telemetry_slots_executed": 91,
+  "watchpoint_records": 197,
+  "write_probe_step_limit": 50000
 }

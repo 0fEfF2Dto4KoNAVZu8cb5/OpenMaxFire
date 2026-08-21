@@ -30,7 +30,7 @@ even though BixCheck uses writes to 0x0E for remote-button actions. See the
 | `CR01` | Bank-1 RAM byte 0x53 | Front-panel button code from RD3/RD2/RD6:RD5 mux scanner |
 | `CR02` | Packed input byte | See bit table below |
 | `CR03` | Packed status/output byte | See bit table below |
-| `CR04` | Bank-1 RAM byte 0x0A2 | Thermometer value used by Checkout; conversion unresolved |
+| `CR04` | Bank-1 RAM byte 0x0A2 | Control-board ambient temperature; the same T00 source is displayed as signed °C |
 | `CR05` | RAM byte 0x34, latched from TMR0 | J10 exhaust-fan sensor pulse count |
 | `CR06` | Packed flags | See bit table below |
 | `CR07` | Low byte of `(RAM 0x45:0x44) >> 4` | J9 feeder-wheel sensor cycle interval |

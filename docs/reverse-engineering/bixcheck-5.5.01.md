@@ -55,13 +55,19 @@ buffers.
 
 - addressed response: `<A|C|D><operation><address:02X><value:02X>`;
 - one-byte telemetry: `T<index:02X><value:02X>`;
-- two-byte telemetry: `T<index:02X><value0:02X><value1:02X>`;
+- a compatibility two-byte receive representation:
+  `T<index:02X><value0:02X><value1:02X>`;
 - `M` and `I` status/control families, whose inner semantics remain unresolved.
 
 Incoming hexadecimal accepts either case. The vendor parser performs weak
 length and invalid-character checking; the replacement parser is intentionally
 stricter. `CollectResponse()` makes at most 16 scan attempts and ignores
 telemetry frames while waiting for a non-telemetry reply.
+
+The later firmware-producer pass establishes that all preserved application
+images physically send only the one-byte T form. BixCheck assembles a logical
+16-bit field from two adjacent five-character T lines. It also accepts and
+stores addressed D-unit auxiliary lines separately from T telemetry.
 
 The real 2.71 firmware has also been run in the experimental PIC14 emulator: an
 injected `CR00` produced `CR0000` plus LF. This is independent dynamic support
@@ -138,7 +144,10 @@ The per-build directory contains:
 - `combustion-adjustments.csv`: raw adjustment arrays;
 - `selected-strings.csv`: provenance-focused string inventory;
 - `protocol-core.asm`, `checkout-core.asm`, and `downloader-core.asm`: exact
-  focused disassembly excerpts.
+  focused disassembly excerpts;
+- `telemetry-core.asm`, `write-ui-core.asm`, `logging-core.asm`, and
+  `monitor-core.asm`: exact display/conversion, write/UI, log/report, and
+  monitoring workflow excerpts.
 
 Build-specific addresses are evidence locators, not stable protocol constants.
 All conclusions remain static or emulated until J3 electrical levels and a live

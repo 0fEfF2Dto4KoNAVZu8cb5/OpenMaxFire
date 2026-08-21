@@ -1,0 +1,17 @@
+register,name,static_effect,evidence,2.06_handler,2.70_handler,2.71_handler
+CW00,service countdown,zero clears the bank-1 service countdown,static,0x1030,0x113A,0x1110
+CW01,persist configuration checksum,recomputes and writes checksum bytes to data EEPROM A00/A01,static plus emulator,0x1036,0x1140,0x1116
+CW02,telemetry suppression enable,sets the telemetry-suppression flag and loads countdown 0x78,static,0x107B,0x1185,0x115B
+CW03,telemetry suppression disable,clears telemetry suppression and parser scratch bytes,static,0x1080,0x118A,0x1160
+CW04,front-panel LEDs,copies value to the LED output routine,BixCheck checkout plus firmware,0x1085,0x118F,0x1165
+CW05,burn-drive motor,enters the plate/burn-drive motor routine,BixCheck checkout plus firmware,0x108E,0x1198,0x116E
+CW06,air compressor on,calls the air-compressor-on routine,BixCheck checkout plus firmware,0x1095,0x119B,0x1171
+CW07,air compressor off,calls the air-compressor-off routine,BixCheck checkout plus firmware,0x109A,0x11A0,0x1176
+CW08,convection fan,copies value to the convection-fan target,BixCheck checkout plus firmware,0x10A1,0x11A7,0x117D
+CW09,exhaust fan,scales value through the exhaust phase-control routine,BixCheck checkout plus firmware,0x10A7,0x11AD,0x1183
+CW0A,igniter follow-up,enters the second igniter follow-up routine,BixCheck checkout plus firmware,0x10C5,0x11CB,0x11A1
+CW0B,feed motor/sensor,uses the high nibble as the feed-test drive parameter,BixCheck checkout plus firmware,0x10D1,0x11D3,0x11A9
+CW0C,controller service,runs a service routine and rewrites RAM 0x43 mode bits; exact purpose unresolved,static; purpose unresolved,0x10DF,0x11E1,0x11B7
+CW0D,igniter workflow,"enters igniter workflow, sets countdown 0x82, emits I plus LF",BixCheck checkout plus firmware,0x10ED,0x11ED,0x11C3
+CW0E,remote buttons,stores the value as a synthetic panel-button code,BixCheck tables plus firmware,0x1104,0x11FE,0x11D8
+CW0F,reset/loader request,value 0xC4 enters the reset/bootloader path,BixCheck downloader plus firmware,0x110B,0x1205,0x11DF

@@ -1928,6 +1928,8 @@
 076E: 17D6  bsf     0x56, 7
 076F: 21DC  call    0x1DC ; low-11 target; resolve page through PCLATH
 0770: 3400  retlw   0x00
+
+; RE: Emit one T<index><value> line and LF.
 0771: 3054  movlw   0x54
 0772: 1E0C  btfss   0x0C, 4
 0773: 2F72  goto    0x772 ; low-11 target; resolve page through PCLATH
@@ -3518,6 +3520,8 @@
 0DA3: 158A  bsf     0x0A, 3
 0DA4: 160A  bsf     0x0A, 4
 0DA5: 28A4  goto    0x0A4 ; low-11 target; resolve page through PCLATH
+
+; RE: Periodic telemetry slot producer block.
 0DA6: 1683  bsf     0x03, 5
 0DA7: 0820  movf    0x20, W
 0DA8: 00CA  movwf   0x4A
@@ -3890,6 +3894,8 @@
 0F17: 00D5  movwf   0x55
 0F18: 118A  bcf     0x0A, 3
 0F19: 1283  bcf     0x03, 5
+
+; RE: Call the periodic T-frame transmitter for the current slot.
 0F1A: 2771  call    0x771 ; low-11 target; resolve page through PCLATH
 0F1B: 158A  bsf     0x0A, 3
 0F1C: 1683  bsf     0x03, 5
@@ -4402,12 +4408,16 @@
 110D: 3E10  addlw   0x10
 110E: 1283  bcf     0x03, 5
 110F: 2B5A  goto    0x35A ; low-11 target; resolve page through PCLATH
+
+; RE: CW00 write handler: service countdown; zero clears the bank-1 service countdown.
 1110: 1683  bsf     0x03, 5
 1111: 08CB  movf    0x4B, F
 1112: 1D03  btfss   0x03, 2
 1113: 2915  goto    0x115 ; low-11 target; resolve page through PCLATH
 1114: 01C2  clrf    0x42
 1115: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW01 write handler: persist configuration checksum; recomputes and writes checksum bytes to data EEPROM A00/A01.
 1116: 120A  bcf     0x0A, 4
 1117: 26F6  call    0x6F6 ; low-11 target; resolve page through PCLATH
 1118: 160A  bsf     0x0A, 4
@@ -4477,16 +4487,22 @@
 1158: 160A  bsf     0x0A, 4
 1159: 1683  bsf     0x03, 5
 115A: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW02 write handler: telemetry suppression enable; sets the telemetry-suppression flag and loads countdown 0x78.
 115B: 15D1  bsf     0x51, 3
 115C: 3078  movlw   0x78
 115D: 1683  bsf     0x03, 5
 115E: 00C2  movwf   0x42
 115F: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW03 write handler: telemetry suppression disable; clears telemetry suppression and parser scratch bytes.
 1160: 11D1  bcf     0x51, 3
 1161: 01CB  clrf    0x4B
 1162: 01CA  clrf    0x4A
 1163: 1683  bsf     0x03, 5
 1164: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW04 write handler: front-panel LEDs; copies value to the LED output routine.
 1165: 1683  bsf     0x03, 5
 1166: 084B  movf    0x4B, W
 1167: 1283  bcf     0x03, 5
@@ -4496,14 +4512,20 @@
 116B: 160A  bsf     0x0A, 4
 116C: 1683  bsf     0x03, 5
 116D: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW05 write handler: burn-drive motor; enters the plate/burn-drive motor routine.
 116E: 2000  call    0x000 ; low-11 target; resolve page through PCLATH
 116F: 1683  bsf     0x03, 5
 1170: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW06 write handler: air compressor on; calls the air-compressor-on routine.
 1171: 120A  bcf     0x0A, 4
 1172: 226A  call    0x26A ; low-11 target; resolve page through PCLATH
 1173: 160A  bsf     0x0A, 4
 1174: 1683  bsf     0x03, 5
 1175: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW07 write handler: air compressor off; calls the air-compressor-off routine.
 1176: 120A  bcf     0x0A, 4
 1177: 158A  bsf     0x0A, 3
 1178: 27D3  call    0x7D3 ; low-11 target; resolve page through PCLATH
@@ -4511,12 +4533,16 @@
 117A: 118A  bcf     0x0A, 3
 117B: 1683  bsf     0x03, 5
 117C: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW08 write handler: convection fan; copies value to the convection-fan target.
 117D: 1683  bsf     0x03, 5
 117E: 084B  movf    0x4B, W
 117F: 1283  bcf     0x03, 5
 1180: 00A9  movwf   0x29
 1181: 1683  bsf     0x03, 5
 1182: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW09 write handler: exhaust fan; scales value through the exhaust phase-control routine.
 1183: 1683  bsf     0x03, 5
 1184: 01CD  clrf    0x4D
 1185: 084B  movf    0x4B, W
@@ -4547,6 +4573,8 @@
 119E: 160A  bsf     0x0A, 4
 119F: 1683  bsf     0x03, 5
 11A0: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW0A write handler: igniter follow-up; enters the second igniter follow-up routine.
 11A1: 2090  call    0x090 ; low-11 target; resolve page through PCLATH
 11A2: 120A  bcf     0x0A, 4
 11A3: 158A  bsf     0x0A, 3
@@ -4555,6 +4583,8 @@
 11A6: 118A  bcf     0x0A, 3
 11A7: 1683  bsf     0x03, 5
 11A8: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW0B write handler: feed motor/sensor; uses the high nibble as the feed-test drive parameter.
 11A9: 1683  bsf     0x03, 5
 11AA: 0E4B  swapf   0x4B, W
 11AB: 00CE  movwf   0x4E
@@ -4569,6 +4599,8 @@
 11B4: 160A  bsf     0x0A, 4
 11B5: 1683  bsf     0x03, 5
 11B6: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW0C write handler: controller service; runs a service routine and rewrites RAM 0x43 mode bits; exact purpose unresolved.
 11B7: 120A  bcf     0x0A, 4
 11B8: 26A9  call    0x6A9 ; low-11 target; resolve page through PCLATH
 11B9: 160A  bsf     0x0A, 4
@@ -4581,6 +4613,8 @@
 11C0: 16C3  bsf     0x43, 5
 11C1: 1683  bsf     0x03, 5
 11C2: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW0D write handler: igniter workflow; enters igniter workflow, sets countdown 0x82, emits I plus LF.
 11C3: 120A  bcf     0x0A, 4
 11C4: 158A  bsf     0x0A, 3
 11C5: 27DF  call    0x7DF ; low-11 target; resolve page through PCLATH
@@ -4602,6 +4636,8 @@
 11D5: 0099  movwf   0x19
 11D6: 1683  bsf     0x03, 5
 11D7: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW0E write handler: remote buttons; stores the value as a synthetic panel-button code.
 11D8: 1683  bsf     0x03, 5
 11D9: 084B  movf    0x4B, W
 11DA: 1283  bcf     0x03, 5
@@ -4609,6 +4645,8 @@
 11DC: 17DD  bsf     0x5D, 7
 11DD: 1683  bsf     0x03, 5
 11DE: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
+
+; RE: CW0F write handler: reset/loader request; value 0xC4 enters the reset/bootloader path.
 11DF: 1683  bsf     0x03, 5
 11E0: 084B  movf    0x4B, W
 11E1: 3CC4  sublw   0xC4
@@ -4654,6 +4692,8 @@
 1209: 1683  bsf     0x03, 5
 120A: 2A0C  goto    0x20C ; low-11 target; resolve page through PCLATH
 120B: 1683  bsf     0x03, 5
+
+; RE: Common exit for normal silent C-unit writes.
 120C: 2B51  goto    0x351 ; low-11 target; resolve page through PCLATH
 120D: 0849  movf    0x49, W
 
@@ -5026,6 +5066,8 @@
 1357: 158A  bsf     0x0A, 3
 1358: 160A  bsf     0x0A, 4
 1359: 28C8  goto    0x0C8 ; low-11 target; resolve page through PCLATH
+
+; RE: CW00-CW0F computed write-dispatch table.
 135A: 140A  bsf     0x0A, 0
 135B: 148A  bsf     0x0A, 1
 135C: 110A  bcf     0x0A, 2
@@ -6461,6 +6503,8 @@
 18F6: 1903  btfsc   0x03, 2
 18F7: 28F9  goto    0x0F9 ; low-11 target; resolve page through PCLATH
 18F8: 2922  goto    0x122 ; low-11 target; resolve page through PCLATH
+
+; RE: Dispatch T09 controller-state family from bank-0 RAM 0x4C.
 18F9: 084C  movf    0x4C, W
 18FA: 3970  andlw   0x70
 18FB: 1903  btfsc   0x03, 2
@@ -6487,6 +6531,8 @@
 1910: 1903  btfsc   0x03, 2
 1911: 2E5D  goto    0x65D ; low-11 target; resolve page through PCLATH
 1912: 2E5D  goto    0x65D ; low-11 target; resolve page through PCLATH
+
+; RE: T09 state family 0x00: initial/reset.
 1913: 08CB  movf    0x4B, F
 1914: 1D03  btfss   0x03, 2
 1915: 291A  goto    0x11A ; low-11 target; resolve page through PCLATH
@@ -6548,6 +6594,8 @@
 194D: 05DD  andwf   0x5D, F
 194E: 2950  goto    0x150 ; low-11 target; resolve page through PCLATH
 194F: 01DD  clrf    0x5D
+
+; RE: T09 state family 0x10: cooldown.
 1950: 3007  movlw   0x07
 1951: 00AD  movwf   0x2D
 1952: 1FDD  btfss   0x5D, 7
@@ -6635,6 +6683,8 @@
 19A4: 158A  bsf     0x0A, 3
 19A5: 01CB  clrf    0x4B
 19A6: 01CA  clrf    0x4A
+
+; RE: T09 state family 0x20: off.
 19A7: 19CC  btfsc   0x4C, 3
 19A8: 29B8  goto    0x1B8 ; low-11 target; resolve page through PCLATH
 19A9: 1ED0  btfss   0x50, 5
@@ -6763,6 +6813,8 @@
 1A24: 3020  movlw   0x20
 1A25: 00F1  movwf   0x71
 1A26: 1486  bsf     0x06, 1
+
+; RE: T09 state family 0x30: startup.
 1A27: 13FE  bcf     0x7E, 7
 1A28: 1FAD  btfss   0x2D, 7
 1A29: 2A38  goto    0x238 ; low-11 target; resolve page through PCLATH
@@ -7236,6 +7288,8 @@
 1BFD: 00DA  movwf   0x5A
 1BFE: 01EC  clrf    0x6C
 1BFF: 2E5D  goto    0x65D ; low-11 target; resolve page through PCLATH
+
+; RE: T09 state family 0x40: operating.
 1C00: 1683  bsf     0x03, 5
 1C01: 01C9  clrf    0x49
 1C02: 120A  bcf     0x0A, 4
@@ -7554,6 +7608,8 @@
 1D3B: 1283  bcf     0x03, 5
 1D3C: 2546  call    0x546 ; low-11 target; resolve page through PCLATH
 1D3D: 158A  bsf     0x0A, 3
+
+; RE: T09 state family 0x60: ash dump.
 1D3E: 1683  bsf     0x03, 5
 1D3F: 01C9  clrf    0x49
 1D40: 120A  bcf     0x0A, 4
@@ -7841,5 +7897,7 @@
 1E5A: 3907  andlw   0x07
 1E5B: 00F5  movwf   0x75
 1E5C: 2E5D  goto    0x65D ; low-11 target; resolve page through PCLATH
+
+; RE: T09 state family 0x70: fallback/undefined.
 1E5D: 2899  goto    0x099 ; low-11 target; resolve page through PCLATH
 1E5E: 0063  sleep  

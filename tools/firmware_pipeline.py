@@ -221,6 +221,117 @@ CR_HANDLER_MATRIX: dict[str, tuple[int, ...]] = {
 }
 
 
+# The C-unit write dispatcher immediately precedes the CR table in every
+# application image.  Each entry is the resolved destination for CW00-CW0F.
+# These addresses are checked against the computed-goto words when the project
+# pipeline runs; keeping them here also gives the emulator bounded handler
+# entry points for otherwise-silent write requests.
+CW_HANDLER_MATRIX: dict[str, tuple[int, ...]] = {
+    "2.06": (0x1030, 0x1036, 0x107B, 0x1080, 0x1085, 0x108E, 0x1095, 0x109A,
+             0x10A1, 0x10A7, 0x10C5, 0x10D1, 0x10DF, 0x10ED, 0x1104, 0x110B),
+    "2.70": (0x113A, 0x1140, 0x1185, 0x118A, 0x118F, 0x1198, 0x119B, 0x11A0,
+             0x11A7, 0x11AD, 0x11CB, 0x11D3, 0x11E1, 0x11ED, 0x11FE, 0x1205),
+    "2.71": (0x1110, 0x1116, 0x115B, 0x1160, 0x1165, 0x116E, 0x1171, 0x1176,
+             0x117D, 0x1183, 0x11A1, 0x11A9, 0x11B7, 0x11C3, 0x11D8, 0x11DF),
+}
+
+
+CW_DISPATCH_PC = {
+    "2.06": 0x1293,
+    "2.70": 0x137D,
+    "2.71": 0x135A,
+}
+
+
+# Normal silent writes converge here before returning to the parser.  CW05 and
+# CW0A enter longer actuator-control routines and need not reach this point in
+# the deliberately incomplete synthetic peripheral model.
+CW_EXIT_PC = {
+    "2.06": 0x113D,
+    "2.70": 0x1232,
+    "2.71": 0x120C,
+}
+
+
+CW_SEMANTICS: tuple[tuple[str, str, str], ...] = (
+    ("service countdown", "zero clears the bank-1 service countdown", "static"),
+    ("persist configuration checksum", "recomputes and writes checksum bytes to data EEPROM A00/A01", "static plus emulator"),
+    ("telemetry suppression enable", "sets the telemetry-suppression flag and loads countdown 0x78", "static"),
+    ("telemetry suppression disable", "clears telemetry suppression and parser scratch bytes", "static"),
+    ("front-panel LEDs", "copies value to the LED output routine", "BixCheck checkout plus firmware"),
+    ("burn-drive motor", "enters the plate/burn-drive motor routine", "BixCheck checkout plus firmware"),
+    ("air compressor on", "calls the air-compressor-on routine", "BixCheck checkout plus firmware"),
+    ("air compressor off", "calls the air-compressor-off routine", "BixCheck checkout plus firmware"),
+    ("convection fan", "copies value to the convection-fan target", "BixCheck checkout plus firmware"),
+    ("exhaust fan", "scales value through the exhaust phase-control routine", "BixCheck checkout plus firmware"),
+    ("igniter follow-up", "enters the second igniter follow-up routine", "BixCheck checkout plus firmware"),
+    ("feed motor/sensor", "uses the high nibble as the feed-test drive parameter", "BixCheck checkout plus firmware"),
+    ("controller service", "runs a service routine and rewrites RAM 0x43 mode bits; exact purpose unresolved", "static; purpose unresolved"),
+    ("igniter workflow", "enters igniter workflow, sets countdown 0x82, emits I plus LF", "BixCheck checkout plus firmware"),
+    ("remote buttons", "stores the value as a synthetic panel-button code", "BixCheck tables plus firmware"),
+    ("reset/loader request", "value 0xC4 enters the reset/bootloader path", "BixCheck downloader plus firmware"),
+)
+
+
+TELEMETRY_PATHS = {
+    "2.06": {
+        "block_entry": 0x0CF2,
+        "index_ram": 0x0A1,
+        "value_ram": 0x0CA,
+        "aux_value_ram": 0x0CB,
+        "t_sender": 0x0783,
+        "t_call": 0x0E5D,
+        "last_index": 0x1D,
+    },
+    "2.70": {
+        "block_entry": 0x0DBD,
+        "index_ram": 0x0A0,
+        "value_ram": 0x0C8,
+        "aux_value_ram": 0x0C9,
+        "t_sender": 0x0771,
+        "t_call": 0x0F4F,
+        "last_index": 0x1D,
+    },
+    "2.71": {
+        "block_entry": 0x0DA6,
+        "index_ram": 0x0A0,
+        "value_ram": 0x0C8,
+        "aux_value_ram": 0x0C9,
+        "t_sender": 0x0771,
+        "t_call": 0x0F1A,
+        "last_index": 0x1E,
+    },
+}
+
+
+# T09 is sourced from bank-0 RAM 0x4C.  The main loop masks its high three
+# bits and routes the eight 0x00..0x70 families through the destinations below.
+STATE_DISPATCH_PC = {
+    "2.06": 0x18DB,
+    "2.70": 0x18D4,
+    "2.71": 0x18F9,
+}
+
+
+STATE_FAMILY_HANDLERS: dict[str, tuple[int, ...]] = {
+    "2.06": (0x18F5, 0x192B, 0x1976, 0x19E8, 0x1BBA, 0x1BBA, 0x1CE0, 0x1E25),
+    "2.70": (0x18EE, 0x192B, 0x1982, 0x1A02, 0x1BDB, 0x1BDB, 0x1D19, 0x1E3D),
+    "2.71": (0x1913, 0x1950, 0x19A7, 0x1A27, 0x1C00, 0x1C00, 0x1D3E, 0x1E5D),
+}
+
+
+STATE_FAMILY_NAMES = (
+    "initial/reset",
+    "cooldown",
+    "off",
+    "startup",
+    "operating",
+    "ramping",
+    "ash dump",
+    "fallback/undefined",
+)
+
+
 CR_CONSTANTS: dict[str, dict[int, int]] = {
     "2.06": {0x00: 0x00, 0x08: 0x05, 0x0B: 0x02, 0x0C: 0x06, 0x0D: 0x00, 0x0E: 0x21},
     "2.70": {0x00: 0x00, 0x08: 0x07, 0x0B: 0x02, 0x0C: 0x70, 0x0D: 0x00, 0x0E: 0x02},
@@ -320,6 +431,41 @@ for _version, _handlers in CR_HANDLER_MATRIX.items():
         _detail = f"; returns constant 0x{_constant:02X}" if _constant is not None else ""
         KNOWN_ANNOTATIONS[_version].setdefault(
             _handler, f"CR{_register:02X} read handler{_detail}."
+        )
+
+for _version, _handlers in CW_HANDLER_MATRIX.items():
+    KNOWN_ANNOTATIONS[_version].setdefault(
+        CW_DISPATCH_PC[_version], "CW00-CW0F computed write-dispatch table."
+    )
+    KNOWN_ANNOTATIONS[_version].setdefault(
+        CW_EXIT_PC[_version], "Common exit for normal silent C-unit writes."
+    )
+    for _register, _handler in enumerate(_handlers):
+        _name, _effect, _evidence = CW_SEMANTICS[_register]
+        KNOWN_ANNOTATIONS[_version].setdefault(
+            _handler, f"CW{_register:02X} write handler: {_name}; {_effect}."
+        )
+
+for _version, _path in TELEMETRY_PATHS.items():
+    KNOWN_ANNOTATIONS[_version].setdefault(
+        _path["block_entry"], "Periodic telemetry slot producer block."
+    )
+    KNOWN_ANNOTATIONS[_version].setdefault(
+        _path["t_sender"], "Emit one T<index><value> line and LF."
+    )
+    KNOWN_ANNOTATIONS[_version].setdefault(
+        _path["t_call"], "Call the periodic T-frame transmitter for the current slot."
+    )
+
+for _version, _handlers in STATE_FAMILY_HANDLERS.items():
+    KNOWN_ANNOTATIONS[_version].setdefault(
+        STATE_DISPATCH_PC[_version],
+        "Dispatch T09 controller-state family from bank-0 RAM 0x4C.",
+    )
+    for _family, _handler in enumerate(_handlers):
+        KNOWN_ANNOTATIONS[_version].setdefault(
+            _handler,
+            f"T09 state family 0x{_family:X}0: {STATE_FAMILY_NAMES[_family]}.",
         )
 
 for _version, _stages in SENSOR_PATH_EXPECTED.items():
@@ -816,11 +962,122 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
                 row.append("" if constant is None else f"0x{constant:02X}")
             writer.writerow(row)
 
+    with (output / "cw00-cw0f-handlers.csv").open(
+        "w", encoding="utf-8", newline=""
+    ) as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow((
+            "register", "name", "static_effect", "evidence",
+            "2.06_handler", "2.70_handler", "2.71_handler",
+        ))
+        for register, (name, effect, evidence) in enumerate(CW_SEMANTICS):
+            writer.writerow((
+                f"CW{register:02X}", name, effect, evidence,
+                *(f"0x{CW_HANDLER_MATRIX[version][register]:04X}"
+                  for version in ("2.06", "2.70", "2.71")),
+            ))
+
+    telemetry_rows: list[tuple[str, ...]] = []
     application_labels = {
         "2.06": "2.06-downloader",
         "2.70": "2.70-embedded",
         "2.71": "2.71-embedded",
     }
+    for version, label in application_labels.items():
+        spec, image = parsed[label]
+        dispatch = CW_DISPATCH_PC[version]
+        for register, expected in enumerate(CW_HANDLER_MATRIX[version]):
+            word = image.words.get(dispatch + 4 + register)
+            if word is None or decode_pic14(word).mnemonic != "goto":
+                raise FirmwareError(
+                    f"{version} CW{register:02X}: no GOTO at dispatch entry "
+                    f"0x{dispatch + 4 + register:04X}"
+                )
+            if (word & 0x07FF) != (expected & 0x07FF):
+                raise FirmwareError(
+                    f"{version} CW{register:02X}: dispatcher encodes "
+                    f"0x{word & 0x07FF:03X}, expected handler 0x{expected:04X}"
+                )
+        path = TELEMETRY_PATHS[version]
+        sender = path["t_sender"]
+        # The sender always begins by loading ASCII T and ends by returning
+        # immediately after the LF write.  This deliberately narrow check
+        # proves the stable one-index/one-value wire shape without pretending
+        # to resolve every producer here.
+        if image.words.get(sender) != 0x3054:
+            raise FirmwareError(
+                f"{version}: telemetry sender at 0x{sender:04X} does not load ASCII T"
+            )
+        if decode_pic14(image.words[path["t_call"]]).mnemonic != "call":
+            raise FirmwareError(
+                f"{version}: telemetry call site 0x{path['t_call']:04X} is not CALL"
+            )
+        telemetry_rows.append((
+            version, spec.filename, f"0x{path['block_entry']:04X}",
+            f"0x{path['index_ram']:03X}", f"0x{path['value_ram']:03X}",
+            f"0x{path['aux_value_ram']:03X}", f"0x{path['t_call']:04X}",
+            f"0x{sender:04X}", f"0x{path['last_index']:02X}",
+            "T<index:02x><value:02x>\\n",
+        ))
+    with (output / "telemetry-paths.csv").open(
+        "w", encoding="utf-8", newline=""
+    ) as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow((
+            "version", "image", "producer_block_pc", "index_ram", "value_ram",
+            "aux_value_ram", "sender_call_pc", "sender_pc", "last_periodic_index",
+            "wire_shape",
+        ))
+        writer.writerows(telemetry_rows)
+
+    state_rows: list[tuple[str, ...]] = []
+    for version, label in application_labels.items():
+        spec, image = parsed[label]
+        dispatch = STATE_DISPATCH_PC[version]
+        if image.words.get(dispatch) != 0x084C or image.words.get(dispatch + 1) != 0x3970:
+            raise FirmwareError(
+                f"{version}: state dispatcher at 0x{dispatch:04X} does not read "
+                "RAM 0x4C and mask 0x70"
+            )
+        branch_offsets = (3, 6, 9, 12, 15, 18, 21, 24)
+        for family, (offset, expected) in enumerate(
+            zip(branch_offsets, STATE_FAMILY_HANDLERS[version], strict=True)
+        ):
+            word = image.words.get(dispatch + offset)
+            if word is None or decode_pic14(word).mnemonic != "goto":
+                raise FirmwareError(
+                    f"{version}: state family 0x{family:X}0 has no GOTO at "
+                    f"0x{dispatch + offset:04X}"
+                )
+            if (word & 0x07FF) != (expected & 0x07FF):
+                raise FirmwareError(
+                    f"{version}: state family 0x{family:X}0 targets low address "
+                    f"0x{word & 0x07FF:03X}, expected 0x{expected:04X}"
+                )
+            state_rows.append(
+                (
+                    version,
+                    spec.filename,
+                    "0x04C",
+                    f"0x{dispatch:04X}",
+                    f"0x{family:X}0",
+                    STATE_FAMILY_NAMES[family],
+                    f"0x{expected:04X}",
+                    "high-nibble family; low bits retain substate/level flags",
+                )
+            )
+    with (output / "state-family-dispatch.csv").open(
+        "w", encoding="utf-8", newline=""
+    ) as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(
+            (
+                "version", "image", "state_ram", "dispatch_pc", "family",
+                "firmware_working_meaning", "handler_pc", "encoding_note",
+            )
+        )
+        writer.writerows(state_rows)
+
     sensor_stage_rows: list[tuple[str, ...]] = []
     sensor_stage_descriptions = {
         "exhaust_t0cki_setup": (

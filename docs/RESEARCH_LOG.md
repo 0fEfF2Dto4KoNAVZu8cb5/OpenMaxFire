@@ -80,3 +80,46 @@
 - Added masked, cross-generation opcode signatures and a generated
   `sensor-signal-paths.csv` so the J9/J10 conclusions fail regeneration if a
   preserved image no longer matches the documented flow.
+
+## 2026-08-21
+
+- Reconstructed all sixteen C-unit write dispatch entries in firmware 2.06,
+  2.70, and 2.71. Roles now cover service countdown, checksum persistence,
+  telemetry suppression/resume, LEDs, burn drive, compressor, convection and
+  exhaust outputs, igniter/feed/service workflows, remote buttons, and the
+  keyed loader request.
+- Extended the PIC emulator with disposable-clone C-write experiments. All 48
+  version/register combinations reach the expected handler; 42 reach the
+  normal exit, while CW05/CW0A in each generation are expected bounded
+  nonreturns in the incomplete actuator/timer model. CW0FC4 remains excluded.
+- Modeled PIC data-EEPROM programming and observed exactly two CW01 write
+  events per firmware generation, at checksum bytes A00/A01.
+- Traced the complete periodic telemetry blocks and senders. All 91 slots reach
+  the real UART formatter in emulation. The firmware emits one-byte `Txxvv`
+  lines; six logical 16-bit fields are adjacent big-endian slot pairs rather
+  than physical seven-character frames.
+- Identified optional addressed D-unit auxiliary lines and separated their
+  BixCheck storage from the T array. Documented 2.71's non-periodic T20 event
+  path and the lack of a recovered 2.71 producer for table-only TFD-TFF.
+- Recovered BixCheck display math for control-board C/F temperature, fan/feed
+  trim percentages, exhaust count-to-RPM, exhaust phase microseconds, feed
+  ticks-to-seconds, and the vendor timer units. Kept thermocouple points and
+  physical calibration explicitly uncalibrated.
+- Reconstructed T09 from bank-0 RAM 0x4C through all cross-version state-family
+  dispatchers. Mapped 2.71's reset, cooldown, off, startup, operating/ramping,
+  ash-dump, and shutdown transition sites.
+- Recovered the exact 5.5.01 display decoder: startup is Prefill/Started/
+  Starting/Ignited, family 4 exposes Level/TSTAT, family 5 is Ramping, family 6
+  is Ash dump, and bit 7 is ignored by both BixCheck and firmware.
+- Added focused static excerpts for telemetry/conversions, writes/UI, logging/
+  reports, and flue/fuel monitoring to every BixCheck version. Documented the
+  generic write/response-refresh sequence, lean-burn pre-write conversion,
+  selected-field CSV-style logs, report naming/loading, and utility-window
+  control structure.
+- Added protocol helpers/tests for adjacent telemetry words and exact operating
+  state decoding, plus firmware/emulator assertions for C writes, telemetry
+  senders, and state dispatch anchors.
+- Recovered the cross-version T08 igniter decoder (`L R failed`, `R failed`,
+  `L failed`, `L R good`, or `Error`). Confirmed that BixCheck leaves T12 IIC
+  and T13 alarm status as raw hexadecimal and only derives T14 Flag mode as
+  `(raw & 7) + 1`; it does not contain the previously implied named decoders.

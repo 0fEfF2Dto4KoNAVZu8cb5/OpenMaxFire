@@ -1,9 +1,10 @@
 # J3 protocol working specification
 
 Status: statically reconstructed from all three BixCheck executables and all
-three application-firmware generations; every `CR00`-`CR0E` exchange and every
-`AR00`-`ARFF` read is corroborated in offline PIC emulation. Nothing has yet
-been validated on serial 5215's J3 port.
+three application-firmware generations; every `CR00`-`CR0E` exchange, every
+`AR00`-`ARFF` read, every C-write handler, and every periodic telemetry slot is
+corroborated in offline PIC emulation. Nothing has yet been validated on serial
+5215's J3 port.
 
 ## Physical interface
 
@@ -63,7 +64,6 @@ BixCheck's `scanio()` removes CR and LF and then dispatches:
 | --- | --- | --- |
 | A/C/D | `<unit><operation><address:02X><value:02X>` | Addressed one-byte result |
 | T | `T<index:02X><value:02X>` | One telemetry byte |
-| T | `T<index:02X><value0:02X><value1:02X>` | Two consecutive telemetry bytes |
 | M | `M...` | Status/control family; payload unresolved |
 | I | `I...` | Status/control family; payload unresolved |
 
@@ -75,6 +75,14 @@ hexadecimal nibbles A-F: for example, uppercase request `CR0A` returns
 `CR0a00` plus LF in the synthetic baseline. Clients must parse response hex
 case-insensitively.
 
+All preserved firmware telemetry senders emit the five-character T form only.
+Logical 16-bit fields arrive as adjacent lines—for example, T0A high then T0B
+low—and BixCheck combines them big-endian. The OpenMaxFire parser continues to
+accept the older seven-character host/capture representation for compatibility,
+but it is not a recovered physical firmware frame. Some periodic slots first
+send an addressed `DWxxyy` auxiliary/diagnostic line; D and T are stored in
+separate BixCheck arrays. See [the telemetry map](telemetry-fields.md).
+
 For an addressed response, BixCheck stores bytes 4-5 as the value at the
 address in bytes 2-3. It does not meaningfully validate byte 1; OpenMaxFire
 retains it as the operation field and applies stricter length/character checks.
@@ -84,10 +92,11 @@ while waiting for a non-telemetry result. This proves that unsolicited telemetry
 can be interleaved with request/response traffic.
 
 The experimental emulator executes the real 2.06, 2.70, and 2.71 code from
-reset. All 45 CR reads reach their expected handler and shared formatter, and
-all 768 A-unit reads return the injected internal-EEPROM fixture byte. This
-confirms the read parser/dispatch/formatter paths offline; it does not establish
-electrical compatibility.
+reset. All 45 CR reads reach their expected handler and shared formatter; all
+768 A-unit reads return the injected internal-EEPROM fixture byte; all 48 safe
+synthetic C-write probes reach their handler; and all 91 periodic slots reach
+the real telemetry sender. This confirms software paths offline; it does not
+establish electrical compatibility or make writes safe.
 
 ## Remote front-panel actions
 
@@ -101,6 +110,9 @@ All three BixCheck builds encode these writes to controller register 0x0E:
 | DOWN | `0x18` | `CW0E18` |
 
 They are software-confirmed but have not been sent to a stove.
+
+The complete `CW00`-`CW0F` dispatcher, including actuator/service registers and
+the excluded loader key, is in [controller-writes.md](controller-writes.md).
 
 ## Downloader is a different protocol
 

@@ -42,7 +42,9 @@ Across all three builds:
 - read requests are `<unit>R<address:02X>`;
 - write requests are `<unit>W<address:02X><value:02X>`;
 - outgoing hex is uppercase and requests carry no terminator;
-- addressed responses are six characters and telemetry is five or seven;
+- addressed responses are six characters; firmware telemetry is the
+  five-character one-byte form, while the host parser retains a seven-character
+  compatibility representation;
 - CR and LF terminate responses;
 - leading bytes 01-03 are stripped before dispatch;
 - the binary firmware downloader is separate from the normal ASCII protocol.
@@ -91,6 +93,11 @@ until independently validated.
 - moves `Time to ash dump` from virtual V1B to V1C;
 - adds TFD `Low temp count`, TFE `Sample maximum`, and TFF `Recent sample`.
 
+The firmware pass independently finds periodic T00-T1E and a separate T20
+event sender in 2.71. It does not find a periodic or literal TFD-TFF producer,
+so those three remain BixCheck table entries rather than claimed periodic wire
+frames.
+
 The complete row-level differences are in
 `reverse-engineering/bixcheck/comparison/data-element-changes.csv`.
 
@@ -112,3 +119,7 @@ Machine-readable evidence lives under
 ```bash
 python tools/analyze_bixcheck.py --repo-root .
 ```
+
+The recovered write, logging/report, QuickCal/debug, and flue/fuel-monitor
+flows are summarized in
+[bixcheck-runtime-workflows.md](bixcheck-runtime-workflows.md).

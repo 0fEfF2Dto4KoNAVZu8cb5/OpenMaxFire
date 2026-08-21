@@ -1,22 +1,29 @@
 # Exhaustive firmware-emulator pass
 
-Status: offline, read-only, experimental emulation. No stove or serial adapter
-is involved.
+Status: offline, experimental emulation against disposable CPU/RAM/EEPROM
+clones. No stove or serial adapter is involved, and no preserved image is
+modified.
 
 ## Scope and result
 
-`tools/pic14_emulator.py project --repo-root .` now performs all five offline
-investigations requested for the 2.06, 2.70, and 2.71 application images:
+`tools/pic14_emulator.py project --repo-root .` now performs these offline
+investigations for the 2.06, 2.70, and 2.71 application images:
 
 1. execute every `CR00` through `CR0E` request;
 2. trace every file-register and port read/write from handler entry to the
    shared response formatter;
 3. record instruction-level watchpoint changes and whole-handler RAM diffs;
-4. replay every configured GPIO input and all eight ten-bit ADC channels; and
-5. run all 256 A-unit reads against checksum-valid synthetic PIC data EEPROM.
+4. execute every `CW00` through `CW0F` handler with safe synthetic values,
+   explicitly substituting `CW0F00` for the reset/loader key;
+5. trace every periodic T slot through its producer and real UART sender;
+6. replay every configured GPIO input and all eight ten-bit ADC channels; and
+7. run all 256 A-unit reads against checksum-valid synthetic PIC data EEPROM.
 
 All 45 CR handlers reached their expected entry and response-formatter PCs
-without error. All 768 A-unit reads returned the injected byte. The fixture is
+without error. All 48 C-write probes reached their expected handler; 42
+returned through the shared silent exit and the six bounded nonreturns are the
+long `CW05`/`CW0A` actuator paths. All 91 periodic telemetry slots reached the
+real sender. All 768 A-unit reads returned the injected byte. The fixture is
 deliberately labeled `EMU00001` / `OPENMAXFIRE-LAB`; it is not data from serial
 5215 and is never written back to an image or device.
 
@@ -53,6 +60,45 @@ replacement clients should continue sending uppercase requests.
 Bank-aware tracing also corrects the CR04 source from the earlier provisional
 RAM `0x22` label to bank-1 address `0x0A2`. The complete source sets and exact
 read PCs are in `cr-handler-dependencies.csv`.
+
+## Synthetic C-write coverage
+
+The new pass reaches every `CW00`-`CW0F` dispatch entry in every generation.
+Writes run only against a cloned post-boot CPU with synthetic RAM and PIC data
+EEPROM. `CW0FC4` is never generated: the reset register is probed with value
+`00`, which exercises its non-key branch and returns normally.
+
+Forty-two of 48 probes reach the normal silent exit. `CW05` (burn-drive motor)
+and `CW0A` (igniter follow-up) in all three versions enter long timer/actuator
+paths and exceed the 50,000-instruction bound. That is expected under the
+incomplete peripheral model and is not classified as an error. `CW0D` emits
+`I` plus LF; all other completed probes are silent.
+
+The EEPROM model now implements the PIC write-enable/write-complete sequence.
+`CW01` produces exactly two program events in each version, at A00 and A01,
+after running the firmware checksum routine. The checksum-valid fixture means
+the final bytes equal the starting bytes, while the write events themselves
+remain observable.
+
+The complete register meanings, exact handler PCs, known service values, and
+safety boundary are in [controller-writes.md](../protocol/controller-writes.md).
+
+## Telemetry producer coverage
+
+The harness directly selects each periodic slot after synthetic boot, then
+allows the real firmware producer and UART sender to run. It completes 30 slots
+for 2.06, 30 for 2.70, and 31 for 2.71 with no error. This establishes the
+physical `Txxvv` one-byte lines, optional preceding `DWxxyy` auxiliary lines,
+producer dependencies, and per-version end indexes.
+
+Direct entry is intentionally not a scheduler model. Periodic cadence,
+suppression gates, and real-time sensor evolution cannot be inferred from the
+step counts. TMR0 also advances synthetically per modeled instruction, so
+those counts establish control flow only.
+
+The field/source map, big-endian adjacent-slot assembly, BixCheck conversion
+math, and exact T09 decoder are in
+[telemetry-fields.md](../protocol/telemetry-fields.md).
 
 ## Signal map recovered offline
 
@@ -132,6 +178,13 @@ All files below are under `reverse-engineering/firmware/emulation/deep/`:
 | `cr-handler-dependencies.csv` | Unique read dependencies, values, and exact PCs |
 | `cr-handler-watchpoints.csv` | Every instrumented value change with before/after bits |
 | `cr-handler-net-changes.csv` | Complete RAM/SFR entry-versus-exit differences |
+| `cw-write-matrix.csv` | All 48 synthetic C writes, reachability, serial output, and event counts |
+| `cw-handler-access-summary.csv` | Per-write unique file-register reads/writes and PCs |
+| `cw-handler-change-summary.csv` | Per-write watchpoint changes grouped by address |
+| `cw-handler-net-changes.csv` | Complete C-write RAM/SFR entry-versus-exit differences |
+| `cw-eeprom-events.csv` | The six A00/A01 checksum-program events produced by CW01 |
+| `telemetry-slot-matrix.csv` | All 91 forced slots, exact T/D lines, scratch writes, and reachability |
+| `telemetry-producer-access-summary.csv` | Per-slot producer dependency sets and exact PCs |
 | `gpio-input-matrix.csv` | TRIS-derived input/output direction for every port bit |
 | `gpio-scenarios.csv`, `gpio-effects.csv` | Per-input replay and only the changed CR results |
 | `adc-scenarios.csv`, `adc-effects.csv` | Per-channel/value reset replay and changed pot results |
@@ -144,9 +197,17 @@ All files below are under `reverse-engineering/firmware/emulation/deep/`:
 
 - Synthetic logic levels do not model voltage, polarity, pull-ups, switch
   bounce, isolation, or a real cable.
-- The emulator executes no `CW` or `AW` request in this pass.
+- C writes alter only disposable synthetic state. No A-unit write is executed,
+  and the keyed `CW0FC4` reset/loader request is explicitly excluded.
+- The modeled completion of a write handler is not physical acknowledgement,
+  actuator validation, persistence verification, or evidence that a request is
+  safe to send live.
+- `CW05` and `CW0A` do not return within the bounded timer/peripheral model;
+  their six records are expected modeled nonreturns, not firmware failures.
+- Telemetry slots are forced directly through real producer/sender code;
+  scheduler cadence and gating remain unmodeled.
 - Firmware control flow can identify a PIC pin and protocol bit, but only a
   cold/off physical correlation can validate the `9067-0604` board wiring on
   serial 5215. The diagram used for signal names depicts `9067-0404`.
-- This work does not make ignition, actuator, downloader, or write commands
-  safe.
+- This work does not make ignition, actuator, downloader, configuration, or
+  ordinary control writes safe.

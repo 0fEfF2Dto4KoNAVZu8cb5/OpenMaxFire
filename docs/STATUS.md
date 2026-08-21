@@ -1,6 +1,6 @@
 # Research status
 
-Snapshot date: 2026-08-20
+Snapshot date: 2026-08-21
 
 OpenMaxFire separates evidence into four levels:
 
@@ -22,14 +22,18 @@ OpenMaxFire separates evidence into four levels:
 | Firmware | Four images target PIC16F877A and validate as Intel HEX | Deterministic firmware pipeline |
 | Firmware identity | CR0B/CR0C constants encode 2.06, 2.70, and 2.71 | Cross-version disassembly |
 | Requests | Reads are exactly 4 bytes, writes 6, uppercase, with no terminator | `regio()` in every EXE |
-| Responses | Addressed replies are six characters; telemetry is five/seven; CR/LF terminates | BixCheck receiver and firmware TX paths |
+| Responses | Addressed replies are six characters; physical firmware telemetry is one-byte `Txxvv`; CR/LF terminates | BixCheck receiver plus all firmware TX paths |
 | UART generation | SPBRG changes `0x40`→`0x20`; exact intended PC rates imply a 10 MHz oscillator | Firmware plus BixCheck DCB setup |
 | Remote buttons | OFF=`CW0E11`, ON=`CW0E12`, UP=`CW0E14`, DOWN=`CW0E18` | All BixCheck tables/action paths |
-| Telemetry | T00-T1C mapped; 5.5.01 adds T1E/TFD-TFF and moves virtual ash time to V1C | Decoded tables / `scanio()` |
+| Telemetry | All 91 periodic producer slots mapped/executed; logical 16-bit fields use adjacent big-endian T slots; 2.71 adds periodic T1E and event T20 | Decoded tables, firmware producers, emulator sender traces |
+| Telemetry conversions | T00 C/F, pot trim, RPM, phase µs, 1/120-second feed values, timer units, and exact T09 display rules recovered | BixCheck update assembly and vendor manual |
+| Operating state | T09 is RAM 0x4C; reset/cooldown/off/startup/operating/ramping/ash-dump handlers and structural transitions mapped in all generations | Firmware dispatcher/transition sites plus BixCheck display decoder |
+| C writes | All CW00-CW0F handlers mapped in every generation; synthetic sweep reaches 48/48 handlers and 42 normal exits; CW05/CW0A are bounded model nonreturns | Firmware dispatch plus disposable-clone emulation |
+| BixCheck workflows | Generic write lifecycle, logging schema/names, configuration reports, QuickCal/debug/flue/fuel UI construction recovered | Retained symbols, call graph, focused assembly |
 | Configuration | Record layout, A-unit ranges, lean-burn transforms, and checksum decoded | All BixCheck EXEs |
 | Checkout | 45 reachable tests; identical dormant 46th plate-motor record | Tables plus UI/dispatcher flow |
 | Downloader | `CW0FC4` reset; `EA`/`EB` identify; `E3` blocks; `ED` completion | All EXEs / emulator identify probe |
-| Emulator | All 45 CR reads and all 768 A-unit EEPROM reads complete through real 2.06/2.70/2.71 code; PICkit code emits `EB` for `EA` | Experimental PIC14 harness |
+| Emulator | 45 CR reads, 48 safe C writes, 91 periodic telemetry slots, and 768 A-unit EEPROM reads execute expected bounded paths through real 2.06/2.70/2.71 code; PICkit emits `EB` for `EA` | Experimental PIC14 harness |
 | Offline inputs | Door=CR02.5/RD1; drawer=CR02.6/RD4; thermostat=CR06.2/RB4; fan pot=CR09/AN3; feed pot=CR0A/AN4 | BixCheck masks plus firmware GPIO/ADC traces |
 | J10 exhaust sensor | RA4/T0CKI falling-edge count is sampled into RAM 0x34 and returned as CR05 | Identical 2.06/2.70/2.71 producer signatures plus BixCheck exhaust predicates and board diagram |
 | J9 feeder sensor | RD0 high-then-low wheel cycle is timed while RB1 is active; CR02.4 is current state and CR07 is the scaled interval | Identical 2.06/2.70/2.71 producer signatures plus BixCheck feed predicate and board diagram |
@@ -45,11 +49,12 @@ OpenMaxFire separates evidence into four levels:
 | J3 pinout/levels | Unknown; do not assume TTL or RS-232 | Continuity and protected voltage/polarity measurements |
 | Oscillator | 10 MHz is strongly inferred, not physically checked | Read marking/frequency |
 | Live framing | Software/emulator grammar is established; no electrical capture | Passive capture, then `CR00` only |
-| M/I families | Outer dispatch known; payload semantics unresolved | Deeper data-flow analysis or controlled capture |
+| M/I families | Outer dispatch known; CW0D emits `I` plus LF, but general payload semantics remain unresolved | Deeper data-flow analysis or controlled capture |
 | Board revision | Diagram depicts 9067-0404; serial 5215 board is owner-reported as 9067-0604 | Clear photos of both board sides, especially J3 and silkscreen |
 | Input wiring | Offline assignments are strong; serial 5215 wiring and physical polarity remain untested; CR02.1 and CR02.7 are unnamed | Cold/off polling while toggling one switch; observe J9 only without energizing its motor |
-| Telemetry conversions | Indexes/widths mapped; several numeric formulas unresolved | Trace display conversions, then correlate safely |
-| EEPROM semantics | Internal storage, addresses/types/checksum, and read path mapped; many calibration meanings rely on labels | Read-only live backup, then field correlation |
+| Telemetry conversions | Core formulas and T08/T09 display decoders are mapped; BixCheck itself leaves T12/T13 raw and only derives T14's mode number | Safe live correlation plus firmware bitfield tracing |
+| Table-only telemetry | BixCheck 5.5.01 names TFD-TFF, but no producer is recovered in periodic 2.71 firmware; T20 is a separate event path | Passive capture or newly identified conditional producer |
+| EEPROM semantics | Internal storage, addresses/types/checksum, read path, and CW01 checksum writes mapped; many calibration meanings rely on labels | Read-only live backup, then field correlation |
 | Checkout thresholds | Buttons, pots, doors, thermostat, exhaust CR05, feeder CR07, and igniter result bits are mapped; several engineering units/state meanings remain unresolved | Trace remaining manual/no-op cases and conversions |
 | Downloader | Framing/identify mapped; erase/program acknowledgements and recovery unproven | Isolated emulation, then sacrificial bench controller only |
 

@@ -15,16 +15,22 @@ Confirmed by static evidence:
 - All four preserved firmware images target a PIC16F877A and pass Intel HEX checksum validation.
 - The controller recognizes ASCII register commands `CRXX` and `CWXXYY`.
 - Requests are fixed at four/six bytes and have no terminator.
-- Addressed responses are six ASCII characters; telemetry frames carry one or
-  two bytes; BixCheck accepts CR or LF termination.
+- Addressed responses are six ASCII characters. Firmware telemetry lines are
+  `Txxvv` one-byte frames; logical 16-bit fields use adjacent high/low slots.
+  BixCheck accepts CR or LF termination.
 - BixCheck maps remote OFF/ON/UP/DOWN to `CW0E11`, `CW0E12`, `CW0E14`, and `CW0E18`.
 - CR0B/CR0C expose firmware `2.06`, `2.70`, or `2.71` as constant bytes.
 - BixCheck 5.0.21 selects 9,600 baud; 5.5.x selects 9,600/19,200, all at 8N1.
 - The configuration/telemetry/Checkout tables, lean-burn transforms, and
   configuration checksum are now machine-readable.
 - The experimental emulator runs the actual firmware: all 45 `CR00`-`CR0E`
-  handlers and all 768 `AR00`-`ARFF` internal-EEPROM reads complete, while the
-  PICkit loader answers `EA` with `EB`.
+  handlers, all 48 safe synthetic `CW00`-`CW0F` handler probes, all 91 periodic
+  telemetry slots, and all 768 `AR00`-`ARFF` internal-EEPROM reads complete
+  their expected bounded paths, while the PICkit loader answers `EA` with
+  `EB`. The keyed `CW0FC4` loader reset is excluded.
+- T09 is RAM `0x4C`; its six operating families, startup substates, thermostat
+  flag, heat levels, and cross-version handler dispatch are reconstructed.
+  Both firmware and BixCheck ignore state bit 7.
 - BixCheck masks plus firmware GPIO/ADC traces map door to CR02.5/RD1, ash
   drawer to CR02.6/RD4, thermostat to CR06.2/RB4, fan pot to CR09/AN3, and feed
   pot to CR0A/AN4. These are offline mappings, not live wiring validation.
@@ -103,7 +109,11 @@ python tools/pic14_emulator.py project --repo-root .
 
 Start with [the research status](docs/STATUS.md),
 [the BixCheck comparison](docs/reverse-engineering/bixcheck-comparison.md),
+[the BixCheck runtime workflows](docs/reverse-engineering/bixcheck-runtime-workflows.md),
 [the J3 protocol](docs/protocol/j3-protocol.md),
+[the controller-write map](docs/protocol/controller-writes.md),
+[the telemetry map](docs/protocol/telemetry-fields.md),
+[the operating-state machine](docs/reverse-engineering/operating-state-machine.md),
 [the firmware comparison](docs/reverse-engineering/firmware-comparison.md),
 [the exhaustive emulator pass](docs/reverse-engineering/emulator-deep-pass.md), and
 [the preservation manifest](preservation/MANIFEST.md).

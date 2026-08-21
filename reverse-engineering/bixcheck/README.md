@@ -22,7 +22,12 @@ member against its expected SHA-256 before analysis.
 - `combustion-adjustments.csv`: byte-exact adjustment arrays;
 - `selected-strings.csv`: evidence-relevant ASCII strings with file offsets;
 - `protocol-core.asm`, `checkout-core.asm`, `downloader-core.asm`: focused exact
-  GNU objdump excerpts.
+  GNU objdump excerpts for framing, factory tests, and firmware servicing;
+- `telemetry-core.asm`: receive/update, state decode, and display conversions;
+- `write-ui-core.asm`: generic register writes, initialization, tuning,
+  QuickCal, and debug construction;
+- `logging-core.asm`: data-log assembly plus report generation/loading;
+- `monitor-core.asm`: blocked-flue and fuel-monitor window construction.
 
 Full multi-megabyte disassemblies are intentionally not checked in because the
 focused excerpts and reproducible script preserve the useful evidence with less

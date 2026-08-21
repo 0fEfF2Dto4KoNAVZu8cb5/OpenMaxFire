@@ -1,0 +1,25 @@
+version,image,state_ram,dispatch_pc,family,firmware_working_meaning,handler_pc,encoding_note
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x00,initial/reset,0x18F5,high-nibble family; low bits retain substate/level flags
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x10,cooldown,0x192B,high-nibble family; low bits retain substate/level flags
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x20,off,0x1976,high-nibble family; low bits retain substate/level flags
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x30,startup,0x19E8,high-nibble family; low bits retain substate/level flags
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x40,operating,0x1BBA,high-nibble family; low bits retain substate/level flags
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x50,ramping,0x1BBA,high-nibble family; low bits retain substate/level flags
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x60,ash dump,0x1CE0,high-nibble family; low bits retain substate/level flags
+2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x70,fallback/undefined,0x1E25,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x00,initial/reset,0x18EE,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x10,cooldown,0x192B,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x20,off,0x1982,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x30,startup,0x1A02,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x40,operating,0x1BDB,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x50,ramping,0x1BDB,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x60,ash dump,0x1D19,high-nibble family; low bits retain substate/level flags
+2.70,Bixby_0270_070206.hex,0x04C,0x18D4,0x70,fallback/undefined,0x1E3D,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x00,initial/reset,0x1913,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x10,cooldown,0x1950,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x20,off,0x19A7,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x30,startup,0x1A27,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x40,operating,0x1C00,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x50,ramping,0x1C00,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x60,ash dump,0x1D3E,high-nibble family; low bits retain substate/level flags
+2.71,Bixby_0271_080315.hex,0x04C,0x18F9,0x70,fallback/undefined,0x1E5D,high-nibble family; low bits retain substate/level flags

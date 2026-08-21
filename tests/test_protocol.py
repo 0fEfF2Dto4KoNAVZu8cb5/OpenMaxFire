@@ -7,7 +7,10 @@ from openmaxfire.protocol import (
     ResponseLineParser,
     StatusResponse,
     TelemetryResponse,
+    combine_telemetry_word,
     calculate_configuration_checksum,
+    decode_igniter_state,
+    decode_operating_state,
     decode_register_request,
     encode_read_register,
     encode_remote_button,
@@ -84,6 +87,49 @@ class ProtocolResponseTests(unittest.TestCase):
         for invalid in (b"CR00", b"CR000000", b"T00", b"T00000000", b"X00"):
             with self.subTest(invalid=invalid), self.assertRaises(ProtocolError):
                 parse_response_line(invalid)
+
+    def test_firmware_telemetry_words_are_big_endian_adjacent_slots(self):
+        self.assertEqual(combine_telemetry_word(0x12, 0x34), 0x1234)
+        with self.assertRaises(ValueError):
+            combine_telemetry_word(0x100, 0)
+
+    def test_bixcheck_t09_state_labels(self):
+        expected = {
+            0x10: ("Cooldown", None, False),
+            0x20: ("Off", None, False),
+            0x30: ("Prefill", None, False),
+            0x31: ("Started", None, False),
+            0x32: ("Starting", None, False),
+            0x33: ("Ignited", None, False),
+            0x37: ("Error", None, False),
+            0x40: ("Level 1", 1, False),
+            0x4B: ("TSTAT L 4", 4, True),
+            0x56: ("Ramping", 7, False),
+            0x60: ("Ash dump", None, False),
+            0x70: ("Undefined: 70", None, False),
+            0xC3: ("Level 4", 4, False),
+        }
+        for raw, values in expected.items():
+            with self.subTest(raw=raw):
+                state = decode_operating_state(raw)
+                self.assertEqual(
+                    (state.label, state.level, state.thermostat), values
+                )
+
+    def test_bixcheck_t08_igniter_labels_ignore_high_bits(self):
+        expected = {
+            0x00: "L R failed",
+            0x01: "R failed",
+            0x02: "L failed",
+            0x03: "Error",
+            0x06: "Error",
+            0x07: "L R good",
+            0x87: "L R good",
+        }
+        for raw, label in expected.items():
+            with self.subTest(raw=raw):
+                state = decode_igniter_state(raw)
+                self.assertEqual((state.code, state.label), (raw & 0x07, label))
 
 
 class BixCheckMathTests(unittest.TestCase):

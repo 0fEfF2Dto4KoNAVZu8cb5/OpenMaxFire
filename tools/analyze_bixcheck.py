@@ -155,6 +155,44 @@ DOWNLOADER_FUNCTIONS = (
 )
 
 
+TELEMETRY_FUNCTIONS = (
+    "bixby110io::scanio(unsigned char*)",
+    "bixby110control::Bixby110UpdateData(char, unsigned char)",
+    "bixby110control::Bixby110DialogSetupTelemetry(int, int, int, int)",
+)
+
+
+WRITE_UI_FUNCTIONS = (
+    "bixby110control::BixbyWriteRegister(unsigned char, unsigned char, unsigned char, unsigned char)",
+    "bixby110control::BixbyWriteRegister(unsigned char, unsigned char, unsigned char)",
+    "bixby110control::Bixby110TuneAdjustments(unsigned char)",
+    "bixby110control::Bixby110Initialize(unsigned char, unsigned char)",
+    "bixby110control::Bixby110DialogSetupIndividualization(int, int, int, int)",
+    "bixby110control::Bixby110DialogSetupQuickCal(int, int, int, int)",
+    "bixby110control::Bixby110DialogSetupDebug(int, int, int, int)",
+)
+
+
+LOGGING_FUNCTIONS = (
+    "bixby110control::AppendDataLogLine(char*, unsigned char)",
+    "bixby110control::AppendDataLogLine(char*)",
+    "bixby110control::WriteDataLogTimeDate()",
+    "bixby110control::DataLogLineAssemblePayload()",
+    "bixby110control::WriteDataLogLine()",
+    "bixby110control::WriteDataLogDescription()",
+    "bixby110control::GenerateReport(char*)",
+    "bixby110control::LoadReport(char*)",
+)
+
+
+MONITOR_FUNCTIONS = (
+    "bixby110control::Bixby110DialogSetupFlueMonitor(int, int, int, int)",
+    "bixby110control::Bixby110DialogSetupFuelMonitor(HWND__*, int, int, int, int, int)",
+    "bixby110control::Bixby110DialogSetupUtilityWindows()",
+    "bixby110control::Bixby110DialogSetupUtilityWindowButtons(int, int, int, int)",
+)
+
+
 SELECTED_STRING_TERMS = (
     "bixcheck",
     "downloader",
@@ -850,6 +888,39 @@ def analyze_one(executable: Path, spec: VersionSpec, output_root: Path) -> dict[
         find_functions(functions, DOWNLOADER_FUNCTIONS),
         instructions,
     )
+    focused_groups = (
+        (
+            "telemetry-core.asm",
+            "Telemetry receive, decode, conversion, and UI update core",
+            TELEMETRY_FUNCTIONS,
+        ),
+        (
+            "write-ui-core.asm",
+            "Configuration writes, initialization, QuickCal, and debug UI core",
+            WRITE_UI_FUNCTIONS,
+        ),
+        (
+            "logging-core.asm",
+            "Data logging and report workflow core",
+            LOGGING_FUNCTIONS,
+        ),
+        (
+            "monitor-core.asm",
+            "Flue, fuel, and utility monitor UI core",
+            MONITOR_FUNCTIONS,
+        ),
+    )
+    focused_counts: dict[str, int] = {}
+    for filename, title, names in focused_groups:
+        selected = find_functions(functions, names)
+        write_assembly_excerpt(
+            destination / filename,
+            title,
+            spec.version,
+            selected,
+            instructions,
+        )
+        focused_counts[filename] = len(selected)
 
     source_files = sorted({item.source for item in functions})
     summary = {
@@ -871,6 +942,7 @@ def analyze_one(executable: Path, spec: VersionSpec, output_root: Path) -> dict[
             "combustion_adjustment_bytes": len(combustion),
             "selected_strings": len(strings),
             "call_edges": len(calls),
+            "focused_assembly_functions": focused_counts,
         },
         "serial": {
             "baudrates_selected_by_pc_software": list(spec.supported_baudrates),

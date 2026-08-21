@@ -7,9 +7,11 @@ set of PIC16F877A peripheral behaviors needed to explore startup, EEPROM reads,
 and UART receive/transmit paths.  Analog, timer, watchdog, and external-I/O
 behavior is deliberately synthetic.
 
-The project command performs read-only probes against copies of the preserved
+The project command probes disposable in-memory copies of the preserved
 firmware images and writes evidence under reverse-engineering/firmware/emulation.
-It never connects to a stove and never modifies the source HEX files.
+Its write experiments modify only cloned RAM and synthetic EEPROM.  It never
+connects to a stove, never modifies a source HEX file, and excludes the
+``CW0FC4`` reset/loader value.
 """
 
 from __future__ import annotations
@@ -26,16 +28,24 @@ from typing import Callable, Iterable, Mapping
 
 try:
     from firmware_pipeline import (
+        CW_EXIT_PC,
+        CW_HANDLER_MATRIX,
+        CW_SEMANTICS,
         CR_HANDLER_MATRIX,
         IHexImage,
+        TELEMETRY_PATHS,
         decode_pic14,
         parse_ihex,
         region_for_word,
     )
 except ModuleNotFoundError:
     from tools.firmware_pipeline import (  # type: ignore[no-redef]
+        CW_EXIT_PC,
+        CW_HANDLER_MATRIX,
+        CW_SEMANTICS,
         CR_HANDLER_MATRIX,
         IHexImage,
+        TELEMETRY_PATHS,
         decode_pic14,
         parse_ihex,
         region_for_word,
@@ -458,6 +468,36 @@ class PIC16F877A:
                         f"EEPROM[0x{ee_address:02X}]",
                     )
                 )
+            if value & 0x02:
+                ee_address = self.ram[SFR_EEADR]
+                if value & 0x04:  # WREN
+                    before = self.eeprom.get(ee_address, 0xFF)
+                    ee_value = self.ram[SFR_EEDATA]
+                    self.eeprom[ee_address] = ee_value
+                    self.ram[SFR_PIR2] |= 1 << 4  # EEIF
+                    self.events.append(
+                        TraceEvent(
+                            self.steps,
+                            "eeprom_write",
+                            self.pc,
+                            ee_value,
+                            f"EEPROM[0x{ee_address:02X}] 0x{before:02X}->0x{ee_value:02X}",
+                        )
+                    )
+                else:
+                    self.events.append(
+                        TraceEvent(
+                            self.steps,
+                            "eeprom_write_rejected",
+                            self.pc,
+                            self.ram[SFR_EEDATA],
+                            "WR requested while WREN was clear",
+                        )
+                    )
+                # The physical part clears WR when the programming cycle
+                # completes.  Complete it immediately in this deterministic
+                # offline model so the firmware's WR polling loop can return.
+                self.ram[address] &= ~0x02
             return
         if address == SFR_ADCON0:
             self.ram[address] = value
@@ -848,6 +888,35 @@ class RequestExecution:
     events: list[TraceEvent]
 
 
+@dataclass(slots=True)
+class SilentWriteExecution:
+    start_step: int
+    request: bytes
+    response: bytes
+    steps: int
+    error: str | None
+    handler_seen: bool
+    exit_seen: bool
+    accesses: list[MemoryAccess]
+    changes: list[MemoryChange]
+    net_changes: list[tuple[int, int, int]]
+    eeprom_changes: list[tuple[int, int, int]]
+    events: list[TraceEvent]
+
+
+@dataclass(slots=True)
+class TelemetrySlotExecution:
+    version: str
+    index: int
+    response: bytes
+    steps: int
+    error: str | None
+    sender_seen: bool
+    accesses: list[MemoryAccess]
+    changes: list[MemoryChange]
+    events: list[TraceEvent]
+
+
 def calculate_fixture_checksum(data_format: int, data: bytes | bytearray) -> int:
     """Implement the BixCheck add-then-ROL16 configuration checksum."""
 
@@ -978,6 +1047,152 @@ def execute_request(
         accesses=accesses,
         changes=changes,
         net_changes=net_changes,
+        events=list(cpu.events[events_before:]),
+    )
+
+
+def execute_silent_write(
+    cpu: PIC16F877A,
+    request: bytes,
+    *,
+    step_limit: int,
+    handler_pc: int,
+    exit_pc: int,
+) -> SilentWriteExecution:
+    """Execute one six-byte C write through its real silent handler.
+
+    C-unit writes normally emit no response, so waiting for LF incorrectly
+    classifies successful writes as timeouts.  This bounded offline helper
+    starts tracing at the statically verified handler entry and treats the
+    common parser exit as completion.  A response such as the CW0D ``I\n`` is
+    captured but is not required.
+    """
+
+    if len(request) != 6 or request[:2] != b"CW":
+        raise ValueError("silent C write must have the form CWxxyy")
+    start_step = cpu.steps
+    tx_before = len(cpu.tx_bytes)
+    events_before = len(cpu.events)
+    handler_seen = False
+    exit_seen = False
+    tracing = False
+    ram_before: bytes | None = None
+    eeprom_before = dict(cpu.eeprom)
+    accesses: list[MemoryAccess] = []
+    changes: list[MemoryChange] = []
+    net_changes: list[tuple[int, int, int]] = []
+    error: str | None = None
+    if cpu.memory_trace_enabled:
+        cpu.end_memory_trace()
+    cpu.queue_uart(request)
+    try:
+        for _ in range(step_limit):
+            if not handler_seen and cpu.pc == handler_pc:
+                handler_seen = True
+                ram_before = bytes(cpu.ram)
+                cpu.begin_memory_trace()
+                tracing = True
+            if handler_seen and cpu.pc == exit_pc:
+                exit_seen = True
+                break
+            cpu.step()
+        if not handler_seen:
+            error = f"handler 0x{handler_pc:04X} not reached within {step_limit} instructions"
+        elif not exit_seen:
+            error = f"handler did not reach silent exit 0x{exit_pc:04X} within {step_limit} instructions"
+    except EmulationError as exc:
+        error = str(exc)
+    finally:
+        if tracing:
+            accesses, changes = cpu.end_memory_trace()
+        if ram_before is not None:
+            net_changes = [
+                (address, before, after)
+                for address, (before, after) in enumerate(
+                    zip(ram_before, bytes(cpu.ram), strict=True)
+                )
+                if before != after
+            ]
+    eeprom_changes = [
+        (address, eeprom_before.get(address, 0xFF), cpu.eeprom.get(address, 0xFF))
+        for address in sorted(set(eeprom_before) | set(cpu.eeprom))
+        if eeprom_before.get(address, 0xFF) != cpu.eeprom.get(address, 0xFF)
+    ]
+    return SilentWriteExecution(
+        start_step=start_step,
+        request=request,
+        response=bytes(cpu.tx_bytes[tx_before:]),
+        steps=cpu.steps - start_step,
+        error=error,
+        handler_seen=handler_seen,
+        exit_seen=exit_seen,
+        accesses=accesses,
+        changes=changes,
+        net_changes=net_changes,
+        eeprom_changes=eeprom_changes,
+        events=list(cpu.events[events_before:]),
+    )
+
+
+def execute_telemetry_slot(
+    cpu: PIC16F877A,
+    version: str,
+    index: int,
+    *,
+    step_limit: int = 20_000,
+) -> TelemetrySlotExecution:
+    """Force one periodic telemetry producer slot in an isolated CPU clone.
+
+    This is a synthetic entry-point experiment, not a cadence model.  It
+    preserves the booted RAM/EEPROM fixture, sets only the periodic slot index,
+    and enters the statically identified producer block with the bank/page
+    state used by the real main-loop jump.
+    """
+
+    try:
+        path = TELEMETRY_PATHS[version]
+    except KeyError as exc:
+        raise ValueError(f"unknown firmware version {version!r}") from exc
+    if not 0 <= index <= path["last_index"]:
+        raise ValueError(
+            f"{version} periodic telemetry index must be 0x00..0x{path['last_index']:02X}"
+        )
+    cpu.pc = path["block_entry"]
+    cpu.stack.clear()
+    cpu.sleeping = False
+    cpu.ram[SFR_PCLATH] = 0x08
+    cpu.status &= ~((1 << STATUS_RP0) | (1 << STATUS_RP1))
+    cpu.ram[path["index_ram"]] = index
+    start_step = cpu.steps
+    tx_before = len(cpu.tx_bytes)
+    events_before = len(cpu.events)
+    cpu.begin_memory_trace()
+    sender_seen = False
+    error: str | None = None
+    try:
+        for executed in range(1, step_limit + 1):
+            if cpu.pc == path["t_sender"]:
+                sender_seen = True
+            cpu.step()
+            emitted = bytes(cpu.tx_bytes[tx_before:])
+            if any(line.startswith(b"T") for line in emitted.split(b"\n")[:-1]):
+                break
+        else:
+            executed = step_limit
+            error = f"no complete T frame within {step_limit} instructions"
+    except EmulationError as exc:
+        executed = cpu.steps - start_step
+        error = str(exc)
+    accesses, changes = cpu.end_memory_trace()
+    return TelemetrySlotExecution(
+        version=version,
+        index=index,
+        response=bytes(cpu.tx_bytes[tx_before:]),
+        steps=executed,
+        error=error,
+        sender_seen=sender_seen,
+        accesses=accesses,
+        changes=changes,
         events=list(cpu.events[events_before:]),
     )
 
@@ -1144,7 +1359,7 @@ def run_deep_project(
     boot_steps: int,
     probe_steps: int,
 ) -> dict[str, object]:
-    """Run exhaustive offline read probes and write machine-readable evidence."""
+    """Run exhaustive offline probes and write machine-readable evidence."""
 
     firmware_root = repo_root / "reverse-engineering" / "firmware"
     destination = firmware_root / "emulation" / "deep"
@@ -1373,6 +1588,349 @@ def run_deep_project(
             "changed_bits", "volatile",
         ),
         net_change_rows,
+    )
+
+    # Exercise every C-unit write dispatcher on an independent clone.  Values
+    # mirror harmless service-software examples where those are known.  CW0F
+    # deliberately uses 0x00: the 0xC4 reset/loader key is never queued here.
+    write_values = {
+        0x00: 0x00,
+        0x01: 0x00,
+        0x02: 0x00,
+        0x03: 0x00,
+        0x04: 0xA5,
+        0x05: 0x00,
+        0x06: 0x00,
+        0x07: 0x00,
+        0x08: 0x32,
+        0x09: 0x40,
+        0x0A: 0x00,
+        0x0B: 0x20,
+        0x0C: 0x00,
+        0x0D: 0x00,
+        0x0E: 0x14,
+        0x0F: 0x00,
+    }
+    write_step_limit = max(20_000, min(probe_steps, 50_000))
+    cw_rows: list[dict[str, object]] = []
+    cw_net_rows: list[dict[str, object]] = []
+    cw_eeprom_rows: list[dict[str, object]] = []
+    cw_accesses: dict[tuple[object, ...], dict[str, object]] = defaultdict(
+        lambda: {"count": 0, "values": set(), "pcs": set()}
+    )
+    cw_changes: dict[tuple[object, ...], dict[str, object]] = defaultdict(
+        lambda: {"count": 0, "before": set(), "after": set(), "pcs": set()}
+    )
+    for version, _relative, _data_format in APPLICATION_SPECS:
+        for register, handler_pc in enumerate(CW_HANDLER_MATRIX[version]):
+            value = write_values[register]
+            request = f"CW{register:02X}{value:02X}".encode("ascii")
+            result = execute_silent_write(
+                booted[version].clone(),
+                request,
+                step_limit=write_step_limit,
+                handler_pc=handler_pc,
+                exit_pc=CW_EXIT_PC[version],
+            )
+            modeled_nonreturn = register in (0x05, 0x0A)
+            semantic, description, evidence = CW_SEMANTICS[register]
+            eeprom_events = [
+                item for item in result.events if item.kind == "eeprom_write"
+            ]
+            cw_rows.append(
+                {
+                    "version": version,
+                    "image": images[version],
+                    "request": request.decode("ascii"),
+                    "register": f"0x{register:02X}",
+                    "value": f"0x{value:02X}",
+                    "semantic": semantic,
+                    "description": description,
+                    "evidence": evidence,
+                    "handler_pc": f"0x{handler_pc:04X}",
+                    "exit_pc": f"0x{CW_EXIT_PC[version]:04X}",
+                    "expected_model_status": (
+                        "long actuator path may not return"
+                        if modeled_nonreturn
+                        else "normal silent exit"
+                    ),
+                    "response": ascii_preview(result.response),
+                    "response_hex": result.response.hex(" ").upper(),
+                    "handler_seen": "yes" if result.handler_seen else "no",
+                    "exit_seen": "yes" if result.exit_seen else "no",
+                    "steps": result.steps,
+                    "reads": sum(item.action == "read" for item in result.accesses),
+                    "writes": sum(item.action == "write" for item in result.accesses),
+                    "watchpoint_changes": len(result.changes),
+                    "net_changes": len(result.net_changes),
+                    "eeprom_write_events": len(eeprom_events),
+                    "eeprom_net_changes": len(result.eeprom_changes),
+                    "error": result.error or "",
+                }
+            )
+            for item in result.accesses:
+                key = (
+                    version,
+                    request.decode("ascii"),
+                    item.action,
+                    item.address,
+                    item.name,
+                    item.via,
+                )
+                detail = cw_accesses[key]
+                detail["count"] = int(detail["count"]) + 1
+                detail["values"].add(item.value)  # type: ignore[union-attr]
+                detail["pcs"].add(item.pc)  # type: ignore[union-attr]
+            for item in result.changes:
+                key = (
+                    version,
+                    request.decode("ascii"),
+                    item.address,
+                    item.name,
+                    item.via,
+                )
+                detail = cw_changes[key]
+                detail["count"] = int(detail["count"]) + 1
+                detail["before"].add(item.before)  # type: ignore[union-attr]
+                detail["after"].add(item.after)  # type: ignore[union-attr]
+                detail["pcs"].add(item.pc)  # type: ignore[union-attr]
+            for address, before, after in result.net_changes:
+                cw_net_rows.append(
+                    {
+                        "version": version,
+                        "request": request.decode("ascii"),
+                        "address": f"0x{address:03X}",
+                        "name": memory_name(address),
+                        "before": f"0x{before:02X}",
+                        "after": f"0x{after:02X}",
+                        "changed_bits": changed_bits(before, after),
+                        "volatile": "yes" if address in VOLATILE_SFRS else "no",
+                    }
+                )
+            for item in eeprom_events:
+                cw_eeprom_rows.append(
+                    {
+                        "version": version,
+                        "request": request.decode("ascii"),
+                        "command_step": item.step - result.start_step,
+                        "pc": f"0x{item.pc:04X}",
+                        "kind": item.kind,
+                        "value": "" if item.value is None else f"0x{item.value:02X}",
+                        "detail": item.detail,
+                    }
+                )
+
+    cw_access_rows: list[dict[str, object]] = []
+    for (version, request, action, address, name, via), detail in sorted(
+        cw_accesses.items(),
+        key=lambda item: (
+            str(item[0][0]), str(item[0][1]), str(item[0][2]),
+            -1 if item[0][3] is None else int(item[0][3]), str(item[0][5]),
+        ),
+    ):
+        cw_access_rows.append(
+            {
+                "version": version,
+                "request": request,
+                "action": action,
+                "address": "" if address is None else f"0x{address:03X}",
+                "name": name,
+                "via": via,
+                "count": detail["count"],
+                "values": " ".join(
+                    f"0x{value:02X}" for value in sorted(detail["values"])  # type: ignore[arg-type]
+                ),
+                "pcs": " ".join(
+                    f"0x{pc:04X}" for pc in sorted(detail["pcs"])  # type: ignore[arg-type]
+                ),
+            }
+        )
+    cw_change_rows: list[dict[str, object]] = []
+    for (version, request, address, name, via), detail in sorted(
+        cw_changes.items(),
+        key=lambda item: (
+            str(item[0][0]), str(item[0][1]),
+            -1 if item[0][2] is None else int(item[0][2]), str(item[0][4]),
+        ),
+    ):
+        cw_change_rows.append(
+            {
+                "version": version,
+                "request": request,
+                "address": "" if address is None else f"0x{address:03X}",
+                "name": name,
+                "via": via,
+                "count": detail["count"],
+                "before_values": " ".join(
+                    f"0x{value:02X}" for value in sorted(detail["before"])  # type: ignore[arg-type]
+                ),
+                "after_values": " ".join(
+                    f"0x{value:02X}" for value in sorted(detail["after"])  # type: ignore[arg-type]
+                ),
+                "pcs": " ".join(
+                    f"0x{pc:04X}" for pc in sorted(detail["pcs"])  # type: ignore[arg-type]
+                ),
+            }
+        )
+    write_csv_rows(
+        destination / "cw-write-matrix.csv",
+        (
+            "version", "image", "request", "register", "value", "semantic",
+            "description", "evidence", "handler_pc", "exit_pc",
+            "expected_model_status", "response", "response_hex", "handler_seen",
+            "exit_seen", "steps", "reads", "writes", "watchpoint_changes",
+            "net_changes", "eeprom_write_events", "eeprom_net_changes", "error",
+        ),
+        cw_rows,
+    )
+    write_csv_rows(
+        destination / "cw-handler-access-summary.csv",
+        ("version", "request", "action", "address", "name", "via", "count", "values", "pcs"),
+        cw_access_rows,
+    )
+    write_csv_rows(
+        destination / "cw-handler-change-summary.csv",
+        (
+            "version", "request", "address", "name", "via", "count",
+            "before_values", "after_values", "pcs",
+        ),
+        cw_change_rows,
+    )
+    write_csv_rows(
+        destination / "cw-handler-net-changes.csv",
+        (
+            "version", "request", "address", "name", "before", "after",
+            "changed_bits", "volatile",
+        ),
+        cw_net_rows,
+    )
+    write_csv_rows(
+        destination / "cw-eeprom-events.csv",
+        ("version", "request", "command_step", "pc", "kind", "value", "detail"),
+        cw_eeprom_rows,
+    )
+
+    # Bypass only the periodic cadence gate and enter each producer slot on a
+    # clone.  This preserves the actual producer and UART sender code while
+    # making every slot reproducible without wall-clock or sensor hardware.
+    telemetry_rows: list[dict[str, object]] = []
+    telemetry_accesses: dict[tuple[object, ...], dict[str, object]] = defaultdict(
+        lambda: {"count": 0, "values": set(), "pcs": set()}
+    )
+    for version, _relative, _data_format in APPLICATION_SPECS:
+        path = TELEMETRY_PATHS[version]
+        for index in range(path["last_index"] + 1):
+            result = execute_telemetry_slot(
+                booted[version].clone(), version, index, step_limit=write_step_limit
+            )
+            lines = [line for line in result.response.splitlines() if line]
+            t_line = next((line for line in lines if line.startswith(b"T")), b"")
+            dw_line = next((line for line in lines if line.startswith(b"DW")), b"")
+            t_index: int | None = None
+            t_value: int | None = None
+            aux_index: int | None = None
+            aux_value: int | None = None
+            try:
+                if len(t_line) == 5:
+                    t_index = int(t_line[1:3], 16)
+                    t_value = int(t_line[3:5], 16)
+                if len(dw_line) == 6:
+                    aux_index = int(dw_line[2:4], 16)
+                    aux_value = int(dw_line[4:6], 16)
+            except ValueError:
+                pass
+            value_write_pcs = sorted(
+                {
+                    item.pc
+                    for item in result.accesses
+                    if item.action == "write" and item.address == path["value_ram"]
+                }
+            )
+            aux_write_pcs = sorted(
+                {
+                    item.pc
+                    for item in result.accesses
+                    if item.action == "write" and item.address == path["aux_value_ram"]
+                }
+            )
+            telemetry_rows.append(
+                {
+                    "version": version,
+                    "index": f"0x{index:02X}",
+                    "block_entry": f"0x{path['block_entry']:04X}",
+                    "sender_pc": f"0x{path['t_sender']:04X}",
+                    "response": ascii_preview(result.response),
+                    "response_hex": result.response.hex(" ").upper(),
+                    "t_frame": t_line.decode("ascii", errors="replace"),
+                    "t_index": "" if t_index is None else f"0x{t_index:02X}",
+                    "t_value": "" if t_value is None else f"0x{t_value:02X}",
+                    "aux_frame": dw_line.decode("ascii", errors="replace"),
+                    "aux_index": "" if aux_index is None else f"0x{aux_index:02X}",
+                    "aux_value": "" if aux_value is None else f"0x{aux_value:02X}",
+                    "value_ram": f"0x{path['value_ram']:03X}",
+                    "value_write_pcs": " ".join(f"0x{pc:04X}" for pc in value_write_pcs),
+                    "aux_value_ram": f"0x{path['aux_value_ram']:03X}",
+                    "aux_write_pcs": " ".join(f"0x{pc:04X}" for pc in aux_write_pcs),
+                    "sender_seen": "yes" if result.sender_seen else "no",
+                    "steps": result.steps,
+                    "reads": sum(item.action == "read" for item in result.accesses),
+                    "writes": sum(item.action == "write" for item in result.accesses),
+                    "error": result.error or "",
+                }
+            )
+            for item in result.accesses:
+                key = (
+                    version,
+                    index,
+                    item.action,
+                    item.address,
+                    item.name,
+                    item.via,
+                )
+                detail = telemetry_accesses[key]
+                detail["count"] = int(detail["count"]) + 1
+                detail["values"].add(item.value)  # type: ignore[union-attr]
+                detail["pcs"].add(item.pc)  # type: ignore[union-attr]
+    telemetry_access_rows: list[dict[str, object]] = []
+    for (version, index, action, address, name, via), detail in sorted(
+        telemetry_accesses.items(),
+        key=lambda item: (
+            str(item[0][0]), int(item[0][1]), str(item[0][2]),
+            -1 if item[0][3] is None else int(item[0][3]), str(item[0][5]),
+        ),
+    ):
+        telemetry_access_rows.append(
+            {
+                "version": version,
+                "index": f"0x{int(index):02X}",
+                "action": action,
+                "address": "" if address is None else f"0x{int(address):03X}",
+                "name": name,
+                "via": via,
+                "count": detail["count"],
+                "values": " ".join(
+                    f"0x{value:02X}" for value in sorted(detail["values"])  # type: ignore[arg-type]
+                ),
+                "pcs": " ".join(
+                    f"0x{pc:04X}" for pc in sorted(detail["pcs"])  # type: ignore[arg-type]
+                ),
+            }
+        )
+    write_csv_rows(
+        destination / "telemetry-slot-matrix.csv",
+        (
+            "version", "index", "block_entry", "sender_pc", "response",
+            "response_hex", "t_frame", "t_index", "t_value", "aux_frame",
+            "aux_index", "aux_value", "value_ram", "value_write_pcs",
+            "aux_value_ram", "aux_write_pcs", "sender_seen", "steps", "reads",
+            "writes", "error",
+        ),
+        telemetry_rows,
+    )
+    write_csv_rows(
+        destination / "telemetry-producer-access-summary.csv",
+        ("version", "index", "action", "address", "name", "via", "count", "values", "pcs"),
+        telemetry_access_rows,
     )
 
     eeprom_read_rows: list[dict[str, object]] = []
@@ -1731,6 +2289,16 @@ def run_deep_project(
 
     cr_errors = [row for row in cr_rows if row["error"]]
     eeprom_mismatches = [row for row in eeprom_read_rows if row["match"] != "yes"]
+    cw_expected_nonreturns = [
+        row for row in cw_rows
+        if row["expected_model_status"] == "long actuator path may not return"
+        and row["exit_seen"] != "yes"
+    ]
+    cw_unexpected_errors = [
+        row for row in cw_rows
+        if row["expected_model_status"] == "normal silent exit" and row["error"]
+    ]
+    telemetry_errors = [row for row in telemetry_rows if row["error"]]
     summary: dict[str, object] = {
         "schema": 1,
         "status": "experimental offline emulation",
@@ -1747,6 +2315,23 @@ def run_deep_project(
         "handler_read_dependencies": len(dependency_rows),
         "watchpoint_records": len(watch_rows),
         "handler_net_change_records": len(net_change_rows),
+        "cw_commands_executed": len(cw_rows),
+        "cw_handlers_reached": sum(row["handler_seen"] == "yes" for row in cw_rows),
+        "cw_normal_exits_reached": sum(row["exit_seen"] == "yes" for row in cw_rows),
+        "cw_expected_modeled_nonreturns": len(cw_expected_nonreturns),
+        "cw_unexpected_errors": len(cw_unexpected_errors),
+        "cw_handler_access_summaries": len(cw_access_rows),
+        "cw_handler_change_summaries": len(cw_change_rows),
+        "cw_handler_net_change_records": len(cw_net_rows),
+        "cw_eeprom_write_events": len(cw_eeprom_rows),
+        "write_probe_step_limit": write_step_limit,
+        "telemetry_slots_executed": len(telemetry_rows),
+        "telemetry_senders_reached": sum(
+            row["sender_seen"] == "yes" for row in telemetry_rows
+        ),
+        "telemetry_frames_completed": sum(bool(row["t_frame"]) for row in telemetry_rows),
+        "telemetry_errors": len(telemetry_errors),
+        "telemetry_producer_access_summaries": len(telemetry_access_rows),
         "a_unit_reads_executed": len(eeprom_read_rows),
         "a_unit_read_mismatches": len(eeprom_mismatches),
         "gpio_input_scenarios": len(gpio_scenario_rows),
@@ -1766,7 +2351,17 @@ def run_deep_project(
             "on serial 5215's reported 9067-0604 board.",
             "The EEPROM fixture is conspicuously synthetic and contains no owner "
             "or stove calibration data.",
-            "No write request is issued by this deep pass.",
+            "C-unit writes execute only in disposable CPU clones with synthetic "
+            "RAM/EEPROM; no source image or physical controller is modified.",
+            "CW0F is probed only with value 0x00. The state-changing 0xC4 "
+            "reset/loader key is explicitly excluded.",
+            "CW05 and CW0A enter long actuator/timer paths that do not return in "
+            "the bounded peripheral model; this is a model limitation, not a "
+            "firmware failure.",
+            "Telemetry slots are entered directly after synthetic boot. Producer "
+            "and UART code are real firmware, but periodic cadence/gating is not modeled.",
+            "TMR0 is advanced synthetically per modeled instruction; no timing or "
+            "sensor-rate conclusion should be drawn from emulator step counts.",
         ],
     }
     (destination / "summary.json").write_text(
@@ -1775,6 +2370,9 @@ def run_deep_project(
     print(
         "deep: "
         f"{summary['cr_handlers_reached']}/{summary['cr_commands_executed']} CR handlers; "
+        f"{summary['cw_normal_exits_reached']}/{summary['cw_commands_executed']} CW exits "
+        f"({summary['cw_expected_modeled_nonreturns']} expected modeled non-returns); "
+        f"{summary['telemetry_frames_completed']}/{summary['telemetry_slots_executed']} telemetry slots; "
         f"{summary['a_unit_reads_executed'] - summary['a_unit_read_mismatches']}"
         f"/{summary['a_unit_reads_executed']} EEPROM reads matched; "
         f"{summary['gpio_effect_records']} GPIO and {summary['adc_effect_records']} ADC effects"

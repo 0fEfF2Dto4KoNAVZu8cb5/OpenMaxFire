@@ -38,6 +38,15 @@ This report compares the three preserved generations at PIC16F877A word level. R
     interrupts increment RAM 0x47:0x46. An RD0 high-then-low cycle latches the
     interval into 0x45:0x44, and CR07 returns the low byte after a four-bit
     right shift. RD0's instantaneous state is also CR02.4.
+14. Every generation has exactly sixteen C-write entries, CW00-CW0F. All 48
+    synthetic probes reach the recovered handler; CW01 programs checksum bytes
+    A00/A01, and the keyed CW0FC4 loader branch is deliberately not executed.
+15. The complete periodic producer emits one physical T byte per line. Forced
+    producer execution reaches 91/91 senders (T00-T1D in 2.06/2.70 and
+    T00-T1E in 2.71), including optional addressed D-unit auxiliary lines.
+16. T09 comes from RAM 0x4C. All three images dispatch the same initial,
+    cooldown, off, startup, operating/ramping, ash-dump, and fallback families;
+    2.71's structural transitions are mapped at instruction level.
 
 ## Protocol-anchor matrix
 
@@ -49,10 +58,14 @@ This report compares the three preserved generations at PIC16F877A word level. R
 | ASCII-hex byte | `0x0EC0` | `0x0FB1` | `0x0F7C` |
 | Check command `C` | `0x1008` | `0x1112` | `0x10E8` |
 | Check command `W` | `0x1014` | `0x111E` | `0x10F4` |
+| CW00-CW0F table | `0x1293` | `0x137D` | `0x135A` |
 | Check command `R` | `0x113F` | `0x1234` | `0x120E` |
 | CR00-CR0E table | `0x12A7` | `0x1391` | `0x136E` |
 | Response formatter | `0x1265` | `0x1352` | `0x132F` |
+| Telemetry producer | `0x0CF2` | `0x0DBD` | `0x0DA6` |
+| Telemetry sender | `0x0783` | `0x0771` | `0x0771` |
 | Application startup | `0x1800` | `0x1800` | `0x1825` |
+| State-family dispatcher | `0x18DB` | `0x18D4` | `0x18F9` |
 
 `*` The 2.06 UART ISR location is a close instruction-signature match and is therefore medium confidence; the other listed anchors are high confidence.
 
@@ -77,6 +90,8 @@ Compiled routines move between releases, so a word at the same numerical address
   bootloader region; `EA`/`EB`, block framing, and completion are mapped.
 - Assign the remaining CR02.1 external-multiplexer slot and verify all muxed
   inputs against the installed `9067-0604` board.
-- Resolve the CR04 thermometer conversion, the CR05/CR07 engineering units,
-  and the physical roles of AN1, AN2, and RE1 from their traced producers.
-- Match write-register handler paths across all versions before considering any live write.
+- Resolve CR05/CR07 physical engineering units and the roles of AN1, AN2, and
+  RE1 from their traced producers.
+- Assign semantic names to every condition feeding the recovered state-family
+  transition writes and decode the remaining alarm/flag bits.
+- Resolve M/I service payloads and conditional/table-only telemetry paths.

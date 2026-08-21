@@ -57,7 +57,13 @@ class AddressedResponse:
 
 @dataclass(frozen=True, slots=True)
 class TelemetryResponse:
-    """A T response carrying one byte or two consecutive bytes."""
+    """A T response carrying one byte, or a legacy two-byte host form.
+
+    The recovered 2.06/2.70/2.71 firmware sender emits one byte per physical
+    ``Txxvv`` line.  The seven-character form remains accepted because the
+    BixCheck receive path can represent two adjacent bytes that way and older
+    OpenMaxFire documentation exposed it as a compatibility grammar.
+    """
 
     index: int
     values: tuple[int, ...]
@@ -73,7 +79,42 @@ class StatusResponse:
     raw: bytes
 
 
+@dataclass(frozen=True, slots=True)
+class OperatingState:
+    """Decoded BixCheck display meaning for telemetry byte T09."""
+
+    raw: int
+    normalized: int
+    family: int
+    phase: str
+    label: str
+    level: int | None = None
+    thermostat: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class IgniterState:
+    """Decoded BixCheck display meaning for telemetry byte T08."""
+
+    raw: int
+    code: int
+    label: str
+
+
 ResponseFrame: TypeAlias = AddressedResponse | TelemetryResponse | StatusResponse
+
+
+# The firmware transmits both halves as separate five-character frames.  The
+# BixCheck update routine stores the first byte, shifts it left eight bits, and
+# adds the following byte when the second index arrives.
+TELEMETRY_WORD_PAIRS: Mapping[int, str] = {
+    0x0A: "ash level",
+    0x0C: "ash target",
+    0x0E: "feed on time",
+    0x10: "feed off time",
+    0x1A: "feed cycle table",
+    0x1C: "feed cycle calibration",
+}
 
 
 def _byte(value: int, name: str) -> int:
@@ -212,6 +253,78 @@ def parse_response_line(data: bytes | bytearray | memoryview | str) -> ResponseF
             raise ProtocolError("status response contains non-printable bytes")
         return StatusResponse(kind=prefix, payload=raw[1:], raw=raw)
     raise ProtocolError(f"unsupported response prefix: {prefix!r}")
+
+
+def combine_telemetry_word(high: int, low: int) -> int:
+    """Combine adjacent firmware telemetry bytes using BixCheck's byte order."""
+
+    return (_byte(high, "high telemetry byte") << 8) | _byte(
+        low, "low telemetry byte"
+    )
+
+
+def decode_igniter_state(raw: int) -> IgniterState:
+    """Decode BixCheck's exact low-three-bit T08 display rules.
+
+    The labels preserve the vendor application's literal ``L``/``R`` wording.
+    High bits do not affect the displayed result.
+    """
+
+    raw = _byte(raw, "igniter state")
+    code = raw & 0x07
+    label = {
+        0: "L R failed",
+        1: "R failed",
+        2: "L failed",
+        7: "L R good",
+    }.get(code, "Error")
+    return IgniterState(raw=raw, code=code, label=label)
+
+
+def decode_operating_state(raw: int) -> OperatingState:
+    """Decode the exact BixCheck 5.5 display rules for the T09 state byte.
+
+    ``family`` is the high nibble.  ``level`` retains the low-three-bit target
+    encoded by the controller even where BixCheck displays only ``Ramping``.
+    Values outside the six known families deliberately remain explicit rather
+    than being assigned invented controller semantics.
+    """
+
+    raw = _byte(raw, "state")
+    normalized = raw & 0x7F
+    family = (normalized & 0x70) >> 4
+    low = normalized & 0x0F
+    if family == 1:
+        return OperatingState(raw, normalized, family, "cooldown", "Cooldown")
+    if family == 2:
+        return OperatingState(raw, normalized, family, "off", "Off")
+    if family == 3:
+        startup = {
+            0: ("prefill", "Prefill"),
+            1: ("started", "Started"),
+            2: ("starting", "Starting"),
+            3: ("ignited", "Ignited"),
+        }
+        phase, label = startup.get(low & 0x07, ("startup_error", "Error"))
+        return OperatingState(raw, normalized, family, phase, label)
+    if family == 4:
+        level = (low & 0x07) + 1
+        thermostat = bool(low & 0x08)
+        label = f"TSTAT L {level}" if thermostat else f"Level {level}"
+        return OperatingState(
+            raw, normalized, family, "operating", label,
+            level=level, thermostat=thermostat
+        )
+    if family == 5:
+        return OperatingState(
+            raw, normalized, family, "ramping", "Ramping",
+            level=(low & 0x07) + 1
+        )
+    if family == 6:
+        return OperatingState(raw, normalized, family, "ash_dump", "Ash dump")
+    return OperatingState(
+        raw, normalized, family, "undefined", f"Undefined: {normalized:02X}"
+    )
 
 
 class ResponseLineParser:
