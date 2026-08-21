@@ -13,6 +13,10 @@ This tree contains deterministic extractions and static analysis for every prese
 
 All four images identify the target as `PIC16F877A`. “Program words” excludes user-ID, configuration, and EEPROM spaces.
 
+> **Have an unlisted firmware version?** If you have MaxFire firmware from a
+> version not listed above, please contact me or open a pull request so it can
+> be preserved and reverse-engineered.
+
 ## Source-package relationships
 
 - `Bixby110_115_02060021_and_manual.zip` contains the two 2.06 HEX files directly. The vendor notes distinguish the Downloader and external-PICkit workflows.
