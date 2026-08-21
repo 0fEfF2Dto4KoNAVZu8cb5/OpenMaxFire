@@ -46,13 +46,16 @@ The permanent appliance-adjacent controller gets only the reliable everyday subs
 
 It does not replace BixCheck's calibration, Checkout, raw-write, memory-format, or firmware-flash functions.
 
+The current two-board hardware candidate and its unresolved validation gates are
+documented in [Candidate permanent-controller hardware](hardware/permanent-controller-candidate.md).
+
 ## Failure model
 
 The factory stove controller owns combustion and appliance safety. OpenMaxFire observes and requests actions.
 
 - Loss of Home Assistant must not disable the stove.
 - Loss of Wi-Fi, MQTT, or Ethernet must not disable the stove.
-- Loss or removal of the ESP32 must not disable the front panel or factory thermostat.
+- Loss or removal of the ESP32 must not disable the front panel and must transfer the thermostat input to the physical backup thermostat path.
 - A stale or ambiguous connection must block new remote commands.
 - A transmitted command is not successful until the resulting stove state is read back.
 - Firmware/configuration writes are never part of ordinary automation.
