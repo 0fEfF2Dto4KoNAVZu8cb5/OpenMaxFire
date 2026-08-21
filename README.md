@@ -42,6 +42,9 @@ Confirmed by static evidence:
   through RA4/T0CKI and TMR0 to CR05, and J9 feeder-wheel sensor through RD0
   and a motor-gated interval counter to CR02.4/CR07. BixCheck's exact raw
   Checkout thresholds are documented; their engineering units are not.
+- Installed photographs expose a `-0604` main-PCB suffix consistent with the
+  owner-reported `9067-0604` and directly show its black four-contact J3
+  housing; individual pin functions and electrical levels remain unknown.
 - The recovered stove is serial 5215; its owner identifies it as a MaxFire 115.
 
 Not yet confirmed on physical hardware:
@@ -51,7 +54,8 @@ Not yet confirmed on physical hardware:
   divisors strongly imply 10 MHz, but the board has not been checked.
 - Live electrical/timing validation of the reconstructed response grammar.
 - Physical validation of the offline button/switch/door/drawer/thermostat/pot
-  and J9/J10 sensor mappings on serial 5215's owner-reported 9067-0604 board.
+  and J9/J10 sensor mappings on serial 5215's owner-reported,
+  photo-corroborated 9067-0604 board.
   The preserved diagram depicts 9067-0404, and CR02.1/CR02.7 remain physically
   unassigned.
 - Any remote command on the actual stove.

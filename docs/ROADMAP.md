@@ -20,7 +20,10 @@
 - [x] Trace J10 exhaust-sensor pulses through RA4/T0CKI/TMR0 to CR05 and J9
   feeder-wheel transitions through RD0 and the interval counter to CR02.4/CR07.
 - [x] Preserve and revision-check the online-found 9067-0404 MaxFire motherboard
-  diagram against serial 5215's owner-reported 9067-0604 controller.
+  diagram against serial 5215's owner-reported, photo-corroborated 9067-0604
+  controller.
+- [x] Preserve the installed component-side, J3, harness, auxiliary-board, and
+  stove-interior photograph set for serial 5215.
 - [x] Model PIC internal data EEPROM and verify AR00-ARFF across all three
   generations with checksum-valid format-05/07 fixtures.
 - [x] Map every CW00-CW0F dispatcher/handler and execute safe synthetic probes
@@ -39,8 +42,10 @@
 ## Phase 1 - electrical and read-only bench validation
 
 - [ ] Photograph both ends of the received cable and record all labels/part numbers.
-- [ ] Photograph both sides of the installed 9067-0604 board and compare its
-  connector layout with the preserved 9067-0404 diagram.
+- [x] Photograph the component side and J3 area of the installed 9067-0604 board
+  and compare visible connector placement with the preserved 9067-0404 diagram.
+- [ ] Photograph the unobstructed full part-number silkscreen and solder side of
+  the installed board, then trace J3 without assuming the 9067-0404 routing.
 - [ ] Identify J3 ground and supply pins without assuming standard RS-232 pinout.
 - [ ] Measure idle voltage and polarity through a protected interface.
 - [ ] Confirm controller oscillator frequency.

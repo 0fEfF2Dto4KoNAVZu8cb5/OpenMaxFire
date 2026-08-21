@@ -46,8 +46,27 @@ Derived work must always point back to one of these preserved sources and record
 - has an indexed public match titled `115 110 Mother Board Pin Out` on Scribd;
 - has no verified original author, issue date, or vendor-publication status; and
 - is used only as related-family corroboration because serial 5215's installed
-  board is owner-reported as `9067-0604`.
+  board is owner-reported as `9067-0604`, with its `-0604` suffix corroborated
+  by the installed photographs.
 
 The hardware cross-reference records which labels agree with independently
 recovered firmware and BixCheck behavior. It does not promote the image to an
 exact revision-specific schematic or J3 electrical pinout.
+
+## Installed-controller photograph line
+
+`1000000390.jpg` through `1000000400.jpg` (ten supplied files; no `0393`)
+
+- were supplied by the stove owner on 2026-08-21;
+- are preserved byte-for-byte under
+  `original/photos/serial-5215-installed-controller/` with the received names;
+- directly show the installed component side, harnesses, auxiliary board, and
+  stove interior;
+- visibly confirm the main PCB's `-0604` silkscreen suffix and the black,
+  four-contact main-board J3 housing, corroborating the owner-reported full
+  `9067-0604` part number; and
+- do not show the solder side or establish any J3 pin function/electrical level.
+
+The research index records image-by-image content without altering the original
+JPEGs. Temporary crops used for visual inspection are not preservation files
+and are not included in the repository.

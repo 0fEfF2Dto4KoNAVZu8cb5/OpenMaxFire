@@ -13,6 +13,12 @@ tab holding the exhaust-fan and feed-rate adjustment knobs. The BixCheck manual
 says the PC interface requires custom Bixby cable P/N 2013324 and supports PC
 serial ports or USB-to-serial converters on the computer side.
 
+The [installed-controller photographs](../hardware/installed-controller-photographs.md)
+directly confirm a black, single-row, four-contact J3 on serial 5215's main
+board. Its legible `-0604` suffix corroborates the owner-reported `9067-0604`.
+The images confirm connector identity and placement only; the solder side and
+individual nets are not visible.
+
 That does not establish that J3 itself carries standard RS-232 voltages. Pin
 order, ground, power, polarity, logic levels, and isolation remain unknown. Do
 not attach a generic serial adapter directly.

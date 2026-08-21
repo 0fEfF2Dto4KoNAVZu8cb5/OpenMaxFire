@@ -34,14 +34,20 @@ that physical role and the resulting CR05/CR07 engineering units remain
 unmeasured.
 
 These are firmware-level facts, not a complete physical schematic. The
-9067-0404 diagram provides related-family labels, but revision-specific routing
-on the installed board remains unverified.
+9067-0404 diagram provides related-family labels. New installed-board
+photographs show the component side, confirm connector placement, and expose a
+`-0604` suffix consistent with the owner-reported 9067-0604 board. The complete
+prefix, revision-specific continuity, solder-side routing, and electrical
+polarity remain unverified.
 
-## Owner inventory
+## Installed-board evidence
 
-The installed main PCB is reported as part/silkscreen `9067-0604`, manufactured
-December 2005, with an internal assembly mark of `12/15`. Board photographs and
-oscillator markings are still needed.
+The [installed-controller photographs](installed-controller-photographs.md)
+directly show the main-PCB `-0604` suffix, component side, harness routing,
+auxiliary output board, and black four-contact main-board J3. The full
+`9067-0604` part number, manufacture in December 2005, and internal assembly
+mark `12/15` remain owner-reported. The solder side and oscillator marking are
+still needed.
 
 The preserved `MaxFire Mother Board Pin Out` image visibly shows the earlier or
 related PCB part number `9067-0404`. It strongly corroborates the controller

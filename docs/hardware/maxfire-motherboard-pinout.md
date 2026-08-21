@@ -21,21 +21,22 @@ date, and vendor-publication status are unverified.
 
 The nameplate photograph establishes appliance serial **5215**, and the owner
 identifies the stove as a MaxFire 115. Its installed controller is
-owner-reported as `9067-0604`, manufactured in December 2005 with assembly mark
-`12/15`.
+owner-reported as `9067-0604`; installed photographs make the `-0604` suffix
+legible but leave the preceding characters obstructed. Manufacture in December
+2005 and assembly mark `12/15` also remain owner-reported.
 
 The diagram therefore does **not** show the exact reported PCB revision:
 
 | Evidence | Board/revision | Conclusion |
 | --- | --- | --- |
 | Supplied diagram silkscreen | `9067-0404` | Directly visible in the image |
-| Serial 5215 installed board | `9067-0604` | Owner-reported; board photograph still needed |
+| Serial 5215 installed board | `9067-0604` | Owner report strongly corroborated by photographed `-0604` suffix |
 | Family relationship | Common `9067-xx04` numbering and matching MaxFire functions | Closely related-family evidence, not proof of identical routing |
 
 Connector names and system roles that agree with software/firmware evidence can
 be used as corroboration. Individual cavities, wire positions, PCB nets, and
-electrical levels must remain unconfirmed until the `9067-0604` board is
-photographed or measured.
+electrical levels remain unconfirmed until solder-side/continuity evidence and
+protected measurements are available.
 
 ## Diagram inventory
 
@@ -101,15 +102,15 @@ particular, `CR05` must not be labeled RPM without a physical correlation.
 ## What the diagram does not establish
 
 The diagram identifies J3 as the computer port and shows its board location,
-which independently corroborates the BixCheck release notes. It does not label
-J3's four individual pins, TX, RX, ground, a supply, signaling voltage, or
-polarity. It therefore does not make a generic TTL or RS-232 adapter safe to
-connect.
+which independently corroborates the BixCheck release notes. The installed
+photos additionally confirm a black four-contact J3 on the installed board.
+Neither source labels the individual pins, TX, RX, ground, a supply, signaling
+voltage, or polarity. They therefore do not make a generic TTL or RS-232 adapter
+safe to connect.
 
 The remaining revision-specific checks are:
 
-1. photograph serial 5215's `9067-0604` silkscreen and both sides around J3;
-2. compare connector designators and harness positions against this `9067-0404`
-   image;
+1. photograph the solder side around J3 and any obscured oscillator marking;
+2. trace connector continuity without assuming the `9067-0404` routing;
 3. identify ground and idle voltages through a protected, power-limited setup;
 4. validate the read-only register mappings with the stove cold and off.

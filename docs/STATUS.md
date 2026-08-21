@@ -5,6 +5,8 @@ Snapshot date: 2026-08-21
 OpenMaxFire separates evidence into four levels:
 
 - **Vendor-documented**: stated in recovered Bixby documentation.
+- **Direct photographic**: visibly established in a preserved photograph of
+  serial 5215 or its installed hardware.
 - **Statically confirmed**: visible in a preserved executable or firmware image.
 - **Emulator-confirmed**: executed from preserved firmware under an explicitly
   incomplete synthetic hardware model.
@@ -15,7 +17,7 @@ OpenMaxFire separates evidence into four levels:
 | Area | Finding | Evidence |
 | --- | --- | --- |
 | Stove | Serial 5215; owner identifies model as MaxFire 115 | Nameplate photo / owner report |
-| Controller | PCB reported as 9067-0604, manufactured December 2005, assembly `12/15` | Owner report |
+| Controller | Installed PCB suffix `-0604` corroborates owner-reported 9067-0604; December 2005 manufacture and assembly `12/15` remain owner-reported | Direct photograph / owner report |
 | BixCheck pairing | 5.0.21→2.06/format 05; 5.5.00→2.70/07; 5.5.01→2.71/07 | Vendor package / EXE tables |
 | BixCheck internals | EXEs retain 640/655 COFF function symbols, source-unit names, and fixed tables | Reproducible PE/COFF analysis |
 | PC serial | 5.0.21 uses 9,600; 5.5.x selects 9,600 or 19,200; all use 8N1 | `async.cpp` methods in all EXEs |
@@ -38,7 +40,7 @@ OpenMaxFire separates evidence into four levels:
 | J10 exhaust sensor | RA4/T0CKI falling-edge count is sampled into RAM 0x34 and returned as CR05 | Identical 2.06/2.70/2.71 producer signatures plus BixCheck exhaust predicates and board diagram |
 | J9 feeder sensor | RD0 high-then-low wheel cycle is timed while RB1 is active; CR02.4 is current state and CR07 is the scaled interval | Identical 2.06/2.70/2.71 producer signatures plus BixCheck feed predicate and board diagram |
 | A-unit storage | Firmware reads A00-AFF through PIC16F877A internal data EEPROM registers | Emulator events and bank-aware handler trace |
-| J3/cable | Black four-pin connector location; factory cable P/N 2013324 | Vendor notes/manual |
+| J3/cable | Black four-contact main-board connector and location; factory cable P/N 2013324 | Installed-board photographs plus vendor notes/manual |
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
 
@@ -50,7 +52,7 @@ OpenMaxFire separates evidence into four levels:
 | Oscillator | 10 MHz is strongly inferred, not physically checked | Read marking/frequency |
 | Live framing | Software/emulator grammar is established; no electrical capture | Passive capture, then `CR00` only |
 | M/I families | Outer dispatch known; CW0D emits `I` plus LF, but general payload semantics remain unresolved | Deeper data-flow analysis or controlled capture |
-| Board revision | Diagram depicts 9067-0404; serial 5215 board is owner-reported as 9067-0604 | Clear photos of both board sides, especially J3 and silkscreen |
+| Board routing | Diagram depicts 9067-0404; serial 5215's `-0604` suffix corroborates the owner-reported 9067-0604, but the prefix and solder side are obstructed | Unobstructed full silkscreen, solder-side photographs, and continuity tracing around J3 |
 | Input wiring | Offline assignments are strong; serial 5215 wiring and physical polarity remain untested; CR02.1 and CR02.7 are unnamed | Cold/off polling while toggling one switch; observe J9 only without energizing its motor |
 | Telemetry conversions | Core formulas and T08/T09 display decoders are mapped; BixCheck itself leaves T12/T13 raw and only derives T14's mode number | Safe live correlation plus firmware bitfield tracing |
 | Table-only telemetry | BixCheck 5.5.01 names TFD-TFF, but no producer is recovered in periodic 2.71 firmware; T20 is a separate event path | Passive capture or newly identified conditional producer |

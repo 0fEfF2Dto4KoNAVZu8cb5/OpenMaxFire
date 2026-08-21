@@ -9,9 +9,11 @@ The custom cable should not be assumed to be passive, and the J3 side should not
 The preserved [MaxFire motherboard diagram](maxfire-motherboard-pinout.md)
 independently labels J3 as `Computer Port` and places it along the upper-left
 edge of a `9067-0404` motherboard. It does not label the four cavities or any
-voltage level. Serial 5215's board is owner-reported as `9067-0604`, so even the
-illustrated physical placement remains revision-family evidence rather than an
-exact pinout.
+voltage level. The [installed-controller photographs](installed-controller-photographs.md)
+show serial 5215's legible `-0604` board suffix and its black, single-row,
+four-contact J3 in the same general edge/ribbon-cable area. This corroborates
+the owner-reported `9067-0604` identity and confirms physical connector
+placement, not an electrical pinout.
 
 ## Earlier project hardware proposal
 

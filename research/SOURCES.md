@@ -7,7 +7,8 @@
 - BixCheck 5.5.00 package for stove software 2.70.
 - BixCheck 5.5.01 package/executable for stove software 2.71.
 - Embedded Bixby 2.70 and 2.71 Intel HEX images, direct 2.06 images, and derived PIC16F877A disassemblies.
-- Direct photographs and owner-reported board inventory for serial 5215.
+- Direct nameplate, control-panel, safety-label, installed-controller, and
+  stove-interior photographs plus owner-reported inventory for serial 5215.
 
 ## Secondary references consulted earlier
 

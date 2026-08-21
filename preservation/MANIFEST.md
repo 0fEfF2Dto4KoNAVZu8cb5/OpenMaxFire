@@ -31,12 +31,22 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 | `original/photos/nameplate-serial-5215.png` | `chart-1.png` | `db3fb1bad3e1138aa914d8e6f28816737f2f1917114de21ec97d82a41bfa5170` | Stove nameplate and serial |
 | `original/photos/safety-labels.png` | `chart-2.png` | `89765674d0324f6c7c7d5c9bc0469d62343914cfb21d20cf7f886e63a9b1846a` | Side-panel/electrical warnings |
 | `original/photos/front-control-panel.jpg` | `IMG_20260527_194238_134.jpg` | `a768c82119606b59bc1c4479a9019d0d659df352f21757c793fd79d7a5752cdc` | Four-button panel and LEDs |
+| `original/photos/serial-5215-installed-controller/1000000390.jpg` | `1000000390.jpg` | `bd5c8933c52ad669f6f36bf8cc0462fd86c771c760c20fb7f0ff8b1043b8575e` | Owner-supplied 2026-08-21; main PCB component/power-section view |
+| `original/photos/serial-5215-installed-controller/1000000391.jpg` | `1000000391.jpg` | `7c5d0a55e58930aace32d15bcd0148667b1e4cd53065d07d9300ce0796cd41ea` | Owner-supplied 2026-08-21; visible installed-PCB `-0604` suffix and connector bank |
+| `original/photos/serial-5215-installed-controller/1000000392.jpg` | `1000000392.jpg` | `d2bda6b4775829bf3743f1637ca1e6033c98a5aae3a4a03fd9ece402b4af5bbe` | Owner-supplied 2026-08-21; J16/J17 and auxiliary-board harness view |
+| `original/photos/serial-5215-installed-controller/1000000394.jpg` | `1000000394.jpg` | `0a1f0180b0d9e654777088d77f5c9170fb1d68843f6c8de388f4531e6425a656` | Owner-supplied 2026-08-21; close-up of four-contact main-board J3 |
+| `original/photos/serial-5215-installed-controller/1000000395.jpg` | `1000000395.jpg` | `d9b961e2f26d7a29fc5cf5b09106076341e06a54cadbb3fa323687b8559cbc37` | Owner-supplied 2026-08-21; installed wiring and board copyright marking |
+| `original/photos/serial-5215-installed-controller/1000000396.jpg` | `1000000396.jpg` | `301901d463d3be2b0dbd7a4a9ee84e80a4b6bfa83e66323d24669126b451168f` | Owner-supplied 2026-08-21; wider J3/J7/controller view |
+| `original/photos/serial-5215-installed-controller/1000000397.jpg` | `1000000397.jpg` | `59beca6ffbb347d3e3e7fbce6dcb7cc813fecf62c8b4fb474d5fffbc314bba3c` | Owner-supplied 2026-08-21; exposed J15/J16/J17 and fuse/output area |
+| `original/photos/serial-5215-installed-controller/1000000398.jpg` | `1000000398.jpg` | `f9284e4b5391c625f8df746ba232a79ac478792063ac856f44e3920e2d4e20a4` | Owner-supplied 2026-08-21; auxiliary igniter/output PCB and ducting |
+| `original/photos/serial-5215-installed-controller/1000000399.jpg` | `1000000399.jpg` | `3c5e11f487ec9358b12ff434769c3dc11cfcab715b03f9914032a1550f593ba7` | Owner-supplied 2026-08-21; installed controller stack overview |
+| `original/photos/serial-5215-installed-controller/1000000400.jpg` | `1000000400.jpg` | `d41ac7a03e2b88b0e306ed5e5bd43fad28b42b38c5e8d0652c688d36f3d01224` | Owner-supplied 2026-08-21; wide stove-interior overview |
 
 ## Hardware diagrams
 
 | Current path | Earlier upload name | Bytes | SHA-256 | Note |
 | --- | --- | ---: | --- | --- |
-| `original/diagrams/maxfire-mother-board-pinout.jpg` | `1000000387.jpg` | 321847 | `22dad1271b3780b5867a4be6bf9875495aa4fe39b218352a9121097920145975` | User-supplied online-found diagram; visibly depicts PCB `9067-0404`, not serial 5215's owner-reported `9067-0604`; authorship/date/vendor status unverified |
+| `original/diagrams/maxfire-mother-board-pinout.jpg` | `1000000387.jpg` | 321847 | `22dad1271b3780b5867a4be6bf9875495aa4fe39b218352a9121097920145975` | User-supplied online-found diagram; visibly depicts PCB `9067-0404`, not serial 5215's owner-reported/photo-corroborated `9067-0604`; authorship/date/vendor status unverified |
 
 ## Derived firmware and project bundles
 

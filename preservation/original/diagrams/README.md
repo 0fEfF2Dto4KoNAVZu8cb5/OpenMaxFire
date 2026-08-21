@@ -15,7 +15,8 @@ The original author, issue date, and vendor publication status have not been
 established. The image is preserved exactly as supplied; its public match is a
 provenance clue, not proof of authorship.
 
-The installed board in stove serial 5215 is owner-reported as `9067-0604`.
-Accordingly, this diagram is related-family evidence and must not be treated as
-an exact connector-cavity pinout for that board revision. See the
+The installed board in stove serial 5215 is owner-reported as `9067-0604`, and
+the installed photographs make its `-0604` suffix legible. Accordingly, this
+diagram is related-family evidence and must not be treated as an exact
+connector-cavity pinout for that board revision. See the
 [cross-reference](../../../docs/hardware/maxfire-motherboard-pinout.md).

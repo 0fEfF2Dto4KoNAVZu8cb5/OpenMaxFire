@@ -123,3 +123,9 @@
   `L failed`, `L R good`, or `Error`). Confirmed that BixCheck leaves T12 IIC
   and T13 alarm status as raw hexadecimal and only derives T14 Flag mode as
   `(raw & 7) + 1`; it does not contain the previously implied named decoders.
+- Preserved ten owner-supplied installed-controller/interior JPEGs byte-for-byte
+  with SHA-256 provenance. The photographs make the main-PCB `-0604` suffix
+  legible, corroborating the owner-reported `9067-0604`, and directly confirm
+  the black four-contact main-board J3, its placement beside the J7 ribbon area,
+  and the nearby visible `LM1815N` marking. Pin functions, electrical levels,
+  solder-side routing, and oscillator marking remain open.

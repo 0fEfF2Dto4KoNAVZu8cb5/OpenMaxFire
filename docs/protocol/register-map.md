@@ -144,9 +144,10 @@ following the `0x30` configuration-bank offset: clear selects Fuel B (`A70...`)
 and set leaves Fuel A (`A40...`).
 
 This still cannot prove the PCB wiring or electrical polarity on serial 5215.
-The preserved diagram shows board `9067-0404`, while the installed board is
-owner-reported as `9067-0604`. Safe validation remains a cold/off CR01/CR02/CR06
-baseline with one physical input changed at a time.
+The preserved diagram shows board `9067-0404`, while installed photographs
+expose a `-0604` suffix that corroborates the owner-reported `9067-0604` but do
+not expose the complete prefix or solder-side routing. Safe validation remains
+a cold/off CR01/CR02/CR06 baseline with one physical input changed at a time.
 
 Machine-readable traces and stimulus results are documented in the
 [exhaustive emulator pass](../reverse-engineering/emulator-deep-pass.md).
