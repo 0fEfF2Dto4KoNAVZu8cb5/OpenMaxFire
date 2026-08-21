@@ -1,6 +1,9 @@
 # BixCheck feature-parity target
 
-The Linux OpenMaxFire application is intended to replace essentially all documented and discovered BixCheck behavior. The permanent ESP32 controller has a much smaller scope; see [architecture](../ARCHITECTURE.md).
+The cross-platform Windows/Linux/macOS OpenMaxFire application is intended to
+replace essentially all documented and discovered BixCheck behavior. The
+permanent ESP32 controller has a much smaller scope; see
+[architecture](../ARCHITECTURE.md).
 
 ## Connection and identity
 

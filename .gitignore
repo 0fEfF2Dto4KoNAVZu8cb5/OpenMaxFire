@@ -1,8 +1,10 @@
 __pycache__/
 *.py[cod]
-.venv/
-dist/
-build/
 *.egg-info/
+.coverage
 .pytest_cache/
+.venv/
+venv/
+build/
+dist/
 vendor/originals/

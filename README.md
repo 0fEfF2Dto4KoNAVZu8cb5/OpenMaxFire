@@ -1,6 +1,6 @@
 # OpenMaxFire
 
-OpenMaxFire is a preservation and reverse-engineering project for the discontinued Bixby MaxFire 110/115 biomass stove ecosystem. It archives the factory BixCheck service software and firmware, documents the J3 computer interface, and is building a modern Linux service tool plus a deliberately limited ESP32/Home Assistant controller.
+OpenMaxFire is a preservation and reverse-engineering project for the discontinued Bixby MaxFire 110/115 biomass stove ecosystem. It archives the factory BixCheck service software and firmware, documents the J3 computer interface, and is building a modern cross-platform Windows/Linux/macOS service tool plus a deliberately limited ESP32/Home Assistant controller.
 
 ## Current status
 
@@ -8,7 +8,7 @@ The repository contains the recovered vendor packages, BixCheck 5.x manual, all
 preserved 2.06/2.70/2.71 firmware images, portable and annotated disassemblies,
 a deep three-EXE comparison, decoded application tables, an experimental PIC
 emulator, a virtual serial lab, photographs, provenance records, and the first
-protocol library.
+cross-platform read-only service-tool foundation.
 
 Confirmed by static evidence:
 
@@ -66,7 +66,8 @@ No live connection should be attempted until [SAFETY.md](SAFETY.md) and the [J3 
 
 1. Preserve original Bixby software, firmware, manuals, release notes, photographs, and hardware documentation without modifying the originals.
 2. Fully document the MaxFire 110/115 J3 protocol and controller register space.
-3. Replace essentially all BixCheck functions with a cross-platform Linux CLI/application.
+3. Replace essentially all BixCheck functions with a cross-platform Windows,
+   Linux, and macOS CLI/application.
 4. Build a fail-out-of-the-way ESP32/ESPHome interface for normal telemetry, faults, start/stop, heat level, command verification, and Home Assistant exposure.
 5. Keep the factory controller, front panel, thermostat inputs, combustion logic, and safety behavior authoritative.
 
@@ -84,9 +85,18 @@ maxfirectl encode read 0x0e
 
 maxfirectl encode button up
 # CW0E14
+
+maxfirectl ports
+# Lists COM ports on Windows and /dev devices on Linux/macOS without opening them
 ```
 
-Live I/O is intentionally gated and requires an explicit port, baud rate, and acknowledgement flag.
+The portable read-only foundation now includes serial-port discovery, exact
+timestamped JSONL traffic capture, bounded register queries, stove identity,
+and complete `AR00`-`ARFF` JSON backups with checksum diagnostics. Live I/O is
+intentionally gated and requires an explicit port, baud rate, and
+acknowledgement flag. Do not open a stove-connected port until the cable and J3
+electrical interface have been characterized; opening a port can transition
+DTR/RTS even when no payload is transmitted.
 
 Run the read-only virtual endpoint without hardware:
 
@@ -112,6 +122,7 @@ python tools/pic14_emulator.py project --repo-root .
 - `tests/` - offline protocol tests
 
 Start with [the research status](docs/STATUS.md),
+[the cross-platform service-tool guide](docs/cli/cross-platform-service-tool.md),
 [the serial command cheat sheet](docs/protocol/serial-command-cheat-sheet.md),
 [the BixCheck comparison](docs/reverse-engineering/bixcheck-comparison.md),
 [the BixCheck runtime workflows](docs/reverse-engineering/bixcheck-runtime-workflows.md),

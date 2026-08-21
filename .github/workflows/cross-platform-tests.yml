@@ -1,0 +1,39 @@
+name: Cross-platform tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run offline tests
+        run: python -m unittest discover -s tests -v
+      - name: Smoke-test CLI
+        run: |
+          maxfirectl encode read 0x00
+          maxfirectl encode read 0x03 --unit A
+          maxfirectl ports --json
+
+  archive-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify preserved artifacts
+        run: bash tools/verify_archive.sh

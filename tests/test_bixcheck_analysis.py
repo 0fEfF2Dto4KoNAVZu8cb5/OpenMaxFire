@@ -107,6 +107,15 @@ class VirtualSerialLabTests(unittest.TestCase):
         self.assertEqual(stove.transact(read), (b"CR0807\n", "synthetic read"))
         self.assertEqual(stove.transact(write), (b"IWRITE-BLOCKED\n", "write blocked"))
 
+    def test_virtual_stove_configuration_checksum_is_valid(self):
+        stove = VirtualStove()
+        eeprom = {
+            address: stove.registers.get(("A", address), 0)
+            for address in range(0x100)
+        }
+        stored = (eeprom[0] << 8) | eeprom[1]
+        self.assertEqual(stored, calculate_fixture_checksum(7, bytes(eeprom.values())))
+
     def test_lab_never_accepts_downloader_identify_byte(self):
         with self.assertRaises(ProtocolError):
             RequestStreamParser().feed(b"\xEA")

@@ -1,6 +1,6 @@
 """OpenMaxFire - open tooling for Bixby MaxFire 110/115."""
 
-from .client import MaxFireClient
+from .client import MaxFireClient, StoveIdentity
 from .protocol import (
     IgniterState,
     OperatingState,
@@ -14,6 +14,7 @@ from .protocol import (
 
 __all__ = [
     "MaxFireClient",
+    "StoveIdentity",
     "IgniterState",
     "OperatingState",
     "RemoteButton",
@@ -24,4 +25,4 @@ __all__ = [
     "encode_write_register",
 ]
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"

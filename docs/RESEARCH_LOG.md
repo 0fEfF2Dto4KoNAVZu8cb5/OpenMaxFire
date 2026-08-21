@@ -129,3 +129,11 @@
   the black four-contact main-board J3, its placement beside the J7 ribbon area,
   and the nearby visible `LM1815N` marking. Pin functions, electrical levels,
   solder-side routing, and oscillator marking remain open.
+- Promoted the service-tool target from Linux-only to a single Windows/Linux/
+  macOS codebase. Added portable serial-port discovery, bounded addressed-read
+  matching with telemetry interleaving, the safe identity sequence, exact
+  timestamped JSONL traffic capture, and lossless AR00-AFF JSON backups with
+  identity/data-format/checksum diagnostics.
+- Made the POSIX PTY lab import-safe on Windows, added a six-entry OS/Python CI
+  matrix, and expanded the offline suite from 48 to 63 tests. The new software
+  remains unvalidated on J3 and does not authorize a physical connection.
