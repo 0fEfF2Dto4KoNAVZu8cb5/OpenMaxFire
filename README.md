@@ -10,6 +10,11 @@ a deep three-EXE comparison, decoded application tables, an experimental PIC
 emulator, a virtual serial lab, photographs, provenance records, and the first
 protocol library.
 
+> **Have an unlisted version?** If you have any BixCheck software, MaxFire
+> firmware, manual, hardware documentation, or related material from a version
+> not listed in this repository, please contact me or open a pull request so it
+> can be preserved and reverse-engineered.
+
 Confirmed by static evidence:
 
 - All four preserved firmware images target a PIC16F877A and pass Intel HEX checksum validation.
