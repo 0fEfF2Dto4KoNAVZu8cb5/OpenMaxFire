@@ -112,6 +112,7 @@ python tools/pic14_emulator.py project --repo-root .
 - `tests/` - offline protocol tests
 
 Start with [the research status](docs/STATUS.md),
+[the serial command cheat sheet](docs/protocol/serial-command-cheat-sheet.md),
 [the BixCheck comparison](docs/reverse-engineering/bixcheck-comparison.md),
 [the BixCheck runtime workflows](docs/reverse-engineering/bixcheck-runtime-workflows.md),
 [the J3 protocol](docs/protocol/j3-protocol.md),
