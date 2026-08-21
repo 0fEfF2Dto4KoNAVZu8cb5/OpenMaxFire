@@ -56,6 +56,20 @@ compressor, exhaust fan, convection fan/capacitor, fuses, and 120 V input.
 Those red circuits are documentation only and are outside the read-only J3
 work. Power must be disconnected before opening or servicing the stove.
 
+## Factory owner-manual corroboration
+
+The preserved MaxFire Model 115 owner manual, document 2020866 Rev. A, contains
+a factory wiring diagram on numbered page 31. It independently labels `J3`,
+control panel `J7`, trim controls `J8`, J9 feeder and J10 exhaust sensors,
+thermocouple `J18`, the external thermostat, the fuel/door/drawer/burner-limit
+switches, fans, motors, igniters, air compressor, and hopper over-temperature
+switch.
+
+The wiring diagram gives no J3 cavity functions, signal levels, polarity, or
+electrical standard. It also shows no hopper-level or hopper-lid sensor. It
+therefore strengthens component-role mappings and the fuel-switch names without
+making a direct J3 adapter safe or making fuel quantity observable.
+
 ## Static firmware and BixCheck correlation
 
 The diagram materially strengthens several mappings recovered independently
