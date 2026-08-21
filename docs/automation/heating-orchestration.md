@@ -4,7 +4,7 @@ The desired whole-house behavior is automatic coordination between the MaxFire a
 
 ## Reliability rule
 
-When Home Assistant is healthy it may decide which heat source should carry the load. If Home Assistant or any network component fails, both heating systems retain their own thermostats. They may overlap, but the house is not left without heat because of an automation failure.
+When Home Assistant is healthy it may decide which heat source should carry the load. The backup system retains its own thermostat. The MaxFire's factory thermostat input must not be assumed to provide equivalent automatic restart: document 2020866 Rev. A says it does not start the stove and only changes an already-running stove between the selected level and level 1. Later format-07 configuration includes thermostat heat-level and auto-restart fields, but serial 5215's exact behavior has not been live-validated. A failed automation must therefore leave the backup heat independently available and the stove in a safe factory-controlled state.
 
 ## OpenMaxFire inputs needed
 
@@ -14,11 +14,11 @@ When Home Assistant is healthy it may decide which heat source should carry the 
 - alarm/blocked-flue/lean-fire indicators
 - command acknowledgements and readback
 - thermocouple trend
-- preferably firebox-door and ash-drawer state after mapping
+- firebox-door and ash-drawer state; remote start must be blocked while either is open
 
 ## Hopper refill problem
 
-If the pellet stove is off or unpowered while backup heat is running, internal J3 data alone cannot reliably prove that the hopper was refilled. A door/lid event only proves access, not fuel quantity.
+If the pellet stove is off or unpowered while backup heat is running, internal J3 data alone cannot reliably prove that the hopper was refilled. The factory owner-manual wiring diagram shows a hopper over-temperature switch but no hopper-level or hopper-lid sensor. A separately added lid event would prove access, not fuel quantity.
 
 Options, strongest first:
 

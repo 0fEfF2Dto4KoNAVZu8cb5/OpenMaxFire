@@ -114,6 +114,20 @@ OpenMaxFire implements these rules in `decode_operating_state()` and preserves
 the raw and normalized bytes. It should continue exposing unknown values as
 unknown rather than coercing them into the nearest familiar state.
 
+## Vendor thermostat behavior and revision scope
+
+The MaxFire Model 115 owner manual, document 2020866 Rev. A, says an unpowered
+on/off 24 V thermostat does not start the stove. When an already-running stove
+receives a heat call it uses the selected heat level; without a call it falls
+back to level 1 and slowly flashes the panel indicators together. That behavior
+agrees with the T09 operating-family thermostat flag but does not prove every
+later transition predicate.
+
+Format-07 BixCheck data adds thermostat heat-level and disable-auto-restart
+configuration bits. OpenMaxFire therefore records the Rev. A statement as a
+revision-scoped baseline and requires live, configuration-aware validation
+before treating firmware 2.70/2.71 or serial 5215 as automatically restartable.
+
 ## Safety boundary
 
 The state machine remains factory-controller behavior. A future host can use

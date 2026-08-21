@@ -137,3 +137,15 @@
 - Made the POSIX PTY lab import-safe on Windows, added a six-entry OS/Python CI
   matrix, and expanded the offline suite from 48 to 63 tests. The new software
   remains unvalidated on J3 and does not authorize a physical connection.
+
+- Preserved the user-supplied 40-page MaxFire Model 115 owner manual, document
+  `2020866 REV A`, byte-for-byte with SHA-256 provenance.
+- Extracted vendor-documented thermostat behavior, door/drawer shutdown timing,
+  fault indicators, maintenance intervals, wiring labels, and service-part
+  numbers into a revision-scoped research note.
+- Used the factory wiring diagram to corroborate J3 and existing switch/sensor
+  roles while confirming that it provides no J3 electrical pinout and depicts
+  no hopper-level or hopper-lid sensor.
+- Corrected heating-orchestration guidance: the Rev. A wall thermostat does not
+  start the stove, so it cannot be assumed to provide independent restart
+  failover without configuration-aware live validation.

@@ -4,7 +4,8 @@ OpenMaxFire is a preservation and reverse-engineering project for the discontinu
 
 ## Current status
 
-The repository contains the recovered vendor packages, BixCheck 5.x manual, all
+The repository contains the recovered vendor packages, the BixCheck service
+manual and MaxFire Model 115 owner manual, all
 preserved 2.06/2.70/2.71 firmware images, portable and annotated disassemblies,
 a deep three-EXE comparison, decoded application tables, an experimental PIC
 emulator, a virtual serial lab, photographs, provenance records, and the first
@@ -41,8 +42,13 @@ Confirmed by static evidence:
   pot to CR0A/AN4. These are offline mappings, not live wiring validation.
 - The common input scanner maps front-panel buttons into CR01, the burn-drive
   limit switch to CR02.0, and the fuel selector to CR02.2 (`1`=Fuel A/corn,
-  `0`=Fuel B/wood). A preserved 9067-0404 board diagram independently
-  corroborates those physical labels.
+  `0`=Fuel B/wood). A preserved 9067-0404 board diagram and the factory owner
+  manual independently corroborate those physical labels.
+- The factory MaxFire Model 115 owner manual documents thermostat behavior,
+  safety-interlock timeouts, fault indicators, maintenance intervals, wiring,
+  and service parts. It confirms that the Rev. A thermostat behavior does not
+  start the stove and that no hopper-level/lid sensor appears in the wiring
+  diagram.
 - The same three firmware generations map the diagram's J10 exhaust sensor
   through RA4/T0CKI and TMR0 to CR05, and J9 feeder-wheel sensor through RD0
   and a motor-gated interval counter to CR02.4/CR07. BixCheck's exact raw
@@ -127,6 +133,7 @@ python tools/pic14_emulator.py project --repo-root .
 - `tests/` - offline protocol tests
 
 Start with [the research status](docs/STATUS.md),
+[the MaxFire owner-manual analysis](docs/manuals/maxfire-owner-manual-2020866-rev-a.md),
 [the cross-platform service-tool guide](docs/cli/cross-platform-service-tool.md),
 [the serial command cheat sheet](docs/protocol/serial-command-cheat-sheet.md),
 [the BixCheck comparison](docs/reverse-engineering/bixcheck-comparison.md),

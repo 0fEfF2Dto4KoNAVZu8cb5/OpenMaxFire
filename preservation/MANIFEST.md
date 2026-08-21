@@ -16,6 +16,7 @@ Recovery dates are in UTC. Files were supplied or recovered through the OpenMaxF
 | `original/vendor-packages/Bixby110_115_02060021_and_manual.zip` | 1487366 | `140ca903bb23667f831a28a4b0f1966bc856a9584c5b897ffecec1890f5222ac` | User-supplied Bixby 2.06/BixCheck 5.0.21 release package |
 | `original/binaries/BixCheck_080315.exe` | 464650 | `b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792` | Separately recovered executable; byte-identical to ZIP member |
 | `original/manuals/1394047.pdf` | 1729968 | `0e8918ed62ae34d0984957ba466f3cee0adb07c69539a5348f305ba0f2c40739` | BixCheck How-To Guide, 2023480 Rev. A; byte-identical to `2023480-A.pdf` in the 2.06 package |
+| `original/manuals/7346103.pdf` | 1595527 | `ed04d708590fa8bec0d0276463abd736409ddbdd8d8eee6c7a66fb0cd7fba33d` | User-supplied MaxFire Model 115 installation, operating, and maintenance instructions; document 2020866 Rev. A; 40-page PDF |
 
 ## 2.06 package members
 
