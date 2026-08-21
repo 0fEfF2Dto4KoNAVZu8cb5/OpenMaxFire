@@ -4,6 +4,7 @@
 
 - [x] Preserve recovered vendor ZIP packages and standalone BixCheck 5.5.01 executable.
 - [x] Preserve the BixCheck 5.x manual and release notes.
+- [x] Preserve and analyze the MaxFire Model 115 owner manual, document 2020866 Rev. A.
 - [x] Extract and checksum all 2.06, 2.70, and 2.71 firmware delivery images.
 - [x] Preserve the earlier 2.71 analysis bundle and independent gpdasm disassembly.
 - [x] Add a dependency-free Intel HEX parser/PIC14 disassembler and deterministic analysis for all images.
