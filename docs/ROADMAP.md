@@ -127,8 +127,12 @@
   from J3.
 - [ ] Prototype the non-latching thermostat transfer relay and verify that its
   de-energized state reconnects the physical backup thermostat.
-- [ ] Design the consolidated daughterboard with integrated isolated UART power,
-  signal-relay driver, hardware watchdog, protection, connectors, and feedback.
+- [x] Document a preliminary consolidated daughterboard circuit with integrated
+  isolated UART power, heartbeat-qualified relay driver, protection footprints,
+  connectors, signal allocation, parts list, and layout constraints.
+- [ ] Convert the preliminary design into a reviewed KiCad schematic and PCB
+  after J3 and thermostat measurements lock voltage, polarity, protection, and
+  contact requirements.
 - [ ] Limit the permanent controller to telemetry, faults, start/stop, heat level,
   command verification, and local temperature control.
 - [ ] Preserve factory front-panel operation and transfer to the physical backup
@@ -136,4 +140,5 @@
 - [ ] Add optional heating-source coordination only after stove control and the
   complete failure matrix are proven reliable.
 
-See [Candidate permanent-controller hardware](hardware/permanent-controller-candidate.md).
+See [Candidate permanent-controller hardware](hardware/permanent-controller-candidate.md)
+and [Preliminary stove-interface daughterboard design](hardware/daughterboard-preliminary-design.md).
