@@ -1,10 +1,11 @@
 # Safety policy
 
-This project interacts with a mains-powered solid-fuel appliance containing hot surfaces, moving mechanisms, igniters, fans, and combustion-safety logic. Reverse-engineering evidence is not a substitute for appliance-service training or the factory manual.
+This project interacts with a mains-powered solid-fuel appliance containing hot surfaces, moving mechanisms, igniters, fans, and combustion-safety logic. Reverse-engineering evidence is not a substitute for appliance-service training or the factory manual. The preserved [MaxFire Model 115 owner manual](preservation/original/manuals/7346103.pdf) remains the primary source for factory installation, operation, maintenance, clearances, and venting instructions.
 
 ## Non-negotiable boundaries
 
-- Disconnect mains power before opening or servicing the stove. Never operate it with the side panel removed.
+- Disconnect mains power and allow the stove to cool before opening, cleaning, or servicing it. Never operate it with the side panel removed.
+- Operate only with the hopper door closed and the firebox door and ash drawer fully latched. The factory manual says a firebox door left open for about one minute or an ash drawer left open for about 20 minutes causes shutdown; opening the drawer also disables the ash dump and blocks startup.
 - Do not connect a USB UART, ESP32, logic analyzer, or standard RS-232 adapter directly to J3 until pinout, ground reference, voltage levels, and signal polarity have been measured.
 - Do not describe a software receive-only capture as electrically passive.
   Opening a PC serial device can transition DTR/RTS before any payload byte is
