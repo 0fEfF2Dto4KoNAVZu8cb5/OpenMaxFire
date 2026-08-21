@@ -119,7 +119,21 @@
 
 ## Phase 7 - permanent controller
 
-- [ ] Build an isolated ESP32/ESPHome interface that electrically fails open.
-- [ ] Limit it to telemetry, faults, start/stop, heat level, and command verification.
-- [ ] Preserve factory front-panel and thermostat operation when the ESP32, network, or Home Assistant is unavailable.
-- [ ] Add optional heating-source coordination only after stove control is proven reliable.
+- [x] Document the candidate Olimex ESP32-POE-ISO-IND plus consolidated
+  stove-interface daughterboard architecture.
+- [ ] Complete the J3 and thermostat electrical measurements required to select
+  the isolated logic voltage, protection, and relay contact ratings.
+- [ ] Prototype isolated read-only UART with the controller powered independently
+  from J3.
+- [ ] Prototype the non-latching thermostat transfer relay and verify that its
+  de-energized state reconnects the physical backup thermostat.
+- [ ] Design the consolidated daughterboard with integrated isolated UART power,
+  signal-relay driver, hardware watchdog, protection, connectors, and feedback.
+- [ ] Limit the permanent controller to telemetry, faults, start/stop, heat level,
+  command verification, and local temperature control.
+- [ ] Preserve factory front-panel operation and transfer to the physical backup
+  thermostat whenever the ESP32 is booting, failed, unpowered, or stale.
+- [ ] Add optional heating-source coordination only after stove control and the
+  complete failure matrix are proven reliable.
+
+See [Candidate permanent-controller hardware](hardware/permanent-controller-candidate.md).
