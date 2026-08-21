@@ -12,6 +12,10 @@ member against its expected SHA-256 before analysis.
 | `5.5.00/` | `BixCheck_080206.exe` | `12dd738a10f72f18a672aeec6ec5e1456ff478103ca84fc154c4f73594aac3d6` |
 | `5.5.01/` | `BixCheck_080315.exe` | `b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792` |
 
+> **Have an unlisted BixCheck version?** If you have BixCheck software from a
+> version not listed above, please contact me or open a pull request so it can
+> be preserved and reverse-engineered.
+
 ## Per-version outputs
 
 - `summary.json`: PE metadata, symbol/table counts, and serial settings;
