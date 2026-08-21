@@ -57,6 +57,10 @@ all stove-facing and fail-safe circuitry:
 - relay-position feedback using a spare contact where practical;
 - removable J3, thermostat, and temperature-sensor connectors.
 
+A circuit-level starting point, signal allocation, fail-safe logic, preliminary
+parts list, and layout constraints are recorded in
+[Preliminary stove-interface daughterboard design](daughterboard-preliminary-design.md).
+
 Candidate integrated UART isolation parts:
 
 - [TI ISOW7721](https://www.ti.com/product/ISOW7721): one forward and one reverse
@@ -83,12 +87,16 @@ fit for the uncharacterized, likely low-energy thermostat input. A mechanical
 dry-contact relay is preferred over an SSR because it gives a definite
 de-energized state without polarity assumptions or off-state leakage.
 
-Candidate watchdog:
+Candidate fail-safe gate:
 
-- [TI TPL5010-Q1](https://www.ti.com/product/TPL5010-Q1), or an equivalent
-  independent supervisor.
-- Firmware must periodically prove liveness.
-- A missed heartbeat resets the ESP32.
+- [TI SN74LVC1G123](https://www.ti.com/product/SN74LVC1G123), or an equivalent
+  retriggerable hardware monostable, generates `HB_OK` only while firmware
+  continuously supplies a heartbeat.
+- A separate AND gate combines `HB_OK` with the firmware's relay request before
+  a MOSFET can energize the relay coil.
+- A reset-only watchdog is optional but is not accepted as the only relay
+  safeguard: a missed heartbeat must remove coil power and keep it removed
+  until liveness and the relay request are both re-established.
 - The relay-control GPIO must default low/high-impedance so reset, boot, and
   power loss release the relay.
 
