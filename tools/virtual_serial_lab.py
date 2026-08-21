@@ -19,13 +19,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import pty
-import select
-import signal
 import sys
-import termios
 import time
-import tty
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TextIO
@@ -36,6 +31,7 @@ try:
         ADDRESSED_UNITS,
         ProtocolError,
         RegisterRequest,
+        calculate_configuration_checksum,
         decode_register_request,
     )
 except ModuleNotFoundError:
@@ -44,6 +40,7 @@ except ModuleNotFoundError:
         ADDRESSED_UNITS,
         ProtocolError,
         RegisterRequest,
+        calculate_configuration_checksum,
         decode_register_request,
     )
 
@@ -124,6 +121,12 @@ def default_registers() -> dict[tuple[str, int], int]:
     for start, value in fields:
         for offset, byte in enumerate(value):
             registers[("A", start + offset)] = byte
+    eeprom = {
+        address: registers.get(("A", address), 0) for address in range(0x100)
+    }
+    checksum = calculate_configuration_checksum(7, eeprom)
+    registers[("A", 0x00)] = checksum >> 8
+    registers[("A", 0x01)] = checksum & 0xFF
     return registers
 
 
@@ -210,6 +213,23 @@ def run_demo(stove: VirtualStove) -> int:
 
 
 def run_pty(stove: VirtualStove, log: TextIO | None) -> int:
+    """Run the optional POSIX PTY endpoint.
+
+    Imports remain local so the protocol model and its tests are importable on
+    Windows even though Windows does not provide Unix pseudo-terminals.
+    """
+
+    try:
+        import pty
+        import select
+        import signal
+        import termios
+        import tty
+    except ImportError as exc:
+        raise RuntimeError(
+            "the PTY virtual endpoint requires Linux or macOS; use --demo on Windows"
+        ) from exc
+
     master, slave = pty.openpty()
     tty.setraw(slave, when=termios.TCSANOW)
     slave_name = os.ttyname(slave)

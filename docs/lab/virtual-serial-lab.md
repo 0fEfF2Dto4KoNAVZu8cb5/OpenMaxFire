@@ -1,9 +1,13 @@
 # Virtual serial lab
 
-`tools/virtual_serial_lab.py` creates a local pseudo-terminal implementing the
+`tools/virtual_serial_lab.py` creates a local POSIX pseudo-terminal implementing the
 reconstructed BixCheck register grammar. It allows the modern client—or
 BixCheck on a compatible host connected through a PTY bridge—to be exercised
 without a stove.
+
+The PTY endpoint requires Linux or macOS. `--demo`, the protocol model, and the
+offline tests remain importable on Windows; normal Windows serial hardware is
+handled by the portable `openmaxfire.transport` layer.
 
 ## Safe default
 
@@ -52,8 +56,9 @@ specifically needs write/echo behavior.
 ## Default identity
 
 The model advertises data format 07 and software bytes 02/71. Its A-unit serial,
-date, and model strings are conspicuously synthetic. Unknown registers read as
-zero. These values are test fixtures, not a dump of serial 5215.
+date, and model strings are conspicuously synthetic, and A00/A01 contain the
+matching synthetic configuration checksum. Unknown registers read as zero.
+These values are test fixtures, not a dump of serial 5215.
 
 ## What this validates
 

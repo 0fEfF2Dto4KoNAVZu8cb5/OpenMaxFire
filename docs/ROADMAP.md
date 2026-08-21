@@ -59,9 +59,15 @@
   factory actuator tests through the unfinished interface.
 - [ ] Identify the physical function of CR02.1 by cold/off correlation.
 
-## Phase 2 - read-only Linux monitor
+## Phase 2 - read-only cross-platform monitor
 
 - [x] Decode addressed/telemetry response framing statically and in emulation.
+- [x] Add platform-neutral serial-port discovery for Windows, Linux, and macOS.
+- [x] Add bounded addressed-response matching that skips interleaved telemetry.
+- [x] Add the read-only controller identity sequence, exact JSONL traffic
+  recording, and a lossless A00-AFF JSON backup artifact with checksum checks.
+- [x] Add Windows/Linux/macOS CI coverage while keeping the POSIX PTY endpoint
+  outside the portable core.
 - [ ] Implement robust timeouts, resynchronization, and stale-data detection.
 - [x] Map BixCheck T-stream indexes, physical slots, producer sources, widths,
   and core numeric conversions to the vendor telemetry fields.
@@ -69,7 +75,9 @@
   TFD-TFF provenance, and M/I payload semantics.
 - [ ] Expose stove identity, state, heat level, alarms, temperatures, fan values, door timers, and ash values.
 - [ ] Add CSV/JSON logging and replayable capture fixtures.
-- [ ] Back up complete configuration/EEPROM before enabling any write.
+- [ ] Validate the complete configuration/EEPROM backup against serial 5215
+  before enabling any write.
+- [ ] Publish checksummed standalone Windows, Linux, and macOS packages.
 
 ## Phase 3 - verified normal control
 
@@ -82,7 +90,9 @@
 ## Phase 4 - BixCheck configuration parity
 
 - [x] Decode identification, checksum, data-format, serial-number, production-date, and model addresses statically.
-- [ ] Implement readback and backups.
+- [x] Implement offline-tested read-only AR00-AFF readback and durable backups.
+- [ ] Validate identity strings, checksum, and backup round-trip against serial
+  5215 before implementing restore.
 - [ ] Map fuel A/B fan, feed, ash, startup, igniter, ash-dump, and convection-fan calibration fields.
 - [ ] Add range validation, version/data-format checks, diff preview, verify-after-write, and restore.
 - [ ] Keep full memory formatting behind a separate expert workflow.

@@ -2,11 +2,37 @@
 
 OpenMaxFire has two related products with deliberately different scopes.
 
-## Linux service tool
+## Cross-platform service tool
 
-The Linux CLI/application is the eventual BixCheck replacement. Its long-term scope includes serial communication, stove identification, telemetry, remote control, fuel/hardware configuration, calibration, blocked-flue and lean-burn monitoring, thermostat/auto-restart settings, trim-pot modes, configuration readback/write/format, logging, factory Checkout, debug tools, firmware identification, bootloader communication, firmware flashing, and post-flash calibration.
+The Windows/Linux/macOS CLI/application is the eventual BixCheck replacement.
+Its long-term scope includes serial communication, stove identification,
+telemetry, remote control, fuel/hardware configuration, calibration,
+blocked-flue and lean-burn monitoring, thermostat/auto-restart settings,
+trim-pot modes, configuration readback/write/format, logging, factory Checkout,
+debug tools, firmware identification, bootloader communication, firmware
+flashing, and post-flash calibration.
 
 Dangerous service functions must remain visibly separated from normal monitoring and control.
+
+The portable architecture has four boundaries:
+
+- `protocol`: OS-independent request encoding, response parsing, register
+  interpretation, conversions, and checksums;
+- `client`: bounded request/response matching, identity, read-only A-space
+  acquisition, and later verified control workflows;
+- `transport`: pyserial port enumeration and 8N1 I/O across COM, `/dev/tty*`,
+  and `/dev/cu.*` names, plus exact JSONL traffic recording;
+- `cli`: user-facing safety gates and durable artifacts.
+
+No protocol or safety decision may depend on a Windows or POSIX device-name
+shape. Platform-specific packaging is a thin delivery layer over the same
+tested Python library. The Linux/macOS PTY virtual endpoint is an optional lab
+adapter, not part of the portable protocol core.
+
+The CLI is the authoritative, scriptable engine. A future desktop GUI should be
+a thin client of the same APIs rather than a second protocol implementation.
+Standalone Windows, Linux, and macOS releases should eventually let stove
+owners use the tool without installing Python.
 
 ## Permanent ESP32/ESPHome controller
 

@@ -2,7 +2,7 @@
 
 Snapshot date: 2026-08-21
 
-OpenMaxFire separates evidence into four levels:
+OpenMaxFire separates evidence into five levels:
 
 - **Vendor-documented**: stated in recovered Bixby documentation.
 - **Direct photographic**: visibly established in a preserved photograph of
@@ -43,6 +43,7 @@ OpenMaxFire separates evidence into four levels:
 | J3/cable | Black four-contact main-board connector and location; factory cable P/N 2013324 | Installed-board photographs plus vendor notes/manual |
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
+| Portable tool | Windows/Linux/macOS port discovery, bounded read matching, identity, JSONL capture, and complete EEPROM backup artifacts implemented | Offline tests and virtual endpoint; live use still blocked on J3 characterization |
 
 ## Important unresolved items
 
