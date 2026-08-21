@@ -2,6 +2,11 @@
 
 Recovery dates are in UTC. Files were supplied or recovered through the OpenMaxFire research conversation and organized on 2026-08-20.
 
+> **Have an unlisted version?** If you have any BixCheck software, MaxFire
+> firmware, manual, hardware documentation, or related material from a version
+> not listed in this manifest, please contact me or open a pull request so it
+> can be preserved and reverse-engineered.
+
 ## Original vendor packages
 
 | Path | Bytes | SHA-256 | Provenance |
