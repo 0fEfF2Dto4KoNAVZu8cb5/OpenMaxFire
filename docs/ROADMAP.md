@@ -37,7 +37,7 @@
   logging, report files, QuickCal/debug construction, and flue/fuel monitors.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
 - [x] Preserve the prior OpenMaxFire v0.1 snapshot.
-- [ ] Publish a public preservation copy to Archive.org after reviewing redistribution and privacy.
+- [x] Publish all three recovered factory firmware/service-software releases to Archive.org after reviewing redistribution and privacy.
 
 ## Phase 1 - electrical and read-only bench validation
 
