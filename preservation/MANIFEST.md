@@ -67,4 +67,10 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 
 ## External archive
 
-Archive.org status: **not yet uploaded**.
+Archive.org status: **complete for all three recovered factory firmware/service-software releases** (2026-08-21).
+
+| Release | Archive.org item |
+| --- | --- |
+| Firmware 2.06 / BixCheck 5.0.21 | [Bixby MaxFire 110/115 Firmware 2.06 and BixCheck 5.0.21 Service Package](https://archive.org/details/bixby-maxfire-110-115-firmware-2.06-bixcheck-5.0.21) |
+| Firmware 2.70 / BixCheck 5.5.00 | [Bixby MaxFire 110/115 Firmware 2.70 and BixCheck 5.5.00 Service Package](https://archive.org/details/bixby-maxfire-110-115-firmware-2.70-bixcheck-5.5.00) |
+| Firmware 2.71 / BixCheck 5.5.01 | [Bixby MaxFire 110/115 Firmware 2.71 and BixCheck 5.5.01 Service Package](https://archive.org/details/bixby-maxfire-110-115-firmware-2.71-bixcheck-5.5.01) |

@@ -14,6 +14,6 @@ OpenMaxFire's MIT License does not apply to these vendor artifacts or photograph
 - `SHA256SUMS.txt` covers every file in `preservation/` and `reverse-engineering/`.
 - `MANIFEST.md` records provenance, relationships, versions, and important notes.
 - Original files should never be edited in place. Add a derived copy under `reverse-engineering/` instead.
-- Future Archive.org identifiers/URLs belong in the manifest; none has been assigned yet.
+- Archive.org identifiers and URLs for the preserved factory releases are recorded in `MANIFEST.md`.
 
 All originals catalogued in `MANIFEST.md` are present in their normal binary form. No split, encoded, or reconstructed copies are used.
