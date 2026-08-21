@@ -17,6 +17,10 @@ OpenMaxFire separates evidence into five levels:
 | Area | Finding | Evidence |
 | --- | --- | --- |
 | Stove | Serial 5215; owner identifies model as MaxFire 115 | Nameplate photo / owner report |
+| Owner manual | Factory installation, operating, and maintenance instructions, document `2020866 REV A`; embedded title identifies Model 115 | Vendor-documented / PDF metadata |
+| Thermostat | Rev. A manual: unpowered on/off 24 V thermostat does not start the stove; while running, a call selects the chosen level and no call falls back to level 1 | Vendor-documented; later format-07 behavior still needs live validation |
+| Safety interlocks | Door open about one minute causes shutdown; drawer open blocks startup/ash dump and about 20 minutes causes shutdown | Vendor-documented |
+| Hopper sensing | Factory wiring diagram shows the hopper over-temperature switch but no hopper-level or hopper-lid sensor | Vendor-documented wiring diagram |
 | Controller | Installed PCB suffix `-0604` corroborates owner-reported 9067-0604; December 2005 manufacture and assembly `12/15` remain owner-reported | Direct photograph / owner report |
 | BixCheck pairing | 5.0.21→2.06/format 05; 5.5.00→2.70/07; 5.5.01→2.71/07 | Vendor package / EXE tables |
 | BixCheck internals | EXEs retain 640/655 COFF function symbols, source-unit names, and fixed tables | Reproducible PE/COFF analysis |
@@ -42,6 +46,7 @@ OpenMaxFire separates evidence into five levels:
 | A-unit storage | Firmware reads A00-AFF through PIC16F877A internal data EEPROM registers | Emulator events and bank-aware handler trace |
 | J3/cable | Black four-contact main-board connector and location; factory cable P/N 2013324 | Installed-board photographs plus vendor notes/manual |
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
+| Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
 | Portable tool | Windows/Linux/macOS port discovery, bounded read matching, identity, JSONL capture, and complete EEPROM backup artifacts implemented | Offline tests and virtual endpoint; live use still blocked on J3 characterization |
 
