@@ -30,6 +30,20 @@
 - the standalone `1394047.pdf` has the same SHA-256 as that manual member
 - exact extraction shows the same main application in both firmware files; the PICkit image adds reset redirection, service/bootloader code, and EEPROM defaults
 
+## MaxFire Model 115 owner-manual line
+
+`7346103.pdf`
+
+- was supplied by the stove owner on 2026-08-21 and is preserved byte-for-byte under `original/manuals/`;
+- is a 40-page factory *Installation, Operating and Maintenance Instructions* manual, printed document `2020866 REV A`;
+- has embedded title `Owner Manual_115_2020866 Rev A` and author metadata `Bixby Energy Systems`;
+- has PDF creation metadata 2005-10-17 and modification metadata 2008-10-22; those file dates are not treated as independently verified publication dates; and
+- has SHA-256 `ed04d708590fa8bec0d0276463abd736409ddbdd8d8eee6c7a66fb0cd7fba33d`.
+
+Its owner-manual statements are vendor-documented evidence for the appliance,
+but Rev. A behavior is not automatically generalized to later format-07
+firmware/configuration features.
+
 ## Deterministic analysis line
 
 `tools/firmware_pipeline.py` reads the three preserved ZIP packages, inventories every member, extracts four firmware delivery images, validates all Intel HEX checksums, parses sparse PIC memory, disassembles the PIC14 instruction words, and produces comparison tables. Generated outputs are reproducible and contain no device-communication path.
