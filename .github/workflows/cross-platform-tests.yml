@@ -2,6 +2,7 @@ name: Cross-platform tests
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:

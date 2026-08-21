@@ -1,0 +1,2 @@
+# Keep Intel HEX artifacts byte-identical across operating systems.
+*.hex text eol=lf
