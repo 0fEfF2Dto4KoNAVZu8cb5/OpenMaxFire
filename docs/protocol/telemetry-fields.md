@@ -72,8 +72,8 @@ T frames. A two-byte row names both physical T slots.
 | T13 | 1 | Alarm status | raw status byte; no named decode in preserved BixCheck |
 | T14 | 1 | Flag status | raw byte; BixCheck `Flag mode` = `(raw & 7) + 1` |
 | T15 | 1 | Igniter current | raw byte/state display |
-| T16 | 1 | Fire-door timer | raw ticks; vendor manual defines 1/3-second units |
-| T17 | 1 | Ash-drawer timer | raw ticks; vendor manual defines 5 1/3-second units |
+| T16 | 1 | Fire-door timer | raw ticks; BixCheck manual defines 1/3-second units; owner manual says about one minute open causes shutdown |
+| T17 | 1 | Ash-drawer timer | raw ticks; BixCheck manual defines 5 1/3-second units; owner manual says open blocks startup and about 20 minutes causes shutdown |
 | T18 | 1 | Exhaust fan target | raw count; displayed RPM = `raw * 24` |
 | T19 | 1 | Drop limit / BF drop limit | raw thermocouple-point threshold |
 | T1A + T1B | 2 | Feed cycle table | unsigned big-endian ticks; seconds = ticks / 120 |
