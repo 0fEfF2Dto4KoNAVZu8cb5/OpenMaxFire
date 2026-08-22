@@ -107,13 +107,13 @@ them with BixCheck's `AnalyzeInteractiveResult()` masks produces:
 
 | Physical/service signal | Protocol representation | PIC source | Offline confidence |
 | --- | --- | --- | --- |
-| Front-panel buttons | `CR01`: none `00`, ON `02`, OFF `01`, UP `04`, DOWN `08` | RD2 button-bank select, RD6:RD5 address, active-low RD3 return; debounced into RAM `0x53` | High static mapping; not live-validated |
+| Front-panel buttons | `CR01`: none `00`, ON `02`, OFF `01`, UP `04`, DOWN `08` | RD2 button-bank select, RD6:RD5 address, active-low RD3 return; debounced into RAM `0x53` | Static map; OFF/UP/DOWN/none later live-validated |
 | Burn-drive limit switch | `CR02` bit 0 | RD3 external-input mux slot 0 | High static mapping; physical polarity unverified |
 | Unassigned mux input | `CR02` bit 1 | RD3 external-input mux slot 1 | Transport mapped; physical function unresolved |
-| Firebox door | `CR02` bit 5; open `1`, closed `0` | RD1 | High; not live-validated |
-| Ash drawer | `CR02` bit 6; open `1`, closed `0` | RD4 | High; not live-validated |
-| Thermostat | `CR06` bit 2 | RB4 | High pin/bit confidence; verify polarity live |
-| Fuel select | `CR02` bit 2; `1`=Fuel A/corn, `0`=Fuel B/wood | RD3 external-input mux slot 2 | High static mapping and polarity; not live-validated |
+| Firebox door | `CR02` bit 5; open `1`, closed `0` | RD1 | Later live-validated |
+| Ash drawer | `CR02` bit 6; open `1`, closed `0` | RD4 | Later live-validated |
+| Thermostat | `CR06` bit 2; open `1`, closed `0` | RB4 | Later live-validated |
+| Fuel select | `CR02` bit 2; `1`=Fuel A/corn, `0`=Fuel B/wood | RD3 external-input mux slot 2 | Later live-validated |
 | Exhaust-fan sensor J10 | `CR05` raw pulse-count byte | RA4/T0CKI → TMR0 → RAM `0x34`; sampled every 30 RB0 external-interrupt ticks | High static mapping; count-to-RPM conversion unresolved |
 | Feeder-wheel sensor J9 | Current state in `CR02.4`; scaled cycle interval in `CR07` | RD0 high-then-low cycle; RB1-gated RAM `0x47:0x46` tick counter latched to `0x45:0x44` | High static mapping; polarity and time unit unresolved |
 | Fan potentiometer | `CR09`; low `00`, center about `80`, high `FF` | AN3 | High offline mapping |

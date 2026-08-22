@@ -154,7 +154,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--baud",
         type=int,
         choices=(9600, 19200),
-        help="required for live I/O: 9600 for 2.06; 19200 intended for 2.70/2.71",
+        help=(
+            "required for live I/O: 9600 for live 2.02 and preserved 2.06; "
+            "19200 intended for 2.70/2.71"
+        ),
     )
     p.add_argument(
         "--timeout",

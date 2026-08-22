@@ -1,6 +1,6 @@
 # Research status
 
-Snapshot date: 2026-08-21
+Snapshot date: 2026-08-22
 
 OpenMaxFire separates evidence into five levels:
 
@@ -10,6 +10,8 @@ OpenMaxFire separates evidence into five levels:
 - **Statically confirmed**: visible in a preserved executable or firmware image.
 - **Emulator-confirmed**: executed from preserved firmware under an explicitly
   incomplete synthetic hardware model.
+- **Live-validated**: observed through preserved raw traffic on serial 5215's
+  physical controller while cold/off.
 - **Owner-reported**: reported by the stove owner but not independently measured.
 
 ## Established facts
@@ -21,14 +23,15 @@ OpenMaxFire separates evidence into five levels:
 | Thermostat | Rev. A manual: unpowered on/off 24 V thermostat does not start the stove; while running, a call selects the chosen level and no call falls back to level 1 | Vendor-documented; later format-07 behavior still needs live validation |
 | Safety interlocks | Door open about one minute causes shutdown; drawer open blocks startup/ash dump and about 20 minutes causes shutdown | Vendor-documented |
 | Hopper sensing | Factory wiring diagram shows the hopper over-temperature switch but no hopper-level or hopper-lid sensor | Vendor-documented wiring diagram |
-| Controller | Installed PCB suffix `-0604` corroborates owner-reported 9067-0604; December 2005 manufacture and assembly `12/15` remain owner-reported | Direct photograph / owner report |
+| Controller | Bare-board photographs directly show PCB `9067-0604`, PIC16F877A-I/P, and `10.000` MHz oscillator; December 2005 manufacture and assembly `12/15` remain owner-reported | Direct photograph / owner report |
 | BixCheck pairing | 5.0.21→2.06/format 05; 5.5.00→2.70/07; 5.5.01→2.71/07 | Vendor package / EXE tables |
+| Installed firmware | Serial 5215's controller reports firmware 2.02/data format 04 at 9,600 baud; this older pairing was absent from the preserved packages | Live-validated JSONL traffic |
 | BixCheck internals | EXEs retain 640/655 COFF function symbols, source-unit names, and fixed tables | Reproducible PE/COFF analysis |
-| PC serial | 5.0.21 uses 9,600; 5.5.x selects 9,600 or 19,200; all use 8N1 | `async.cpp` methods in all EXEs |
+| PC serial | 5.0.21 uses 9,600; 5.5.x selects 9,600 or 19,200; all use 8N1; live 2.02 responds at 9,600 and not 19,200 | `async.cpp` methods plus live capture |
 | Firmware | Four images target PIC16F877A and validate as Intel HEX | Deterministic firmware pipeline |
 | Firmware identity | CR0B/CR0C constants encode 2.06, 2.70, and 2.71 | Cross-version disassembly |
-| Requests | Reads are exactly 4 bytes, writes 6, uppercase, with no terminator | `regio()` in every EXE |
-| Responses | Addressed replies are six characters; physical firmware telemetry is one-byte `Txxvv`; CR/LF terminates | BixCheck receiver plus all firmware TX paths |
+| Requests | Reads are exactly 4 bytes, uppercase, with no terminator; live `CR00` was `43 52 30 30` | `regio()` plus live traffic |
+| Responses | Addressed replies are six characters plus LF; firmware emits lowercase hex; live format-04 telemetry uses one-byte `Txxvv` and auxiliary `DWxxyy` lines | BixCheck/firmware paths plus live traffic |
 | UART generation | SPBRG changes `0x40`→`0x20`; exact intended PC rates imply a 10 MHz oscillator | Firmware plus BixCheck DCB setup |
 | Remote buttons | OFF=`CW0E11`, ON=`CW0E12`, UP=`CW0E14`, DOWN=`CW0E18` | All BixCheck tables/action paths |
 | Telemetry | All 91 periodic producer slots mapped/executed; logical 16-bit fields use adjacent big-endian T slots; 2.71 adds periodic T1E and event T20 | Decoded tables, firmware producers, emulator sender traces |
@@ -40,34 +43,35 @@ OpenMaxFire separates evidence into five levels:
 | Checkout | 45 reachable tests; identical dormant 46th plate-motor record | Tables plus UI/dispatcher flow |
 | Downloader | `CW0FC4` reset; `EA`/`EB` identify; `E3` blocks; `ED` completion | All EXEs / emulator identify probe |
 | Emulator | 45 CR reads, 48 safe C writes, 91 periodic telemetry slots, and 768 A-unit EEPROM reads execute expected bounded paths through real 2.06/2.70/2.71 code; PICkit emits `EB` for `EA` | Experimental PIC14 harness |
-| Offline inputs | Door=CR02.5/RD1; drawer=CR02.6/RD4; thermostat=CR06.2/RB4; fan pot=CR09/AN3; feed pot=CR0A/AN4 | BixCheck masks plus firmware GPIO/ADC traces |
+| Physical inputs | Door=CR02.5 (1=open); drawer=CR02.6 (1=open); thermostat=CR06.2 (1=open); fuel=CR02.2 (1=corn); OFF/UP/DOWN=CR01 01/04/08; fan=CR09; feed=CR0A | Static/emulator mapping plus live one-at-a-time cold/off validation |
 | J10 exhaust sensor | RA4/T0CKI falling-edge count is sampled into RAM 0x34 and returned as CR05 | Identical 2.06/2.70/2.71 producer signatures plus BixCheck exhaust predicates and board diagram |
 | J9 feeder sensor | RD0 high-then-low wheel cycle is timed while RB1 is active; CR02.4 is current state and CR07 is the scaled interval | Identical 2.06/2.70/2.71 producer signatures plus BixCheck feed predicate and board diagram |
 | A-unit storage | Firmware reads A00-AFF through PIC16F877A internal data EEPROM registers | Emulator events and bank-aware handler trace |
-| J3/cable | Black four-contact main-board connector and location; factory cable P/N 2013324 | Installed-board photographs plus vendor notes/manual |
+| J3/cable | J3-1=stove TX/PIC25, J3-2=stove RX/PIC26, J3-4=ground, J3-3 unresolved; FTDI TTL-232R-5V-WE wired without VCC exchanged valid traffic | Bare-board photographs, owner continuity, adapter inventory, live traffic |
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
-| Portable tool | Windows/Linux/macOS port discovery, bounded read matching, identity, JSONL capture, and complete EEPROM backup artifacts implemented | Offline tests and virtual endpoint; live use still blocked on J3 characterization |
+| Portable tool | Windows/Linux/macOS port discovery, timeout-bounded read matching, identity, JSONL capture, and complete EEPROM backup artifacts implemented and live-used | Offline tests, virtual endpoint, and serial 5215 captures |
+| EEPROM | Three independent A00-AFF reads agree; checksum EFCE matches; format 04, model `Bixby Model 115`, stored serial `2060`, date string `01102007` | Live-validated backup and two raw traffic logs |
+| Format-04 telemetry | ~3.58 s burst cycle; T03 fan trim, T04 feed trim, T06 firebox-related dynamic value, T08 flashing door/drawer warning bits, T0C bit 08 thermostat-open | Live A/B and A-B-A cold/off captures |
 
 ## Important unresolved items
 
 | Question | Current position | Next evidence |
 | --- | --- | --- |
-| J3 pinout/levels | Unknown; do not assume TTL or RS-232 | Continuity and protected voltage/polarity measurements |
-| Oscillator | 10 MHz is strongly inferred, not physically checked | Read marking/frequency |
-| Live framing | Software/emulator grammar is established; no electrical capture | Passive capture, then `CR00` only |
+| J3 pin 3 | Ground/TX/RX are live-validated; pin 3 remains unused/unresolved | Protected measurement and revision-specific tracing; do not connect |
 | M/I families | Outer dispatch known; CW0D emits `I` plus LF, but general payload semantics remain unresolved | Deeper data-flow analysis or controlled capture |
-| Board routing | Diagram depicts 9067-0404; serial 5215's `-0604` suffix corroborates the owner-reported 9067-0604, but the prefix and solder side are obstructed | Unobstructed full silkscreen, solder-side photographs, and continuity tracing around J3 |
-| Input wiring | Offline assignments are strong; serial 5215 wiring and physical polarity remain untested; CR02.1 and CR02.7 are unnamed | Cold/off polling while toggling one switch; observe J9 only without energizing its motor |
-| Telemetry conversions | Core formulas and T08/T09 display decoders are mapped; BixCheck itself leaves T12/T13 raw and only derives T14's mode number | Safe live correlation plus firmware bitfield tracing |
+| Board routing | Full 9067-0604 marking and both PCB sides are photographed; J3 continuity is owner-measured, but pin 3 and some under-component routing remain unresolved | Additional protected net tracing only as needed |
+| Input wiring | Door/drawer/thermostat/fuel/buttons/pots are live-validated; CR02.1/CR02.7 and live J9/J10 behavior remain unnamed/unvalidated | Cold/off correlation or passive observation without actuator writes |
+| Telemetry conversions | Later format-05/07 map is statically decoded; live format 04 differs and only several fields are correlated | Additional cold/off correlation, then operating capture under a separate safe plan |
 | Table-only telemetry | BixCheck 5.5.01 names TFD-TFF, but no producer is recovered in periodic 2.71 firmware; T20 is a separate event path | Passive capture or newly identified conditional producer |
-| EEPROM semantics | Internal storage, addresses/types/checksum, read path, and CW01 checksum writes mapped; many calibration meanings rely on labels | Read-only live backup, then field correlation |
+| EEPROM semantics | Live format-04 backup/checksum/identity are preserved; stored serial/date differ from the appliance nameplate and many calibration meanings rely on labels | Compare another format-04 unit or recovered 2.02 BixCheck/firmware |
 | Checkout thresholds | Buttons, pots, doors, thermostat, exhaust CR05, feeder CR07, and igniter result bits are mapped; several engineering units/state meanings remain unresolved | Trace remaining manual/no-op cases and conversions |
 | Downloader | Framing/identify mapped; erase/program acknowledgements and recovery unproven | Isolated emulation, then sacrificial bench controller only |
 
-## Current blocker
+## Current boundary
 
-The J3 electrical interface has not been characterized. No command has been
-validated against serial 5215. Findings are vendor-documented, static, or
-explicitly labeled experimental emulation.
+Read-only J3 access is now established for serial 5215. The next safety boundary
+is any state-changing command or operating-stove test: neither is authorized by
+the cold/off session. Firmware 2.02 program memory remains unpreserved, J3-3 is
+unresolved, and no recovery path has been proven on sacrificial hardware.

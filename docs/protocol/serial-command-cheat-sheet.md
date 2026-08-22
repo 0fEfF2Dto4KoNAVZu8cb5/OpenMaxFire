@@ -5,10 +5,11 @@ This is the short, operator-friendly reference for the reconstructed MaxFire
 configuration bytes, telemetry fields, and loader controls in one place.
 
 > **Current proof level:** the commands below come from three BixCheck releases,
-> three factory application-firmware generations, and offline execution of the
-> real PIC code. They have **not** been validated on serial 5215's physical J3
-> port. J3 pin order and electrical levels are still unknown. Do not connect a
-> generic USB serial adapter directly.
+> three preserved application-firmware generations, offline execution of the
+> real PIC code, and a read-only live session on serial 5215's firmware
+> 2.02/data-format 04 controller. That board's J3 ground/TX/RX and 5 V TTL cable
+> are validated; J3-3 remains unresolved. Do not connect a generic USB serial
+> adapter or generalize this pinout to another board revision.
 
 ## Safety legend
 
@@ -28,6 +29,7 @@ effect, not the cable**.
 | Item | Rule |
 | --- | --- |
 | Serial format | 8 data bits, no parity, 1 stop bit (`8N1`) |
+| Live firmware 2.02 / format 04 | 9,600 baud |
 | Firmware 2.06 | 9,600 baud |
 | Firmware 2.70/2.71 | 19,200 baud intended; BixCheck also offered 9,600 |
 | Host control lines | BixCheck enables DTR and RTS; no hardware/software flow control |
@@ -77,9 +79,9 @@ byte and timestamp.
 | Order | Request | Why |
 | ---: | --- | --- |
 | 1 | `CR00` | Lowest-risk known probe; expected value `00` |
-| 2 | `CR08` | Data format: `05` for firmware 2.06, `07` for 2.70/2.71 |
+| 2 | `CR08` | Data format: live 2.02=`04`, 2.06=`05`, 2.70/2.71=`07` |
 | 3 | `CR0B` | Firmware major byte; expected `02` |
-| 4 | `CR0C` | Firmware minor byte: `06`, `70`, or `71` |
+| 4 | `CR0C` | Firmware minor byte: live `02`, or preserved `06`, `70`, `71` |
 | 5 | `CR0D` | Reserved constant; expected `00` |
 | 6 | `CR0E` | Version-dependent read constant |
 | 7 | `CR01`-`CR0A` | Inputs and live measurements, one at a time |
@@ -89,6 +91,7 @@ Version identification:
 
 | CR0B | CR0C | Firmware | CR08 format | Intended baud |
 | ---: | ---: | --- | ---: | ---: |
+| `02` | `02` | 2.02 (live-observed) | `04` | 9,600 |
 | `02` | `06` | 2.06 | `05` | 9,600 |
 | `02` | `70` | 2.70 | `07` | 19,200 |
 | `02` | `71` | 2.71 | `07` | 19,200 |
@@ -99,7 +102,7 @@ Do not send a `CW`, `AW`, or raw loader byte during this sequence.
 
 | Request | Returned value/field | Plain meaning | Notes |
 | --- | --- | --- | --- |
-| `CR00` | constant `00` | Presence/basic communication probe | Same in 2.06, 2.70, and 2.71 |
+| `CR00` | constant `00` | Presence/basic communication probe | Live 2.02 and preserved 2.06/2.70/2.71 |
 | `CR01` | button byte | Physical front-panel button | Values in the button table below |
 | `CR02` | bit field | Switches, doors, fuel, feeder sensor | Bits below; two inputs still unnamed |
 | `CR03` | bit field | Internal/output status | Physical names remain partly unresolved |
@@ -107,11 +110,11 @@ Do not send a `CW`, `AW`, or raw loader byte during this sequence.
 | `CR05` | raw byte | J10 exhaust-fan sensor pulse count | Raw counter, not proved RPM |
 | `CR06` | bit field | Controller flags and thermostat | Thermostat is bit 2 |
 | `CR07` | raw byte | J9 feeder-wheel cycle interval | Raw interval-like value; unit unproved |
-| `CR08` | constant | Stove data format | `05` on 2.06; `07` on 2.70/2.71 |
+| `CR08` | constant | Stove data format | Live 2.02=`04`; 2.06=`05`; 2.70/2.71=`07` |
 | `CR09` | raw byte | Fan adjustment potentiometer | AN3; checkout thresholds below |
 | `CR0A` | raw byte | Feed adjustment potentiometer | AN4; checkout thresholds below |
 | `CR0B` | constant | Firmware major byte | `02` on all preserved versions |
-| `CR0C` | constant | Firmware minor byte | `06`, `70`, or `71` |
+| `CR0C` | constant | Firmware minor byte | Live `02`; preserved `06`, `70`, or `71` |
 | `CR0D` | constant `00` | Reserved/unknown | Same in all preserved versions |
 | `CR0E` | constant on read | Version-dependent/reserved readback | 2.06=`21`, 2.70=`02`, 2.71=`00`; writes are remote buttons |
 
@@ -160,7 +163,7 @@ firebox door reports open.
 | --- | --- | --- |
 | 0 / `01` | RAM `0x2D`, bit 0 | Internal flag; unnamed |
 | 1 / `02` | RAM `0x2D`, bit 1 | Internal flag; unnamed |
-| 2 / `04` | RB4 | Thermostat input; live polarity unverified |
+| 2 / `04` | RB4 | Thermostat input; live 2.02 polarity is 1=open, 0=closed |
 | 3-7 / `F8` | Zero in recovered handler | Reserved in observed firmware |
 
 ### Raw checkout ranges
@@ -178,6 +181,8 @@ firebox door reports open.
 
 These are vendor checkout predicates on raw bytes. Do not label CR05 as RPM or
 CR07 as seconds until live correlation establishes physical units.
+The live format-04 fan control's physical center read `0x78`, one count below
+the later BixCheck detent predicate; the feed control's center read `0x79`.
 
 ## Controller write registers: CW00-CW0F
 
@@ -419,7 +424,7 @@ controller. It is included only so captures can be recognized.
 Never place these bytes in a monitor, Home Assistant integration, normal CLI,
 or automatic retry loop.
 
-## First live-session checklist
+## New-board live-session checklist
 
 - Stove cold, off, and not responsible for heating.
 - Identify J3 ground, pin order, idle level, polarity, and whether isolation is
@@ -433,6 +438,10 @@ or automatic retry loop.
 - Read identity/version registers next; then observe cold/off inputs one at a
   time.
 - Send no `CW`, `AW`, or loader byte in the first session.
+
+Serial 5215 completed this checklist read-only on 2026-08-22. Its exact pinout,
+cable wiring, captures, EEPROM, and format-04 field correlations are in the
+[live firmware-2.02 report](../reverse-engineering/live-fw202-format04.md).
 
 For derivation details and machine-readable evidence, see the
 [J3 working specification](j3-protocol.md),

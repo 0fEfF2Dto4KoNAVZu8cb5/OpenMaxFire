@@ -1,0 +1,62 @@
+[
+  {
+    "description": "n/a",
+    "device": "/dev/ttyS0",
+    "hardware_id": "n/a",
+    "location": null,
+    "manufacturer": null,
+    "pid": null,
+    "product": null,
+    "serial_number": null,
+    "usb_id": null,
+    "vid": null
+  },
+  {
+    "description": "n/a",
+    "device": "/dev/ttyS1",
+    "hardware_id": "n/a",
+    "location": null,
+    "manufacturer": null,
+    "pid": null,
+    "product": null,
+    "serial_number": null,
+    "usb_id": null,
+    "vid": null
+  },
+  {
+    "description": "n/a",
+    "device": "/dev/ttyS2",
+    "hardware_id": "n/a",
+    "location": null,
+    "manufacturer": null,
+    "pid": null,
+    "product": null,
+    "serial_number": null,
+    "usb_id": null,
+    "vid": null
+  },
+  {
+    "description": "n/a",
+    "device": "/dev/ttyS3",
+    "hardware_id": "n/a",
+    "location": null,
+    "manufacturer": null,
+    "pid": null,
+    "product": null,
+    "serial_number": null,
+    "usb_id": null,
+    "vid": null
+  },
+  {
+    "description": "TTL-232R-5V-WE - TTL-232R-5V-WE",
+    "device": "/dev/ttyUSB0",
+    "hardware_id": "USB VID:PID=0403:6001 SER=ABBAUPPN LOCATION=3-1",
+    "location": "3-1",
+    "manufacturer": "FTDI",
+    "pid": 24577,
+    "product": "TTL-232R-5V-WE",
+    "serial_number": "ABBAUPPN",
+    "usb_id": "0403:6001",
+    "vid": 1027
+  }
+]

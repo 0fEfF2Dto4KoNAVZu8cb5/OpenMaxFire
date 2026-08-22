@@ -1,10 +1,9 @@
 # J3 protocol working specification
 
 Status: statically reconstructed from all three BixCheck executables and all
-three application-firmware generations; every `CR00`-`CR0E` exchange, every
-`AR00`-`ARFF` read, every C-write handler, and every periodic telemetry slot is
-corroborated in offline PIC emulation. Nothing has yet been validated on serial
-5215's J3 port.
+three preserved application-firmware generations, then live-validated
+read-only on serial 5215's older firmware 2.02/data-format 04 controller on
+2026-08-22. No live write has been attempted.
 
 ## Physical interface
 
@@ -14,14 +13,16 @@ says the PC interface requires custom Bixby cable P/N 2013324 and supports PC
 serial ports or USB-to-serial converters on the computer side.
 
 The [installed-controller photographs](../hardware/installed-controller-photographs.md)
-directly confirm a black, single-row, four-contact J3 on serial 5215's main
-board. Its legible `-0604` suffix corroborates the owner-reported `9067-0604`.
-The images confirm connector identity and placement only; the solder side and
-individual nets are not visible.
+locate the black, single-row, four-contact J3. The later
+[bare-controller photographs](../hardware/bare-controller-photographs.md)
+directly show both PCB sides, complete `9067-0604` marking, PIC16F877A, and
+`10.000` MHz oscillator. Owner continuity tracing plus successful live traffic
+establish J3-1=stove TX, J3-2=stove RX, J3-4=ground. J3-3 remains unresolved
+and disconnected. See [the hardware pinout](../hardware/j3-interface.md).
 
-That does not establish that J3 itself carries standard RS-232 voltages. Pin
-order, ground, power, polarity, logic levels, and isolation remain unknown. Do
-not attach a generic serial adapter directly.
+The working adapter is an FTDI `TTL-232R-5V-WE`; adapter VCC was not connected.
+This validates non-inverted TTL UART compatibility for the tested board. It
+does not make a generic DB9/bipolar RS-232 adapter safe on J3.
 
 ## PC serial settings
 
@@ -35,6 +36,9 @@ control is disabled.
 | 5.5.00 | 2.70 | 9,600 or 19,200 |
 | 5.5.01 | 2.71 | 9,600 or 19,200 |
 
+The live controller identified itself as firmware 2.02/data format 04 and
+responded at 9,600 baud. A 19,200-baud `CR00` attempt timed out.
+
 The firmware uses `TXSTA=0x26`, `RCSTA=0x90`, and these divisors:
 
 | Firmware | SPBRG | At 10 MHz | Matching intended PC rate |
@@ -45,8 +49,8 @@ The firmware uses `TXSTA=0x26`, `RCSTA=0x90`, and these divisors:
 
 For the PIC16F877A high-speed asynchronous UART,
 `baud = Fosc / (16 × (SPBRG + 1))`. The exact host settings make a 10 MHz
-controller oscillator the strong compatibility inference. The marking/frequency
-must still be physically confirmed before a live connection.
+controller oscillator the strong compatibility inference. The bare-board
+photographs now physically confirm the installed oscillator's `10.000` marking.
 
 ## Requests
 
@@ -94,8 +98,11 @@ address in bytes 2-3. It does not meaningfully validate byte 1; OpenMaxFire
 retains it as the operation field and applies stricter length/character checks.
 
 `CollectResponse()` makes no more than 16 scan attempts and skips `T` frames
-while waiting for a non-telemetry result. This proves that unsolicited telemetry
-can be interleaved with request/response traffic.
+while waiting for a non-telemetry result. This proves that telemetry can be
+interleaved with request/response traffic. The live format-04 controller can
+place a valid addressed response after more than 16 complete `T`/`DW` frames,
+so OpenMaxFire no longer copies that fixed limit by default; it matches until
+the configured serial timeout.
 
 The experimental emulator executes the real 2.06, 2.70, and 2.71 code from
 reset. All 45 CR reads reach their expected handler and shared formatter; all
@@ -127,20 +134,22 @@ uses raw binary control bytes and program blocks. It is not an extension of the
 ASCII register grammar and is intentionally excluded from normal OpenMaxFire
 APIs. See [the downloader analysis](../reverse-engineering/bixcheck-downloader-protocol.md).
 
-## First live read-only sequence
+## Completed first live read-only sequence
 
-1. Confirm J3 ground, pinout, idle voltage, and polarity using protected
-   high-impedance measurements.
-2. Confirm the board oscillator marking/frequency.
-3. Use an isolated, current-limited, level-correct interface with transmit held
-   disabled initially.
-4. Passively observe idle and any controller traffic with the stove not firing.
-5. Match 9,600 to 2.06 or 19,200 to 2.70/2.71 based on a read-only version probe;
-   do not guess with writes.
-6. Send only `CR00`, capture exact bytes/timing, and require `CR0000` plus CR/LF.
-7. Read CR08 and CR0B-CR0E to identify data format and firmware.
-8. Only after stable read-only behavior, validate the offline mappings
-   (door=CR02.5/RD1, drawer=CR02.6/RD4, thermostat=CR06.2/RB4) by toggling one
-   safe switch at a time while the appliance is cold and off.
+The 2026-08-22 session completed the intended first-live sequence without any
+write:
 
-No `CW` request belongs in the first live session.
+1. traced J3 ground/TX/RX and left J3-3 disconnected;
+2. confirmed the physical 10 MHz oscillator marking;
+3. inventoried and wired the official 5 V TTL FTDI adapter without VCC;
+4. observed no spontaneous passive traffic;
+5. rejected 19,200 and established 9,600 8N1;
+6. captured exact `CR00`/`CR0000` bytes and LF termination;
+7. identified firmware 2.02/data format 04;
+8. completed three identical A00-AFF EEPROM reads; and
+9. live-validated door, drawer, thermostat, fuel, button, and trim-pot inputs
+   while cold/off.
+
+See [the complete live report](../reverse-engineering/live-fw202-format04.md).
+Future live sessions remain read-only unless a separate, reviewed plan
+explicitly authorizes a known command. No `CW` request was sent in this session.

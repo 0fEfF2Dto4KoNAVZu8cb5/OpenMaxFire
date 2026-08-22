@@ -149,3 +149,43 @@
 - Corrected heating-orchestration guidance: the Rev. A wall thermostat does not
   start the stove, so it cannot be assumed to provide independent restart
   failover without configuration-aware live validation.
+
+## 2026-08-22
+
+- Preserved full component- and solder-side photographs of serial 5215's bare
+  controller. The images directly identify PCB `9067-0604`, PIC16F877A-I/P,
+  and the `10.000` MHz oscillator.
+- Combined owner continuity tracing with the photographed square pad and PIC
+  pinout: J3-1 is stove TX toward PIC25/RC6, J3-2 is stove RX toward
+  PIC26/RC7, J3-4 is board ground, and J3-3 remains unresolved/disconnected.
+- Inventoried the exact live cable as FTDI `TTL-232R-5V-WE`, VID:PID
+  `0403:6001`, serial `ABBAUPPN`; black/orange/yellow connected to
+  ground/stove-RX/stove-TX and adapter VCC remained disconnected.
+- Rejected 19,200 baud and completed the first physical `CR00` exchange at
+  9,600 8N1. Captured exact no-terminator request framing, LF responses, and
+  lowercase response nibbles.
+- Identified the installed controller as previously unpreserved firmware 2.02,
+  data format 04 (`CR00=00`, `CR08=04`, `CR0B=02`, `CR0C=02`, `CR0D=00`,
+  `CR0E=00`).
+- Captured the complete CR00-CR0E cold baseline and physically validated
+  firebox door (`CR02 & 20`), ash drawer (`CR02 & 40`), corn/Fuel-A selector
+  (`CR02 & 04`), thermostat-open (`CR06 & 04`), OFF/UP/DOWN buttons, and both
+  full-range trim potentiometers. Physical ON was intentionally excluded.
+- Completed three byte-identical A00-AFF reads. The 256-byte EEPROM checksum
+  `EFCE` matches; it decodes format 04, model `Bixby Model 115`, serial string
+  `2060`, and production-date string `01102007`. The mismatch with appliance
+  serial 5215/December 2005 is preserved without assigning a cause.
+- Measured about a 3.58-second format-04 telemetry cycle during active polling.
+  Live correlations identify T03 fan trim, T04 feed trim, T06 as a dynamic
+  firebox-related value, flashing T08 bits 08/10 for firebox/ash warnings, and
+  T0C bit 08 for thermostat-open. DW06 is not uniquely an ash-drawer field.
+- Established that passive capture produces no spontaneous telemetry; the
+  controller emits telemetry bursts while requests are active. Port opening can
+  expose a partial line or ambiguous `00 0A` fragment.
+- Reproduced two client failures: a partial opening fragment and a valid CR08
+  reply arriving after more than 16 interleaved frames. Changed query matching
+  to continue until transport timeout, added delimiter resynchronization, and
+  added regression tests.
+- Preserved the raw JSONL traffic, adapter inventory, EEPROM artifact, hashes,
+  photographs, and interpreted live report. No C/A write, remote ON, loader,
+  or actuator command was sent.

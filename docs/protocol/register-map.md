@@ -1,26 +1,31 @@
 # Firmware CR register map
 
-The detailed map below combines bank-aware handler traces from all three real
-firmware images with BixCheck's Checkout masks. It is emulator-confirmed, not
-live-stove-confirmed. The same CR00-CR0E structure exists in 2.06, 2.70, and
-2.71.
+The detailed map below combines bank-aware handler traces from all three
+preserved firmware images with BixCheck's Checkout masks. The common physical
+inputs were subsequently live-validated read-only on an older firmware
+2.02/data-format 04 controller. The same CR00-CR0E request structure is now
+observed in 2.02, 2.06, 2.70, and 2.71.
 
 ## Cross-version constants
 
-| Read | 2.06 | 2.70 | 2.71 |
-| --- | ---: | ---: | ---: |
-| `CR00` | `0x00` | `0x00` | `0x00` |
-| `CR08` | `0x05` | `0x07` | `0x07` |
-| `CR0B` | `0x02` | `0x02` | `0x02` |
-| `CR0C` | `0x06` | `0x70` | `0x71` |
-| `CR0D` | `0x00` | `0x00` | `0x00` |
-| `CR0E` | `0x21` | `0x02` | `0x00` |
+| Read | Live 2.02 | 2.06 | 2.70 | 2.71 |
+| --- | ---: | ---: | ---: | ---: |
+| `CR00` | `0x00` | `0x00` | `0x00` | `0x00` |
+| `CR08` | `0x04` | `0x05` | `0x07` | `0x07` |
+| `CR0B` | `0x02` | `0x02` | `0x02` | `0x02` |
+| `CR0C` | `0x02` | `0x06` | `0x70` | `0x71` |
+| `CR0D` | `0x00` | `0x00` | `0x00` | `0x00` |
+| `CR0E` | `0x00` | `0x21` | `0x02` | `0x00` |
 
 CR0B/CR0C are identified as the two-byte stove software version. Every
 BixCheck Individualization table labels C08 `Stove data format`, so CR08's name
 is now statically confirmed rather than inferred. CR0E read behavior changes
 even though BixCheck uses writes to 0x0E for remote-button actions. See the
 [full firmware comparison](../reverse-engineering/firmware-comparison.md).
+
+The 2.02 column is live observation, not a recovered firmware-image constant.
+The complete capture is in
+[the format-04 live report](../reverse-engineering/live-fw202-format04.md).
 
 ## 2.71 detailed handlers
 
@@ -55,6 +60,11 @@ even though BixCheck uses writes to 0x0E for remote-button actions. See the
 | 6 | RD4 | Ash drawer: open=1, closed=0 |
 | 7 | RE1 | Direct digital input |
 
+On serial 5215, the cold/off baseline was `0x12`. One-at-a-time physical tests
+returned `0x32` with the firebox door open, `0x52` with the ash drawer open,
+and `0x16` in corn/Fuel-A position, then returned to `0x12`. This live-validates
+bits 5, 6, and 2 and their documented polarity on the 9067-0604 controller.
+
 ## CR03
 
 | Bit | Static source |
@@ -74,6 +84,10 @@ even though BixCheck uses writes to 0x0E for remote-button actions. See the
 | 2 | RB4 thermostat input |
 | 3-7 | Zero in the observed handler |
 
+The live thermostat baseline was `CR06=0x03` with its jumper installed/contacts
+closed and `0x07` with the jumper removed/contacts open. Bit 2 is therefore
+live-validated as 1=open on this controller.
+
 ## Buttons and potentiometers
 
 `AnalyzeInteractiveResult()` supplies exact service-test encodings:
@@ -88,6 +102,11 @@ even though BixCheck uses writes to 0x0E for remote-button actions. See the
 Reset-time synthetic ADC sweeps identify AN3→CR09 and AN4→CR0A in all three
 firmware generations. The reported byte is the high eight bits of the modeled
 10-bit sample.
+
+Live cold/off testing returned OFF=`0x01`, UP=`0x04`, DOWN=`0x08`, and none=
+`0x00`; ON was intentionally not pressed. Both potentiometers covered
+`0x00`-`0xFF`; physical center was fan `0x78` and feed `0x79`. The session ended
+with fan `0x78` and the owner's original feed setting `0x49`.
 
 ## J9 and J10 sensor counters
 
@@ -143,11 +162,10 @@ remain unnamed. Static code establishes the fuel polarity by
 following the `0x30` configuration-bank offset: clear selects Fuel B (`A70...`)
 and set leaves Fuel A (`A40...`).
 
-This still cannot prove the PCB wiring or electrical polarity on serial 5215.
-The preserved diagram shows board `9067-0404`, while installed photographs
-expose a `-0604` suffix that corroborates the owner-reported `9067-0604` but do
-not expose the complete prefix or solder-side routing. Safe validation remains
-a cold/off CR01/CR02/CR06 baseline with one physical input changed at a time.
+The cold/off CR01/CR02/CR06 and potentiometer mappings above are now physically
+validated on serial 5215's directly photographed `9067-0604` board. CR02.1 and
+CR02.7 remain unnamed. CR05/J10 and CR07/J9 have not been correlated against
+live moving hardware because this session deliberately avoided actuator tests.
 
 Machine-readable traces and stimulus results are documented in the
 [exhaustive emulator pass](../reverse-engineering/emulator-deep-pass.md).

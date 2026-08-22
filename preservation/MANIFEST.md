@@ -40,6 +40,7 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 | `original/photos/serial-5215-installed-controller/1000000390.jpg` | `1000000390.jpg` | `bd5c8933c52ad669f6f36bf8cc0462fd86c771c760c20fb7f0ff8b1043b8575e` | Owner-supplied 2026-08-21; main PCB component/power-section view |
 | `original/photos/serial-5215-installed-controller/1000000391.jpg` | `1000000391.jpg` | `7c5d0a55e58930aace32d15bcd0148667b1e4cd53065d07d9300ce0796cd41ea` | Owner-supplied 2026-08-21; visible installed-PCB `-0604` suffix and connector bank |
 | `original/photos/serial-5215-installed-controller/1000000392.jpg` | `1000000392.jpg` | `d2bda6b4775829bf3743f1637ca1e6033c98a5aae3a4a03fd9ece402b4af5bbe` | Owner-supplied 2026-08-21; J16/J17 and auxiliary-board harness view |
+| `original/photos/serial-5215-installed-controller/1000000393.jpg` | `10-1000000393.jpg` | `7c567602d643cbbe97fd0509ebaa9139f713327e25e76008cc11a3411fdf2531` | Owner-supplied 2026-08-22; completes earlier installed-board sequence; power/output section and harness routing |
 | `original/photos/serial-5215-installed-controller/1000000394.jpg` | `1000000394.jpg` | `0a1f0180b0d9e654777088d77f5c9170fb1d68843f6c8de388f4531e6425a656` | Owner-supplied 2026-08-21; close-up of four-contact main-board J3 |
 | `original/photos/serial-5215-installed-controller/1000000395.jpg` | `1000000395.jpg` | `d9b961e2f26d7a29fc5cf5b09106076341e06a54cadbb3fa323687b8559cbc37` | Owner-supplied 2026-08-21; installed wiring and board copyright marking |
 | `original/photos/serial-5215-installed-controller/1000000396.jpg` | `1000000396.jpg` | `301901d463d3be2b0dbd7a4a9ee84e80a4b6bfa83e66323d24669126b451168f` | Owner-supplied 2026-08-21; wider J3/J7/controller view |
@@ -47,12 +48,33 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 | `original/photos/serial-5215-installed-controller/1000000398.jpg` | `1000000398.jpg` | `f9284e4b5391c625f8df746ba232a79ac478792063ac856f44e3920e2d4e20a4` | Owner-supplied 2026-08-21; auxiliary igniter/output PCB and ducting |
 | `original/photos/serial-5215-installed-controller/1000000399.jpg` | `1000000399.jpg` | `3c5e11f487ec9358b12ff434769c3dc11cfcab715b03f9914032a1550f593ba7` | Owner-supplied 2026-08-21; installed controller stack overview |
 | `original/photos/serial-5215-installed-controller/1000000400.jpg` | `1000000400.jpg` | `d41ac7a03e2b88b0e306ed5e5bd43fad28b42b38c5e8d0652c688d36f3d01224` | Owner-supplied 2026-08-21; wide stove-interior overview |
+| `original/photos/serial-5215-bare-controller/component-side-full.jpg` | `02-PXL_20260821_235715471-1-.jpg`; duplicate `03-PXL_20260821_235715471.jpg` | `b0f4806a93bc4c98e103f364766f55a66edfca2c9b504322b34dd013df9fc299` | Full component side; complete 9067-0604 marking |
+| `original/photos/serial-5215-bare-controller/component-side-alternate.jpg` | `06-PXL_20260821_235722538.jpg` | `14c876cd1a1c146b4e687be00e7f2bf53b6bab2d90668d7670917bb3396ea7a1` | Alternate component-side view |
+| `original/photos/serial-5215-bare-controller/solder-side-full.jpg` | `01-PXL_20260821_235730336-1-.jpg`; duplicate `04-PXL_20260821_235730336.jpg` | `fc7e250e8848ac87e89cce599fb5b3a6dd13b6a9d0144dddc3afcb47e00a4a2a` | Full solder side and copper routing |
+| `original/photos/serial-5215-bare-controller/j3-pic-component-side.jpg` | `05-PXL_20260822_001605553.jpg` | `c67a97d4f8cd4527efa65d480a15a945aee3acd997c6b4ab693466916e3e3f91` | PIC16F877A, 10.000 oscillator, and J3 area |
+| `original/photos/serial-5215-bare-controller/pic-solder-side-routing.jpg` | `07-PXL_20260822_001557290.jpg` | `012592929c169baedc06441a51d182e7747e9054f38519fe456b07272f18db45` | PIC/J3-area solder-side routing |
+| `original/photos/serial-5215-bare-controller/j3-component-side-closeup.jpg` | `08-PXL_20260822_001612975.jpg` | `a60e4b265134d794219ac95d809cd61fb309b7c76bc765d9cd80ca98fe49b894` | J3 passive network and PIC close-up |
+| `original/photos/serial-5215-bare-controller/j3-ftdi-wiring-solder-side.jpg` | `01-image-1787358640676.jpg` | `6bcaf1ac8222137a326a4e0aa899c96d4e3e29d29b8f810175a297ec7ac5f179` | Working black/unused/orange/yellow FTDI attachment |
+
+### Supplied video pending external archive
+
+| Earlier upload name | Bytes | SHA-256 | Status |
+| --- | ---: | --- | --- |
+| `1000000401.mp4` | 78737900 | `185338b444ab517d1ded2ec43f37af73c68f1720acef4b209e6673e2fde64434` | Owner-supplied 31.564-second 1920x1080 HEVC/AAC board-tracing clip; documented but not committed to Git because of size; candidate for external preservation |
 
 ## Hardware diagrams
 
 | Current path | Earlier upload name | Bytes | SHA-256 | Note |
 | --- | --- | ---: | --- | --- |
 | `original/diagrams/maxfire-mother-board-pinout.jpg` | `1000000387.jpg` | 321847 | `22dad1271b3780b5867a4be6bf9875495aa4fe39b218352a9121097920145975` | User-supplied online-found diagram; visibly depicts PCB `9067-0404`, not serial 5215's owner-reported/photo-corroborated `9067-0604`; authorship/date/vendor status unverified |
+
+## Live read-only evidence
+
+The byte-identical 2026-08-22 JSONL traffic, adapter inventory, format-04
+EEPROM backup, and per-file checksums are catalogued under
+[`../research/live/2026-08-22-fw202-format04/`](../research/live/2026-08-22-fw202-format04/).
+This set documents firmware 2.02/data format 04 at 9,600 baud and contains no
+state-changing request.
 
 ## Derived firmware and project bundles
 

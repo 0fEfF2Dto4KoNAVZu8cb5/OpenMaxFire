@@ -1,8 +1,9 @@
 # Cross-platform service tool
 
-Status: the portable read-only foundation is implemented and tested offline.
-No command has been sent to serial 5215, and J3 electrical behavior remains
-unverified.
+Status: the portable read-only foundation is implemented, tested offline, and
+live-validated for read-only use on serial 5215's firmware 2.02/data-format 04
+controller at 9,600 baud. Writes remain unvalidated and excluded from the
+documented workflow.
 
 `maxfirectl` uses one Python codebase on Windows, Linux, and macOS. The protocol,
 identity, backup, and safety logic does not contain OS-specific port assumptions.
@@ -103,7 +104,9 @@ unless `--overwrite` is supplied.
 
 `identify` sends only `CR00`, `CR08`, and `CR0B` through `CR0E`, in that order.
 It waits 100 ms between requests by default and ignores interleaved telemetry
-while waiting for the matching addressed reply.
+while waiting for the matching addressed reply. Matching continues until the
+transport timeout by default and resynchronizes after a partial opening line;
+the live format-04 controller can emit more than 16 frames before a valid reply.
 
 ```bash
 maxfirectl --port COM3 --baud 19200 \
@@ -115,6 +118,7 @@ The known static pairings are:
 
 | Firmware | CR08 | CR0B | CR0C | CR0D | CR0E | Intended baud |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2.02 (live-observed) | `04` | `02` | `02` | `00` | `00` | 9,600 |
 | 2.06 | `05` | `02` | `06` | `00` | `21` | 9,600 |
 | 2.70 | `07` | `02` | `70` | `00` | `02` | 19,200 |
 | 2.71 | `07` | `02` | `71` | `00` | `00` | 19,200 |
@@ -178,5 +182,6 @@ must contain no `CW`, `AW`, or loader bytes.
 GitHub Actions runs the offline suite on Windows, Ubuntu, and macOS with Python
 3.11 and 3.13. The suite covers request/response parsing, interleaved telemetry,
 identity ordering, A-space reads, backup integrity, port normalization, traffic
-recording, real-firmware emulation, and loader separation. Archive integrity is
-verified separately on Linux.
+recording, real-firmware emulation, and loader separation. Live-derived
+regressions cover a partial first line and 32 interleaved telemetry frames.
+Archive integrity is verified separately on Linux.

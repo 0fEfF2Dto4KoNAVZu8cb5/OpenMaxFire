@@ -25,6 +25,8 @@
   controller.
 - [x] Preserve the installed component-side, J3, harness, auxiliary-board, and
   stove-interior photograph set for serial 5215.
+- [x] Preserve the bare 9067-0604 component/solder-side, J3/PIC, oscillator,
+  routing, and working-cable photograph set.
 - [x] Model PIC internal data EEPROM and verify AR00-ARFF across all three
   generations with checksum-valid format-05/07 fixtures.
 - [x] Map every CW00-CW0F dispatcher/handler and execute safe synthetic probes
@@ -45,17 +47,21 @@
 - [ ] Photograph both ends of the received cable and record all labels/part numbers.
 - [x] Photograph the component side and J3 area of the installed 9067-0604 board
   and compare visible connector placement with the preserved 9067-0404 diagram.
-- [ ] Photograph the unobstructed full part-number silkscreen and solder side of
+- [x] Photograph the unobstructed full part-number silkscreen and solder side of
   the installed board, then trace J3 without assuming the 9067-0404 routing.
-- [ ] Identify J3 ground and supply pins without assuming standard RS-232 pinout.
+- [x] Identify J3 ground/TX/RX without assuming standard RS-232; leave the
+  unresolved fourth function/pin 3 disconnected.
 - [ ] Measure idle voltage and polarity through a protected interface.
-- [ ] Confirm controller oscillator frequency.
+- [x] Physically confirm the controller oscillator's `10.000` MHz marking.
 - [ ] Capture BixCheck startup traffic if the Windows application can run.
-- [ ] Test only `CR00` at 9,600 for likely 2.06; try 19,200 only if the
-  protected electrical capture shows no valid response.
-- [ ] Record exact request bytes, response bytes, timing, and line termination.
-- [ ] Poll CR00-CR0E with the stove safely off.
-- [ ] Repeat polling while operating the fire door, ash drawer, thermostat, fuel switch, trim pots, and panel buttons.
+- [x] Test only `CR00`; reject 19,200 and establish 9,600 for live firmware
+  2.02/data format 04.
+- [x] Record exact request bytes, response bytes, timing, lowercase hex, and LF
+  termination.
+- [x] Poll CR00-CR0E with the stove safely off.
+- [x] Repeat polling while operating the fire door, ash drawer, thermostat,
+  fuel switch, trim pots, and OFF/UP/DOWN panel buttons; intentionally exclude
+  physical ON.
 - [ ] Correlate CR05 and CR07 with passive J10/J9 observations; do not run
   factory actuator tests through the unfinished interface.
 - [ ] Identify the physical function of CR02.1 by cold/off correlation.
@@ -64,20 +70,23 @@
 
 - [x] Decode addressed/telemetry response framing statically and in emulation.
 - [x] Add platform-neutral serial-port discovery for Windows, Linux, and macOS.
-- [x] Add bounded addressed-response matching that skips interleaved telemetry.
+- [x] Add timeout-bounded addressed-response matching that skips interleaved telemetry.
 - [x] Add the read-only controller identity sequence, exact JSONL traffic
   recording, and a lossless A00-AFF JSON backup artifact with checksum checks.
 - [x] Add Windows/Linux/macOS CI coverage while keeping the POSIX PTY endpoint
   outside the portable core.
-- [ ] Implement robust timeouts, resynchronization, and stale-data detection.
+- [x] Match addressed replies until transport timeout and resynchronize after a
+  bounded partial opening line; live regression covers more than 16 interleaved
+  telemetry frames.
+- [ ] Implement stale-data detection for long-running monitoring.
 - [x] Map BixCheck T-stream indexes, physical slots, producer sources, widths,
   and core numeric conversions to the vendor telemetry fields.
 - [ ] Complete remaining status/flag meanings, physical calibration, table-only
   TFD-TFF provenance, and M/I payload semantics.
 - [ ] Expose stove identity, state, heat level, alarms, temperatures, fan values, door timers, and ash values.
 - [ ] Add CSV/JSON logging and replayable capture fixtures.
-- [ ] Validate the complete configuration/EEPROM backup against serial 5215
-  before enabling any write.
+- [x] Validate three identical complete format-04 A00-AFF backups with matching
+  stored/calculated checksum against serial 5215.
 - [ ] Publish checksummed standalone Windows, Linux, and macOS packages.
 
 ## Phase 3 - verified normal control
@@ -92,8 +101,8 @@
 
 - [x] Decode identification, checksum, data-format, serial-number, production-date, and model addresses statically.
 - [x] Implement offline-tested read-only AR00-AFF readback and durable backups.
-- [ ] Validate identity strings, checksum, and backup round-trip against serial
-  5215 before implementing restore.
+- [x] Validate identity strings, checksum, and three identical read-only backups
+  against serial 5215; restore remains unimplemented and unauthorized.
 - [ ] Map fuel A/B fan, feed, ash, startup, igniter, ash-dump, and convection-fan calibration fields.
 - [ ] Add range validation, version/data-format checks, diff preview, verify-after-write, and restore.
 - [ ] Keep full memory formatting behind a separate expert workflow.
@@ -121,8 +130,8 @@
 
 - [x] Document the candidate Olimex ESP32-POE-ISO-IND plus consolidated
   stove-interface daughterboard architecture.
-- [ ] Complete the J3 and thermostat electrical measurements required to select
-  the isolated logic voltage, protection, and relay contact ratings.
+- [ ] Complete remaining J3-3, idle-level/noise-margin, and thermostat contact
+  measurements required to select isolation, protection, and relay ratings.
 - [ ] Prototype isolated read-only UART with the controller powered independently
   from J3.
 - [ ] Prototype the non-latching thermostat transfer relay and verify that its

@@ -49,6 +49,7 @@ class StoveIdentity:
     @property
     def recognized(self) -> bool:
         expected = {
+            (0x04, 0x02, 0x02, 0x00, 0x00),
             (0x05, 0x02, 0x06, 0x00, 0x21),
             (0x07, 0x02, 0x70, 0x00, 0x02),
             (0x07, 0x02, 0x71, 0x00, 0x00),
@@ -97,21 +98,42 @@ class MaxFireClient:
         address: int,
         *,
         unit: str = "C",
-        max_frames: int = 16,
+        max_frames: int | None = None,
     ) -> AddressedResponse:
-        """Read one A/C/D register and ignore interleaved unsolicited frames."""
+        """Read one A/C/D register and ignore interleaved unsolicited frames.
 
-        if max_frames < 1:
+        By default, matching continues until the transport's configured read
+        timeout expires.  ``max_frames`` remains available to callers that need
+        an additional explicit bound.
+        """
+
+        if max_frames is not None and max_frames < 1:
             raise ValueError("max_frames must be at least one")
         self.send_raw(encode_read_register(address, unit=unit))
-        for _ in range(max_frames):
-            frame = self.receive_response()
+        frames_seen = 0
+        while max_frames is None or frames_seen < max_frames:
+            try:
+                frame = self.receive_response()
+            except TimeoutError as exc:
+                raise TimeoutError(
+                    f"no matching {unit}R{address:02X} response before serial "
+                    f"timeout after {frames_seen} frame(s)"
+                ) from exc
+            except ValueError:
+                # A port can open in the middle of a periodic telemetry line.
+                # Discard that bounded malformed fragment and resynchronize at
+                # the next CR/LF delimiter while the traffic logger retains the
+                # original bytes for diagnosis.
+                frames_seen += 1
+                continue
+            frames_seen += 1
             if (
                 isinstance(frame, AddressedResponse)
                 and frame.unit == unit
                 and frame.address == address
             ):
                 return frame
+        assert max_frames is not None
         raise TimeoutError(
             f"no matching {unit}R{address:02X} response within {max_frames} frames"
         )

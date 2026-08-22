@@ -69,7 +69,7 @@ exact revision-specific schematic or J3 electrical pinout.
 
 ## Installed-controller photograph line
 
-`1000000390.jpg` through `1000000400.jpg` (ten supplied files; no `0393`)
+`1000000390.jpg` through `1000000400.jpg` (eleven supplied files)
 
 - were supplied by the stove owner on 2026-08-21;
 - are preserved byte-for-byte under
@@ -84,3 +84,29 @@ exact revision-specific schematic or J3 electrical pinout.
 The research index records image-by-image content without altering the original
 JPEGs. Temporary crops used for visual inspection are not preservation files
 and are not included in the repository.
+
+## Bare-controller photograph line
+
+Seven unique JPEG byte streams were supplied on 2026-08-22. Two `PXL` filename
+pairs were byte-identical duplicates; the repository retains one copy of each
+unique stream under descriptive names in
+`original/photos/serial-5215-bare-controller/` and records every received alias
+in `MANIFEST.md`.
+
+The set directly exposes the full component and solder sides, complete
+`9067-0604` silkscreen, PIC16F877A-I/P, `10.000` oscillator, J3/PIC routing
+area, and working FTDI attachment. Owner-performed continuity observations are
+documented separately from what pixels alone prove.
+
+The accompanying `1000000401.mp4` is hash-catalogued in `MANIFEST.md` but is
+not committed to Git because it is 78,737,900 bytes. It remains pending an
+external preservation target.
+
+## Live controller evidence line
+
+The 2026-08-22 read-only session produced JSONL serial traffic, an adapter
+inventory, and a lossless A00-AFF EEPROM artifact. These device-generated
+research records are preserved under
+`research/live/2026-08-22-fw202-format04/`, outside `original/`, with their own
+SHA-256 inventory. The directory README distinguishes raw evidence from the
+interpreted live report.

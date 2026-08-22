@@ -3,7 +3,13 @@
 Status: BixCheck display records and the complete periodic firmware producer
 have been statically reconstructed; every periodic slot has also executed
 through the real producer and UART sender in offline emulation. Values remain
-unvalidated on a physical stove.
+unvalidated on a physical stove for the preserved 2.06/2.70/2.71 images.
+
+> **Format boundary:** the live controller in serial 5215 identified as firmware
+> 2.02/data format 04. Its shorter `T00`-`T15` stream does not match this later
+> format-05/07 logical table position-for-position. Live format-04 correlations
+> are documented separately in
+> [the firmware-2.02 report](../reverse-engineering/live-fw202-format04.md).
 
 ## Wire framing
 

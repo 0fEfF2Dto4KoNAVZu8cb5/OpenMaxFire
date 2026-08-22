@@ -9,14 +9,17 @@ manual and MaxFire Model 115 owner manual, all
 preserved 2.06/2.70/2.71 firmware images, portable and annotated disassemblies,
 a deep three-EXE comparison, decoded application tables, an experimental PIC
 emulator, a virtual serial lab, photographs, provenance records, and the first
-cross-platform read-only service-tool foundation.
+cross-platform read-only service-tool foundation. A live cold/off session now
+documents serial 5215's previously unpreserved firmware 2.02/data format 04,
+working J3 pinout, 9,600-baud traffic, physical inputs, telemetry correlations,
+and three identical EEPROM backups.
 
 > **Have an unlisted version?** If you have any BixCheck software, MaxFire
 > firmware, manual, hardware documentation, or related material from a version
 > not listed in this repository, please contact me at [openmaxfire@mailbruh.com](mailto:openmaxfire@mailbruh.com) or open a pull request so it
 > can be preserved and reverse-engineered.
 
-Confirmed by static evidence:
+Confirmed by static, photographic, emulator, and live evidence:
 
 - All four preserved firmware images target a PIC16F877A and pass Intel HEX checksum validation.
 - The controller recognizes ASCII register commands `CRXX` and `CWXXYY`.
@@ -25,7 +28,8 @@ Confirmed by static evidence:
   `Txxvv` one-byte frames; logical 16-bit fields use adjacent high/low slots.
   BixCheck accepts CR or LF termination.
 - BixCheck maps remote OFF/ON/UP/DOWN to `CW0E11`, `CW0E12`, `CW0E14`, and `CW0E18`.
-- CR0B/CR0C expose firmware `2.06`, `2.70`, or `2.71` as constant bytes.
+- CR0B/CR0C expose firmware identity bytes; the live controller reports `2.02`
+  and `CR08=04`, older than the preserved 2.06/format-05 release.
 - BixCheck 5.0.21 selects 9,600 baud; 5.5.x selects 9,600/19,200, all at 8N1.
 - The configuration/telemetry/Checkout tables, lean-burn transforms, and
   configuration checksum are now machine-readable.
@@ -39,7 +43,8 @@ Confirmed by static evidence:
   Both firmware and BixCheck ignore state bit 7.
 - BixCheck masks plus firmware GPIO/ADC traces map door to CR02.5/RD1, ash
   drawer to CR02.6/RD4, thermostat to CR06.2/RB4, fan pot to CR09/AN3, and feed
-  pot to CR0A/AN4. These are offline mappings, not live wiring validation.
+  pot to CR0A/AN4. One-at-a-time cold/off tests live-validated these mappings
+  and their polarity on the physical 9067-0604 controller.
 - The common input scanner maps front-panel buttons into CR01, the burn-drive
   limit switch to CR02.0, and the fuel selector to CR02.2 (`1`=Fuel A/corn,
   `0`=Fuel B/wood). A preserved 9067-0404 board diagram and the factory owner
@@ -53,25 +58,30 @@ Confirmed by static evidence:
   through RA4/T0CKI and TMR0 to CR05, and J9 feeder-wheel sensor through RD0
   and a motor-gated interval counter to CR02.4/CR07. BixCheck's exact raw
   Checkout thresholds are documented; their engineering units are not.
-- Installed photographs expose a `-0604` main-PCB suffix consistent with the
-  owner-reported `9067-0604` and directly show its black four-contact J3
-  housing; individual pin functions and electrical levels remain unknown.
+- Bare-board photographs directly expose the complete `9067-0604` marking,
+  PIC16F877A, `10.000` MHz oscillator, both PCB sides, and J3 routing area.
+- Continuity and live traffic establish J3-1=stove TX, J3-2=stove RX,
+  J3-4=ground; J3-3 is unresolved and disconnected. An official FTDI
+  `TTL-232R-5V-WE`, used without VCC, exchanged valid 9,600-baud traffic.
+- Three independent live A00-AFF reads agree byte-for-byte and have a matching
+  `EFCE` EEPROM checksum. The stored controller serial/date strings differ from
+  the appliance nameplate and are preserved without an assumed explanation.
 - The recovered stove is serial 5215; its owner identifies it as a MaxFire 115.
 
 Not yet confirmed on physical hardware:
 
-- J3 pinout and electrical levels.
-- Physical oscillator marking/frequency. The exact BixCheck rates and firmware
-  divisors strongly imply 10 MHz, but the board has not been checked.
-- Live electrical/timing validation of the reconstructed response grammar.
-- Physical validation of the offline button/switch/door/drawer/thermostat/pot
-  and J9/J10 sensor mappings on serial 5215's owner-reported,
-  photo-corroborated 9067-0604 board.
-  The preserved diagram depicts 9067-0404, and CR02.1/CR02.7 remain physically
-  unassigned.
-- Any remote command on the actual stove.
+- J3-3 function, exact idle/noise-margin measurements, and behavior under
+  operating electrical loads.
+- Physical J9/J10 sensor correlation, CR02.1/CR02.7 functions, and most
+  format-04 telemetry meanings.
+- Any remote write, actuator/service command, or operating-stove control.
+- A recoverable in-circuit method for preserving firmware-2.02 program memory.
 
-No live connection should be attempted until [SAFETY.md](SAFETY.md) and the [J3 working specification](docs/protocol/j3-protocol.md) have been reviewed.
+No new board revision or state-changing live connection should be attempted
+until [SAFETY.md](SAFETY.md), the
+[J3 working specification](docs/protocol/j3-protocol.md), and the
+[first-live report](docs/reverse-engineering/live-fw202-format04.md) have been
+reviewed.
 
 ## Project goals
 
@@ -102,12 +112,12 @@ maxfirectl ports
 ```
 
 The portable read-only foundation now includes serial-port discovery, exact
-timestamped JSONL traffic capture, bounded register queries, stove identity,
+timestamped JSONL traffic capture, timeout-bounded register queries, stove identity,
 and complete `AR00`-`ARFF` JSON backups with checksum diagnostics. Live I/O is
 intentionally gated and requires an explicit port, baud rate, and
-acknowledgement flag. Do not open a stove-connected port until the cable and J3
-electrical interface have been characterized; opening a port can transition
-DTR/RTS even when no payload is transmitted.
+acknowledgement flag. Addressed matching tolerates partial opening lines and
+arbitrarily many valid telemetry frames until the configured serial timeout.
+Opening a port can still transition DTR/RTS even when no payload is transmitted.
 
 Run the read-only virtual endpoint without hardware:
 
@@ -127,12 +137,16 @@ python tools/pic14_emulator.py project --repo-root .
 - `preservation/original/` - recovered files as received, plus provenance and hashes
 - `reverse-engineering/` - EXE tables/call graphs, firmware, disassembly,
   comparisons, and emulation traces
+- `research/live/` - byte-identical physical traffic, EEPROM, adapter, and
+  checksum evidence
 - `docs/` - hardware, protocol, BixCheck, automation, status, history, and roadmap
 - `src/openmaxfire/` - modern Python protocol/transport foundation
 - `tools/` - reproducible Debian analysis helpers
 - `tests/` - offline protocol tests
 
 Start with [the research status](docs/STATUS.md),
+[the firmware-2.02/data-format-04 live report](docs/reverse-engineering/live-fw202-format04.md),
+[the bare-controller photographs](docs/hardware/bare-controller-photographs.md),
 [the MaxFire owner-manual analysis](docs/manuals/maxfire-owner-manual-2020866-rev-a.md),
 [the cross-platform service-tool guide](docs/cli/cross-platform-service-tool.md),
 [the serial command cheat sheet](docs/protocol/serial-command-cheat-sheet.md),
