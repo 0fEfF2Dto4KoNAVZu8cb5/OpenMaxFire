@@ -48,21 +48,13 @@ even after a safe abort, interruption, or connection failure.
 
 ## Optional normal-control evidence
 
-Remote OFF/UP/DOWN is a separate state-changing phase:
+The read-only safety checklist requires the controller to begin cold/off. In
+that state, an OFF no-op cannot prove acceptance and UP/DOWN have no active
+heat level to change. `--include-control` by itself therefore records those
+tests as skipped and transmits no remote-control command.
 
-```bash
-python tools/live_validation_session.py \
-  --port /dev/ttyUSB0 \
-  --baud 9600 \
-  --include-control
-```
-
-This requires a phase-wide phrase, a second safety checklist, and a distinct
-authorization phrase before every transmitted command. UP is paired with DOWN
-to restore the selected level. A transmitted command is never called accepted
-without the corresponding operator observation.
-
-Remote ON remains behind an additional flag and authorization phrase:
+A meaningful normal-control test is a separately gated, state-aware
+ON → UP → DOWN → OFF sequence:
 
 ```bash
 python tools/live_validation_session.py \
@@ -71,6 +63,18 @@ python tools/live_validation_session.py \
   --include-control \
   --include-start-test
 ```
+
+This requires a phase-wide phrase, a second safety checklist, and a distinct
+authorization phrase for ON, UP, and DOWN. UP is sent only after the operator
+positively observes startup, then DOWN restores the selected level. OFF recovery
+is sent in a `finally` block. A transmitted command is never called accepted
+without the corresponding operator observation.
+
+Interactive prompts can accumulate periodic telemetry in the host receive
+buffer. Before each state-changing transmission the harness ingests queued
+frames through the audited transport until the serial line is idle. Operator
+observations are recorded before the post-command snapshot, so a snapshot
+timeout cannot erase valid physical evidence.
 
 Use that phase only when the stove is fully assembled, correctly vented, safe
 to run, continuously supervised, and the physical OFF control is immediately

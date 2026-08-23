@@ -567,6 +567,36 @@ def _operator_status(observation: str) -> str:
     return {"yes": "pass", "no": "fail", "unknown": "indeterminate"}[observation]
 
 
+def _drain_pending_frames(
+    session: ControllerSession,
+    *,
+    max_frames: int = 1024,
+) -> int:
+    """Ingest queued unsolicited frames until one serial read timeout.
+
+    Interactive prompts can leave several periodic telemetry bursts waiting in
+    the host receive buffer.  A request sent into that backlog can be accepted
+    by the controller while the caller times out parsing only stale frames.
+    Draining through the recording transport preserves every byte and updates
+    the monitor rather than silently discarding the evidence.
+    """
+
+    drained = 0
+    while drained < max_frames:
+        try:
+            frame = session.client.receive_response()
+        except TimeoutError:
+            return drained
+        except ValueError:
+            drained += 1
+            continue
+        session.monitor.observe(frame)
+        drained += 1
+    raise TimeoutError(
+        f"serial input did not become idle within {max_frames} queued frame(s)"
+    )
+
+
 def _send_remote_button(
     session: ControllerSession,
     audit: AuditTrail,
@@ -591,10 +621,18 @@ def _send_remote_button(
         )
     checkpoint = audit.checkpoint()
     try:
+        drained_before = _drain_pending_frames(session)
         receipt = session.client.remote_button(button)
         time.sleep(0.5)
-        after = session.poll_snapshot(request_delay=0.10).to_dict()
         observed = console.observation(observation_prompt)
+        after: dict[str, object] | None = None
+        snapshot_error: str | None = None
+        drained_after = 0
+        try:
+            drained_after = _drain_pending_frames(session)
+            after = session.poll_snapshot(request_delay=0.10).to_dict()
+        except Exception as exc:
+            snapshot_error = str(exc)
         return _step(
             audit,
             key=key,
@@ -604,11 +642,14 @@ def _send_remote_button(
                 "request_ascii": receipt.request.decode("ascii"),
                 "request_hex": receipt.request.hex(" ").upper(),
                 "operator_observed_expected_effect": observed,
+                "queued_frames_ingested_before_command": drained_before,
+                "queued_frames_ingested_after_observation": drained_after,
                 "after": after,
+                "post_command_snapshot_error": snapshot_error,
             },
             message=(
-                "operator observation plus post-command snapshot; transmission "
-                "alone is not acceptance"
+                "operator observation retained; post-command snapshot "
+                + ("captured" if snapshot_error is None else "was unavailable")
             ),
             checkpoint=checkpoint,
         )
@@ -655,55 +696,39 @@ def _run_control_tests(
         if not console.confirm(statement):
             raise SessionAborted(f"control safety condition declined: {statement}")
 
-    results.append(
-        _send_remote_button(
-            session,
-            audit,
-            console,
-            RemoteButton.OFF,
-            key="remote-off-cold",
-            title="Remote OFF while already cold/off",
-            observation_prompt="Did the controller visibly acknowledge or remain safely off?",
-        )
-    )
-    results.append(
-        _send_remote_button(
-            session,
-            audit,
-            console,
-            RemoteButton.UP,
-            key="remote-up",
-            title="Remote UP",
-            observation_prompt="Did the displayed/selected heat level increase exactly once?",
-        )
-    )
-    results.append(
-        _send_remote_button(
-            session,
-            audit,
-            console,
-            RemoteButton.DOWN,
-            key="remote-down-restore",
-            title="Remote DOWN and level restoration",
-            observation_prompt=(
-                "Did the displayed/selected heat level decrease exactly once, "
-                "restoring it?"
-            ),
-        )
-    )
-
     if not include_start:
-        results.append(
-            _step(
-                audit,
-                key="remote-on-start",
-                title="Remote ON/start and OFF recovery",
-                status="skipped",
-                message="start test was not enabled; no ON command was sent",
-            )
+        reason = (
+            "controller is required to be cold/off; OFF is not probative and "
+            "UP/DOWN have no active heat level to change; no command was sent"
         )
+        for key, title in (
+            ("remote-off-cold", "Remote OFF while already cold/off"),
+            ("remote-up", "Remote UP"),
+            ("remote-down-restore", "Remote DOWN and level restoration"),
+            ("remote-on-start", "Remote ON/start and OFF recovery"),
+        ):
+            results.append(
+                _step(
+                    audit,
+                    key=key,
+                    title=title,
+                    status="skipped",
+                    message=reason,
+                )
+            )
         return results
 
+    results.append(
+        _step(
+            audit,
+            key="remote-off-cold",
+            title="Remote OFF while already cold/off",
+            status="skipped",
+            message="a no-op OFF while already off cannot prove command acceptance",
+        )
+    )
+
+    _drain_pending_frames(session)
     before = session.poll_snapshot(request_delay=0.10)
     inputs = before.physical_inputs
     if inputs is None or inputs.firebox_door_open or inputs.ash_drawer_open:
@@ -732,19 +757,59 @@ def _run_control_tests(
     stop_observation = "unknown"
     snapshots: list[dict[str, object]] = []
     request_hex: list[str] = []
+    up_result: dict[str, object] | None = None
+    down_result: dict[str, object] | None = None
+    post_shutdown_snapshot_error: str | None = None
     try:
+        _drain_pending_frames(session)
         start_attempted = True
         start_receipt = session.client.remote_button(RemoteButton.ON)
         request_hex.append(start_receipt.request.hex(" ").upper())
-        deadline = time.monotonic() + start_observe_seconds
-        while time.monotonic() < deadline:
-            snapshots.append(session.poll_snapshot(request_delay=0.10).to_dict())
-            remaining = deadline - time.monotonic()
-            if remaining > 0:
-                time.sleep(min(1.0, remaining))
+        if start_observe_seconds:
+            time.sleep(start_observe_seconds)
         start_observation = console.observation(
             "Did the stove visibly enter its normal startup sequence?"
         )
+        if start_observation == "yes":
+            up_result = _send_remote_button(
+                session,
+                audit,
+                console,
+                RemoteButton.UP,
+                key="remote-up",
+                title="Remote UP while running",
+                observation_prompt=(
+                    "Did the displayed/selected heat level increase exactly once?"
+                ),
+            )
+            down_result = _send_remote_button(
+                session,
+                audit,
+                console,
+                RemoteButton.DOWN,
+                key="remote-down-restore",
+                title="Remote DOWN and level restoration while running",
+                observation_prompt=(
+                    "Did the displayed/selected heat level decrease exactly once, "
+                    "restoring it?"
+                ),
+            )
+        else:
+            reason = "startup was not positively observed; UP/DOWN were not sent"
+            up_result = _step(
+                audit,
+                key="remote-up",
+                title="Remote UP while running",
+                status="skipped",
+                message=reason,
+            )
+            down_result = _step(
+                audit,
+                key="remote-down-restore",
+                title="Remote DOWN and level restoration while running",
+                status="skipped",
+                message=reason,
+            )
     finally:
         if start_attempted:
             print(
@@ -761,6 +826,11 @@ def _run_control_tests(
         stop_observation = console.observation(
             "Did the controller acknowledge OFF and begin its normal safe shutdown/cooldown?"
         )
+        try:
+            _drain_pending_frames(session)
+            snapshots.append(session.poll_snapshot(request_delay=0.10).to_dict())
+        except Exception as exc:
+            post_shutdown_snapshot_error = str(exc)
     status = (
         "pass"
         if start_observation == "yes" and stop_observation == "yes"
@@ -779,11 +849,14 @@ def _run_control_tests(
                 "start_observed": start_observation,
                 "shutdown_observed": stop_observation,
                 "poll_snapshots": snapshots,
+                "post_shutdown_snapshot_error": post_shutdown_snapshot_error,
             },
             message="operator-observed startup and recovery; exact traffic preserved",
             checkpoint=checkpoint,
         )
     )
+    assert up_result is not None and down_result is not None
+    results.extend((up_result, down_result))
     return results
 
 
@@ -846,12 +919,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--include-control",
         action="store_true",
-        help="offer separately authorized remote OFF/UP/DOWN validation",
+        help="enable the separately authorized remote-control phase",
     )
     parser.add_argument(
         "--include-start-test",
         action="store_true",
-        help="also offer a separately authorized ON/start/OFF test",
+        help="offer state-aware ON/UP/DOWN/OFF validation while operating",
     )
     parser.add_argument("--start-observe-seconds", type=float, default=15.0)
     parser.add_argument(

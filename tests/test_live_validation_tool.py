@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 
 TOOL_PATH = Path(__file__).parents[1] / "tools" / "live_validation_session.py"
@@ -100,6 +101,76 @@ class LiveValidationToolTests(unittest.TestCase):
             after = len(session.client.transport.transport.controller.requests)
         self.assertEqual(before, after)
         self.assertEqual(results[0]["status"], "skipped")
+
+    def test_cold_control_phase_without_start_transmits_nothing(self):
+        class AcceptingConsole:
+            @staticmethod
+            def phrase(prompt, required):
+                return True
+
+            @staticmethod
+            def confirm(statement):
+                return True
+
+        audit = live_validation.AuditTrail(session_id="cold-control")
+        with live_validation.ControllerSession.simulated(
+            "fw202-format04", allow_writes=True, audit=audit
+        ) as session:
+            controller = session.client.transport.transport.controller
+            before = len(controller.requests)
+            with redirect_stdout(io.StringIO()):
+                results = live_validation._run_control_tests(
+                    session,
+                    audit,
+                    AcceptingConsole(),
+                    include_start=False,
+                    start_observe_seconds=0,
+                )
+            after = len(controller.requests)
+        self.assertEqual(before, after)
+        self.assertEqual([item["status"] for item in results], ["skipped"] * 4)
+
+    def test_remote_observation_survives_snapshot_timeout(self):
+        class ObservingConsole:
+            @staticmethod
+            def phrase(prompt, required):
+                return True
+
+            @staticmethod
+            def observation(prompt):
+                return "yes"
+
+        class FakeClient:
+            @staticmethod
+            def remote_button(button):
+                return type("Receipt", (), {"request": b"CW0E14"})()
+
+        class FakeSession:
+            client = FakeClient()
+
+            @staticmethod
+            def poll_snapshot(*, request_delay):
+                raise TimeoutError("snapshot unavailable")
+
+        audit = live_validation.AuditTrail(session_id="snapshot-timeout")
+        with patch.object(live_validation, "_drain_pending_frames", return_value=7):
+            with redirect_stdout(io.StringIO()):
+                result = live_validation._send_remote_button(
+                    FakeSession(),
+                    audit,
+                    ObservingConsole(),
+                    live_validation.RemoteButton.UP,
+                    key="remote-up",
+                    title="Remote UP",
+                    observation_prompt="Did it move?",
+                )
+        self.assertEqual(result["status"], "pass")
+        observations = result["observations"]
+        self.assertEqual(observations["operator_observed_expected_effect"], "yes")
+        self.assertIsNone(observations["after"])
+        self.assertEqual(
+            observations["post_command_snapshot_error"], "snapshot unavailable"
+        )
 
     def test_nonempty_destination_is_refused(self):
         with tempfile.TemporaryDirectory() as temporary:
