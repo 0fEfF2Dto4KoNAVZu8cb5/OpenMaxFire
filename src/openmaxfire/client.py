@@ -1,9 +1,9 @@
-"""High-level OpenMaxFire client.
+"""High-level and research-level OpenMaxFire client primitives.
 
-Version 0.1 deliberately keeps the high-level surface small.  Raw register
-writes are available to research tooling, while ordinary users get only the
-known front-panel abstraction.  Factory checkout commands are intentionally
-not exposed here yet.
+The public methods deliberately distinguish transmission from verification.
+Writing bytes to J3 is never treated as proof that the controller accepted or
+acted on them.  Callers that need a verified register value must request a
+fresh readback explicitly.
 """
 
 from __future__ import annotations
@@ -11,9 +11,11 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass
+from typing import Callable
 
 from .protocol import (
     AddressedResponse,
+    READ_OPCODE,
     ResponseFrame,
     RemoteButton,
     encode_read_register,
@@ -84,14 +86,48 @@ class MaxFireClient:
     def __init__(self, transport: Transport):
         self.transport = transport
 
-    def send_raw(self, command: bytes) -> CommandReceipt:
-        self.transport.write(command)
-        return CommandReceipt(request=command)
+    def send_raw(self, command: bytes | bytearray | memoryview) -> CommandReceipt:
+        """Transmit exact bytes without appending a line terminator.
 
-    def read_register(self, address: int) -> CommandReceipt:
+        This is a transport primitive, not a success claim.  In particular,
+        arbitrary bytes can invoke undocumented controller behavior or enter
+        the firmware loader.  The CLI places an additional acknowledgement in
+        front of this method.
+        """
+
+        payload = bytes(command)
+        if not payload:
+            raise ValueError("raw command must contain at least one byte")
+        self.transport.write(payload)
+        return CommandReceipt(request=payload)
+
+    def exchange_raw(
+        self,
+        command: bytes | bytearray | memoryview,
+        *,
+        receive_duration: float = 1.0,
+    ) -> CommandReceipt:
+        """Transmit exact bytes and retain all bytes received for a duration.
+
+        No response grammar, acknowledgement, or success semantics are
+        inferred.  This makes the primitive useful for preservation work while
+        keeping register and loader state machines separate.
+        """
+
+        if not math.isfinite(receive_duration) or receive_duration < 0:
+            raise ValueError("receive_duration must be finite and nonnegative")
+        receipt = self.send_raw(command)
+        response = (
+            self.capture_receive_only(receive_duration)
+            if receive_duration > 0
+            else b""
+        )
+        return CommandReceipt(request=receipt.request, response=response)
+
+    def read_register(self, address: int, *, unit: str = "C") -> CommandReceipt:
         """Send a register-read request without waiting for a response."""
 
-        return self.send_raw(encode_read_register(address))
+        return self.send_raw(encode_read_register(address, unit=unit))
 
     def query_register(
         self,
@@ -99,6 +135,7 @@ class MaxFireClient:
         *,
         unit: str = "C",
         max_frames: int | None = None,
+        on_frame: Callable[[ResponseFrame], None] | None = None,
     ) -> AddressedResponse:
         """Read one A/C/D register and ignore interleaved unsolicited frames.
 
@@ -127,9 +164,12 @@ class MaxFireClient:
                 frames_seen += 1
                 continue
             frames_seen += 1
+            if on_frame is not None:
+                on_frame(frame)
             if (
                 isinstance(frame, AddressedResponse)
                 and frame.unit == unit
+                and frame.opcode == READ_OPCODE
                 and frame.address == address
             ):
                 return frame
@@ -210,10 +250,50 @@ class MaxFireClient:
             line.extend(value)
         raise ValueError("serial response exceeded receive limit")
 
-    def write_register(self, address: int, value: int) -> CommandReceipt:
-        """Research-level raw register write. Use only with a documented map."""
+    def write_register(
+        self,
+        address: int,
+        value: int,
+        *,
+        unit: str = "C",
+    ) -> CommandReceipt:
+        """Transmit one A/C/D write without claiming controller acceptance."""
 
-        return self.send_raw(encode_write_register(address, value))
+        return self.send_raw(encode_write_register(address, value, unit=unit))
+
+    def write_register_verified(
+        self,
+        address: int,
+        value: int,
+        *,
+        unit: str = "C",
+        settle_delay: float = 0.0,
+        max_frames: int | None = None,
+        on_frame: Callable[[ResponseFrame], None] | None = None,
+    ) -> CommandReceipt:
+        """Write a register, read it afresh, and compare the returned byte.
+
+        A matching readback verifies only the addressed byte.  It does not
+        prove that an actuator moved or that a command-style C register had its
+        intended physical effect.
+        """
+
+        if not math.isfinite(settle_delay) or settle_delay < 0:
+            raise ValueError("settle_delay must be finite and nonnegative")
+        receipt = self.write_register(address, value, unit=unit)
+        if settle_delay:
+            time.sleep(settle_delay)
+        response = self.query_register(
+            address,
+            unit=unit,
+            max_frames=max_frames,
+            on_frame=on_frame,
+        )
+        return CommandReceipt(
+            request=receipt.request,
+            response=response.raw,
+            verified=response.value == value,
+        )
 
     def remote_button(self, button: RemoteButton) -> CommandReceipt:
         """Send a reconstructed BixCheck front-panel remote-control action.

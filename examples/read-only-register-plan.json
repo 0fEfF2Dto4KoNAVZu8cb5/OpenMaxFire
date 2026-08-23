@@ -1,0 +1,17 @@
+{
+  "schema": "openmaxfire.transaction.v1",
+  "description": "Read-only controller identity sequence",
+  "operations": [
+    {"op": "read", "unit": "C", "address": "0x00"},
+    {"op": "delay", "seconds": 0.5},
+    {"op": "read", "unit": "C", "address": "0x08"},
+    {"op": "delay", "seconds": 0.5},
+    {"op": "read", "unit": "C", "address": "0x0B"},
+    {"op": "delay", "seconds": 0.5},
+    {"op": "read", "unit": "C", "address": "0x0C"},
+    {"op": "delay", "seconds": 0.5},
+    {"op": "read", "unit": "C", "address": "0x0D"},
+    {"op": "delay", "seconds": 0.5},
+    {"op": "read", "unit": "C", "address": "0x0E"}
+  ]
+}

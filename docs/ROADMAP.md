@@ -78,19 +78,27 @@
 - [x] Match addressed replies until transport timeout and resynchronize after a
   bounded partial opening line; live regression covers more than 16 interleaved
   telemetry frames.
-- [ ] Implement stale-data detection for long-running monitoring.
+- [x] Implement latest-value monitoring state and stale-data detection with
+  explicit age/freshness fields.
 - [x] Map BixCheck T-stream indexes, physical slots, producer sources, widths,
   and core numeric conversions to the vendor telemetry fields.
 - [ ] Complete remaining status/flag meanings, physical calibration, table-only
   TFD-TFF provenance, and M/I payload semantics.
 - [ ] Expose stove identity, state, heat level, alarms, temperatures, fan values, door timers, and ash values.
-- [ ] Add CSV/JSON logging and replayable capture fixtures.
+- [x] Add decoded JSONL snapshot logging and offline replay against preserved
+  live serial-capture fixtures, including format-04 door/drawer/thermostat A/B cases.
+- [ ] Add a flattened CSV export after the stable monitor field set is validated live.
 - [x] Validate three identical complete format-04 A00-AFF backups with matching
   stored/calculated checksum against serial 5215.
 - [ ] Publish checksummed standalone Windows, Linux, and macOS packages.
 
 ## Phase 3 - verified normal control
 
+- [x] Add offline-tested generic A/C/D writes, optional fresh-readback
+  verification, exact-byte exchange, and fail-fast JSON register transactions.
+- [x] Prevent possible write echoes from satisfying readback matching; require
+  an actual addressed `R` response.
+- [x] Isolate known loader traffic from generic raw/transaction commands.
 - [ ] Validate OFF, ON, UP, and DOWN individually.
 - [ ] Read back state after every command.
 - [ ] Add idempotent command handling, rate limits, lockouts, and failure recovery.

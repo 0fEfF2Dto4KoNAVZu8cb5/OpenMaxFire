@@ -30,6 +30,20 @@ class ClientReadOnlyTests(unittest.TestCase):
         self.assertEqual(response.value, 0x07)
         self.assertEqual(transport.writes, [b"CR08"])
 
+    def test_query_register_does_not_mistake_write_echo_for_readback(self):
+        transport = FakeTransport(b"CW0811\nCR0807\n")
+        response = MaxFireClient(transport).query_register(0x08)
+        self.assertEqual(response.value, 0x07)
+        self.assertEqual(transport.writes, [b"CR08"])
+
+    def test_query_register_reports_every_valid_frame_to_monitor_callback(self):
+        transport = FakeTransport(b"T094b\nCR0804\n")
+        observed = []
+        response = MaxFireClient(transport).query_register(0x08, on_frame=observed.append)
+        self.assertEqual(response.value, 0x04)
+        self.assertEqual([type(frame).__name__ for frame in observed],
+                         ["TelemetryResponse", "AddressedResponse"])
+
     def test_query_register_has_no_default_frame_limit(self):
         telemetry = b"".join(f"T{index:02x}00\n".encode() for index in range(32))
         transport = FakeTransport(telemetry + b"CR0807\n")
@@ -86,6 +100,41 @@ class ClientReadOnlyTests(unittest.TestCase):
     def test_invalid_explicit_frame_limit_is_rejected(self):
         with self.assertRaises(ValueError):
             MaxFireClient(FakeTransport()).query_register(0x08, max_frames=0)
+
+    def test_generic_write_can_target_all_addressed_units(self):
+        transport = FakeTransport()
+        receipt = MaxFireClient(transport).write_register(0x6B, 0x40, unit="A")
+        self.assertEqual(receipt.request, b"AW6B40")
+        self.assertFalse(receipt.verified)
+        self.assertEqual(transport.writes, [b"AW6B40"])
+
+    def test_send_only_read_can_target_d_space(self):
+        transport = FakeTransport()
+        receipt = MaxFireClient(transport).read_register(0x12, unit="D")
+        self.assertEqual(receipt.request, b"DR12")
+        self.assertEqual(transport.writes, [b"DR12"])
+
+    def test_verified_write_uses_fresh_read_response(self):
+        transport = FakeTransport(b"AW6B40\nAR6b40\n")
+        receipt = MaxFireClient(transport).write_register_verified(
+            0x6B, 0x40, unit="A"
+        )
+        self.assertEqual(transport.writes, [b"AW6B40", b"AR6B"])
+        self.assertEqual(receipt.response, b"AR6b40")
+        self.assertTrue(receipt.verified)
+
+    def test_verified_write_reports_mismatched_readback(self):
+        transport = FakeTransport(b"AR6b41\n")
+        receipt = MaxFireClient(transport).write_register_verified(
+            0x6B, 0x40, unit="A"
+        )
+        self.assertFalse(receipt.verified)
+
+    def test_invalid_raw_receive_duration_sends_nothing(self):
+        transport = FakeTransport()
+        with self.assertRaises(ValueError):
+            MaxFireClient(transport).exchange_raw(b"CR00", receive_duration=-1)
+        self.assertEqual(transport.writes, [])
 
 
 if __name__ == "__main__":

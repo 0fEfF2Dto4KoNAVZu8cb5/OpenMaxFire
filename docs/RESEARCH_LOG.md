@@ -189,3 +189,31 @@
 - Preserved the raw JSONL traffic, adapter inventory, EEPROM artifact, hashes,
   photographs, and interpreted live report. No C/A write, remote ON, loader,
   or actuator command was sent.
+
+## 2026-08-23
+
+- Promoted the experimental differential reader into `maxfirectl monitor`, a
+  first-class read-only CR00-CR0E polling loop that retains rather than discards
+  interleaved telemetry and tolerates individual addressed-read timeouts.
+- Added a latest-value monitor state with raw CR/T/status preservation,
+  adjacent-slot words, frame counts, timestamp/age fields, configurable stale
+  detection, compact console output, and durable decoded JSONL snapshots.
+- Added `maxfirectl replay` for offline reconstruction from exact
+  `openmaxfire.serial-capture.v1` logs, including arbitrary RX chunk boundaries,
+  malformed opening-line resynchronization, and explicit trailing-byte counts.
+- Replayed the preserved all-closed, firebox-open, ash-drawer-open, and
+  thermostat-open format-04 captures as regression fixtures. Their observed
+  T08 warning bits and T0C thermostat bit reconstruct correctly.
+- Tightened the evidence boundary after replay showed format-04 `T09=07` while
+  cold/off: the monitor preserves that byte as unresolved instead of applying
+  the later BixCheck 5.5 state decoder. No live command or write was issued in
+  this development pass.
+- Added the version-0.4 low-level service layer: A/C/D reads and send-only
+  writes, optional fresh-readback verification, uninterpreted exact-byte
+  exchange, and validated fail-fast JSON register transactions.
+- Corrected addressed-read matching to require an `R` opcode, preventing a
+  possible same-address `W` echo from being accepted as write verification.
+- Added a second explicit acknowledgement for live state-changing traffic and
+  blocked `CW0FC4`, `EA`, `E3`, and `ED` from generic raw/transaction paths.
+  Loader support remains a separate unfinished state machine; no physical
+  write or loader traffic was issued during this implementation pass.

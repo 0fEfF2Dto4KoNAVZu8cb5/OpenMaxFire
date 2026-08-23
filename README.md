@@ -12,7 +12,12 @@ emulator, a virtual serial lab, photographs, provenance records, and the first
 cross-platform read-only service-tool foundation. A live cold/off session now
 documents serial 5215's previously unpreserved firmware 2.02/data format 04,
 working J3 pinout, 9,600-baud traffic, physical inputs, telemetry correlations,
-and three identical EEPROM backups.
+and three identical EEPROM backups. Version 0.3 adds a first-class read-only
+monitor, freshness/stale-data tracking, decoded JSONL snapshots, and offline
+replay against the preserved byte-exact traffic corpus. Version 0.4 adds the
+offline-tested low-level service foundation: generic A/C/D reads and writes,
+fresh-readback verification, exact-byte raw exchange, and validated fail-fast
+register transactions. Known loader traffic remains isolated and blocked.
 
 > **Have an unlisted version?** If you have any BixCheck software, MaxFire
 > firmware, manual, hardware documentation, or related material from a version
@@ -76,6 +81,7 @@ Not yet confirmed on physical hardware:
   format-04 telemetry meanings.
 - Any remote write, actuator/service command, or operating-stove control.
 - A recoverable in-circuit method for preserving firmware-2.02 program memory.
+- Firmware-loader erase/program acknowledgements or interrupted-transfer recovery.
 
 No new board revision or state-changing live connection should be attempted
 until [SAFETY.md](SAFETY.md), the
@@ -109,15 +115,28 @@ maxfirectl encode button up
 
 maxfirectl ports
 # Lists COM ports on Windows and /dev devices on Linux/macOS without opening them
+
+maxfirectl replay research/live/2026-08-22-fw202-format04/captures/\
+fw202-identify-firebox-door-open-long.jsonl --json
+# Reconstructs monitor state without opening a serial port
+
+maxfirectl transaction plan.json --dry-run
+# Validates and canonicalizes a register transaction without opening a port
 ```
 
-The portable read-only foundation now includes serial-port discovery, exact
+The portable foundation now includes serial-port discovery, exact
 timestamped JSONL traffic capture, timeout-bounded register queries, stove identity,
-and complete `AR00`-`ARFF` JSON backups with checksum diagnostics. Live I/O is
+complete `AR00`-`ARFF` JSON backups with checksum diagnostics, continuous
+read-only CR00-CR0E monitoring, stale-data detection, and capture replay. Live I/O is
 intentionally gated and requires an explicit port, baud rate, and
 acknowledgement flag. Addressed matching tolerates partial opening lines and
 arbitrarily many valid telemetry frames until the configured serial timeout.
 Opening a port can still transition DTR/RTS even when no payload is transmitted.
+The low-level 0.4 layer also exposes generic A/C/D writes, optional fresh
+readback verification, raw byte exchange, and JSON transaction plans behind a
+second state-change acknowledgement. These new write paths are offline-tested
+but have not been authorized or exercised on the physical stove. See the
+[low-level service layer](docs/cli/low-level-service-layer.md).
 
 Run the read-only virtual endpoint without hardware:
 
@@ -149,6 +168,7 @@ Start with [the research status](docs/STATUS.md),
 [the bare-controller photographs](docs/hardware/bare-controller-photographs.md),
 [the MaxFire owner-manual analysis](docs/manuals/maxfire-owner-manual-2020866-rev-a.md),
 [the cross-platform service-tool guide](docs/cli/cross-platform-service-tool.md),
+[the low-level service layer](docs/cli/low-level-service-layer.md),
 [the serial command cheat sheet](docs/protocol/serial-command-cheat-sheet.md),
 [the BixCheck comparison](docs/reverse-engineering/bixcheck-comparison.md),
 [the BixCheck runtime workflows](docs/reverse-engineering/bixcheck-runtime-workflows.md),
