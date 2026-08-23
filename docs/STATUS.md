@@ -47,7 +47,7 @@ OpenMaxFire separates evidence into five levels:
 | J10 exhaust sensor | RA4/T0CKI falling-edge count is sampled into RAM 0x34 and returned as CR05 | Identical 2.06/2.70/2.71 producer signatures plus BixCheck exhaust predicates and board diagram |
 | J9 feeder sensor | RD0 high-then-low wheel cycle is timed while RB1 is active; CR02.4 is current state and CR07 is the scaled interval | Identical 2.06/2.70/2.71 producer signatures plus BixCheck feed predicate and board diagram |
 | A-unit storage | Firmware reads A00-AFF through PIC16F877A internal data EEPROM registers | Emulator events and bank-aware handler trace |
-| J3/cable | J3-1=stove TX/PIC25, J3-2=stove RX/PIC26, J3-4=ground, J3-3 unresolved; FTDI TTL-232R-5V-WE wired without VCC exchanged valid traffic | Bare-board photographs, owner continuity, adapter inventory, live traffic |
+| J3/cable | J3-1=stove RX/PIC26 with FTDI orange/TX, J3-2=stove TX/PIC25 with FTDI yellow/RX, J3-4=ground, J3-3 unresolved; adapter VCC disconnected | Corrected owner continuity/wiring identification, adapter inventory, live traffic; reversed-wire photograph retained and marked incorrect |
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |

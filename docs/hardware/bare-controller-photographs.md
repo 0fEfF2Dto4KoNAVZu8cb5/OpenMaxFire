@@ -19,7 +19,7 @@ upload names and hashes are recorded in the preservation manifest.
 | [`j3-pic-component-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-pic-component-side.jpg) | 1536 x 1157 | PIC16F877A, `10.000` oscillator, J3, and adjacent passive network |
 | [`j3-component-side-closeup.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-component-side-closeup.jpg) | 1157 x 1536 | J3, resistor/capacitor network, PIC, and nearby logic |
 | [`pic-solder-side-routing.jpg`](../../preservation/original/photos/serial-5215-bare-controller/pic-solder-side-routing.jpg) | 1157 x 1536 | Solder-side PIC/J3-area routing |
-| [`j3-ftdi-wiring-solder-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-ftdi-wiring-solder-side.jpg) | 1152 x 1536 | Working three-conductor FTDI attachment with one J3 position intentionally unused |
+| [`j3-ftdi-incorrect-wiring-solder-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-ftdi-incorrect-wiring-solder-side.jpg) | 1152 x 1536 | **Incorrect/reversed FTDI attachment retained as evidence; do not copy** |
 
 The separately supplied `1000000393.jpg` completes the earlier installed-board
 sequence and is retained with that set.
@@ -35,14 +35,17 @@ sequence and is retained with that set.
   is the bottom J3 pad, while the confirmed ground is the top round pad/pin 4.
 - J3's two UART contacts enter passive networks before the PIC area rather than
   a visible MAX232, USB PHY, or RS-485 transceiver.
-- Owner continuity measurements map J3-1 toward PIC physical pin 25/RC6-TX,
-  J3-2 toward pin 26/RC7-RX, and J3-4 to board ground.
-- The attached FTDI photograph shows black on J3-4, J3-3 unused, orange on
-  J3-2, and yellow on J3-1. That attachment subsequently exchanged valid
-  9,600-baud application traffic.
+- Corrected owner continuity and wiring identification maps J3-1 toward PIC
+  physical pin 26/RC7-RX, J3-2 toward pin 25/RC6-TX, and J3-4 to board ground.
+- The archived FTDI photograph shows black on J3-4, J3-3 unused, orange on
+  J3-2, and yellow on J3-1. **That orange/yellow placement is reversed and must
+  not be copied.** The photograph does not show the successful live connection.
+- The successful connection used black on J3-4, left J3-3 unused, placed orange
+  on J3-1, and placed yellow on J3-2. It exchanged valid 9,600-baud application
+  traffic.
 
 Continuity measurements are owner-performed physical evidence rather than a
-value derivable solely from pixels. The successful live exchange independently
+value derivable solely from pixels. The corrected live exchange independently
 validates the functional TX/RX crossing.
 
 ## Supplied video

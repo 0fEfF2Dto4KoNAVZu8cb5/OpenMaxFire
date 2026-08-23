@@ -13,7 +13,7 @@ db3fb1bad3e1138aa914d8e6f28816737f2f1917114de21ec97d82a41bfa5170  preservation/o
 14c876cd1a1c146b4e687be00e7f2bf53b6bab2d90668d7670917bb3396ea7a1  preservation/original/photos/serial-5215-bare-controller/component-side-alternate.jpg
 b0f4806a93bc4c98e103f364766f55a66edfca2c9b504322b34dd013df9fc299  preservation/original/photos/serial-5215-bare-controller/component-side-full.jpg
 a60e4b265134d794219ac95d809cd61fb309b7c76bc765d9cd80ca98fe49b894  preservation/original/photos/serial-5215-bare-controller/j3-component-side-closeup.jpg
-6bcaf1ac8222137a326a4e0aa899c96d4e3e29d29b8f810175a297ec7ac5f179  preservation/original/photos/serial-5215-bare-controller/j3-ftdi-wiring-solder-side.jpg
+6bcaf1ac8222137a326a4e0aa899c96d4e3e29d29b8f810175a297ec7ac5f179  preservation/original/photos/serial-5215-bare-controller/j3-ftdi-incorrect-wiring-solder-side.jpg
 c67a97d4f8cd4527efa65d480a15a945aee3acd997c6b4ab693466916e3e3f91  preservation/original/photos/serial-5215-bare-controller/j3-pic-component-side.jpg
 012592929c169baedc06441a51d182e7747e9054f38519fe456b07272f18db45  preservation/original/photos/serial-5215-bare-controller/pic-solder-side-routing.jpg
 fc7e250e8848ac87e89cce599fb5b3a6dd13b6a9d0144dddc3afcb47e00a4a2a  preservation/original/photos/serial-5215-bare-controller/solder-side-full.jpg

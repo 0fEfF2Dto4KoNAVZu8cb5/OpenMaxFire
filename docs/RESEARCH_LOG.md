@@ -183,12 +183,14 @@
 - Preserved full component- and solder-side photographs of serial 5215's bare
   controller. The images directly identify PCB `9067-0604`, PIC16F877A-I/P,
   and the `10.000` MHz oscillator.
-- Combined owner continuity tracing with the photographed square pad and PIC
-  pinout: J3-1 is stove TX toward PIC25/RC6, J3-2 is stove RX toward
-  PIC26/RC7, J3-4 is board ground, and J3-3 remains unresolved/disconnected.
+- Combined corrected owner continuity tracing with the photographed square pad
+  and successful live wiring: J3-1 is stove RX toward PIC26/RC7, J3-2 is stove
+  TX toward PIC25/RC6, J3-4 is board ground, and J3-3 remains
+  unresolved/disconnected.
 - Inventoried the exact live cable as FTDI `TTL-232R-5V-WE`, VID:PID
   `0403:6001`, serial `ABBAUPPN`; black/orange/yellow connected to
-  ground/stove-RX/stove-TX and adapter VCC remained disconnected.
+  J3-4/ground, J3-1/stove-RX, and J3-2/stove-TX respectively. Adapter VCC
+  remained disconnected.
 - Rejected 19,200 baud and completed the first physical `CR00` exchange at
   9,600 8N1. Captured exact no-terminator request framing, LF responses, and
   lowercase response nibbles.
@@ -278,3 +280,8 @@
 - Added four offline validation-harness regressions, bringing the work-export
   suite to 135 passing tests plus the conditional full-corpus integration test.
   No physical traffic was issued while developing the harness.
+- Corrected the J3 wiring record after owner review: J3-1 is stove RX/PIC26 and
+  uses the FTDI orange TX conductor; J3-2 is stove TX/PIC25 and uses the yellow
+  RX conductor. Renamed the earlier reversed-wire photograph as incorrect
+  evidence and marked it not to be copied; it does not show the successful live
+  connection.

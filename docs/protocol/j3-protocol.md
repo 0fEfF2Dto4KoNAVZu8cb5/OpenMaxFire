@@ -17,8 +17,10 @@ locate the black, single-row, four-contact J3. The later
 [bare-controller photographs](../hardware/bare-controller-photographs.md)
 directly show both PCB sides, complete `9067-0604` marking, PIC16F877A, and
 `10.000` MHz oscillator. Owner continuity tracing plus successful live traffic
-establish J3-1=stove TX, J3-2=stove RX, J3-4=ground. J3-3 remains unresolved
-and disconnected. See [the hardware pinout](../hardware/j3-interface.md).
+establish J3-1=stove RX, J3-2=stove TX, J3-4=ground. J3-3 remains unresolved
+and disconnected. The preserved pre-validation FTDI photograph has the two
+signal wires reversed and is explicitly marked incorrect. See
+[the hardware pinout](../hardware/j3-interface.md).
 
 The working adapter is an FTDI `TTL-232R-5V-WE`; adapter VCC was not connected.
 This validates non-inverted TTL UART compatibility for the tested board. It

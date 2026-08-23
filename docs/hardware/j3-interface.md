@@ -28,8 +28,8 @@ The J3 square pad is pin 1. With the board upright in the documented view, pin
 
 | J3 pin | Function | Physical evidence |
 | ---: | --- | --- |
-| 1 | Stove TX | Continuity/tracing toward PIC physical pin 25, `RC6/TX/CK`; successful receive path |
-| 2 | Stove RX | Continuity/tracing toward PIC physical pin 26, `RC7/RX/DT`; successful transmit path |
+| 1 | Stove RX | Corrected continuity/tracing toward PIC physical pin 26, `RC7/RX/DT`; successful transmit path |
+| 2 | Stove TX | Corrected continuity/tracing toward PIC physical pin 25, `RC6/TX/CK`; successful receive path |
 | 3 | Unresolved; leave disconnected | No function established; earlier standalone-board measurement was 0 V |
 | 4 | Board/signal ground | Continuity to board power-input ground |
 
@@ -48,12 +48,19 @@ The working adapter inventory is preserved as
 | FTDI wire | Adapter signal | J3 |
 | --- | --- | --- |
 | Black | GND | Pin 4 / stove ground |
-| Orange | TX | Pin 2 / stove RX |
-| Yellow | RX | Pin 1 / stove TX |
+| Orange | TX | Pin 1 / stove RX |
+| Yellow | RX | Pin 2 / stove TX |
 | Red | VCC | Disconnected |
 | Brown/green | Flow control | Disconnected |
 
-This exact connection returned valid `CR0000` and firmware identity at 9,600
+The preserved
+[`j3-ftdi-incorrect-wiring-solder-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-ftdi-incorrect-wiring-solder-side.jpg)
+shows orange and yellow in the opposite positions. It records an incorrect
+pre-validation attachment, is retained only as evidence, and must not be used
+as a wiring guide.
+
+The table above is the corrected connection that returned valid `CR0000` and
+firmware identity at 9,600
 8N1. The red VCC wire was never connected. A DB9/bipolar RS-232 adapter, USB
 data cable, or unknown-color generic adapter must not be substituted directly.
 

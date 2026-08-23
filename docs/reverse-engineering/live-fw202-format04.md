@@ -44,8 +44,8 @@ J3 mapping. Numbering follows the square pin-1 pad:
 
 | J3 pin | Physical position in the documented upright board view | Function | Evidence |
 | ---: | --- | --- | --- |
-| 1 | Bottom, square pad | Stove TX, toward PIC pin 25 `RC6/TX/CK` | Owner continuity trace plus successful receive path |
-| 2 | Third from top | Stove RX, toward PIC pin 26 `RC7/RX/DT` | Owner continuity trace plus successful transmit path |
+| 1 | Bottom, square pad | Stove RX, toward PIC pin 26 `RC7/RX/DT` | Corrected owner continuity/wiring identification plus successful transmit path |
+| 2 | Third from top | Stove TX, toward PIC pin 25 `RC6/TX/CK` | Corrected owner continuity/wiring identification plus successful receive path |
 | 3 | Second from top | Unresolved; left disconnected | No voltage/function conclusion; measured 0 V in an earlier standalone-board check |
 | 4 | Top | Board ground | Direct continuity to board power-input ground |
 
@@ -55,9 +55,14 @@ The working cable is an FTDI `TTL-232R-5V-WE`, USB `0403:6001`, serial
 | FTDI conductor | FTDI function | J3 connection |
 | --- | --- | --- |
 | Black | Ground | J3-4 |
-| Orange | Adapter TX | J3-2 / stove RX |
-| Yellow | Adapter RX | J3-1 / stove TX |
+| Orange | Adapter TX | J3-1 / stove RX |
+| Yellow | Adapter RX | J3-2 / stove TX |
 | Red, brown, green | Power/flow control | Disconnected |
+
+The preserved solder-side FTDI photograph shows orange on J3-2 and yellow on
+J3-1. That photographed placement was incorrect and does not represent the
+successful live connection; the image is retained only as clearly labeled
+historical evidence.
 
 No adapter VCC conductor was connected. A generic bipolar RS-232 adapter or a
 USB data cable is not equivalent. The continuity path to the PIC USART, lack of
