@@ -33,6 +33,13 @@ simulator-only state machine with retries, progress, corruption/disconnect
 faults, and final memory comparison. It still contains no physical flashing
 path, bootloader-entry write, or erase command.
 
+Live work on 2026-08-23 physically validated the normal OFF/ON/UP/DOWN command
+bytes on firmware 2.02 and captured flashing fault light 8. The API now retains
+format-04 `T08` fault bits across the lamp's dark phase and keeps that profile
+separate from BixCheck's later raw `T13` alarm field. The verified high-level
+physical control executor remains blocked until format-04 state readback is
+decoded well enough to prove command outcomes automatically.
+
 > **Have an unlisted version?** If you have any BixCheck software, MaxFire
 > firmware, manual, hardware documentation, or related material from a version
 > not listed in this repository, please contact me at [openmaxfire@mailbruh.com](mailto:openmaxfire@mailbruh.com) or open a pull request so it
@@ -47,6 +54,9 @@ Confirmed by static, photographic, emulator, and live evidence:
   `Txxvv` one-byte frames; logical 16-bit fields use adjacent high/low slots.
   BixCheck accepts CR or LF termination.
 - BixCheck maps remote OFF/ON/UP/DOWN to `CW0E11`, `CW0E12`, `CW0E14`, and `CW0E18`.
+- Those four normal-control bytes produced the expected physical responses on
+  the live firmware-2.02 controller; exact traffic and operator observations
+  are preserved.
 - CR0B/CR0C expose firmware identity bytes; the live controller reports `2.02`
   and `CR08=04`, older than the preserved 2.06/format-05 release.
 - BixCheck 5.0.21 selects 9,600 baud; 5.5.x selects 9,600/19,200, all at 8N1.
@@ -86,6 +96,9 @@ Confirmed by static, photographic, emulator, and live evidence:
   `EFCE` EEPROM checksum. The stored controller serial/date strings differ from
   the appliance nameplate and are preserved without an assumed explanation.
 - The recovered stove is serial 5215; its owner identifies it as a MaxFire 115.
+- Format-04 `T08` is a flashing-indicator bitmap: lights 4, 5, and 8 are
+  live-correlated to `0x08`, `0x10`, and `0x80`. The monitor uses temporal
+  retention so a snapshot taken during the dark phase does not lose the fault.
 
 Not yet confirmed on physical hardware:
 
@@ -93,7 +106,8 @@ Not yet confirmed on physical hardware:
   operating electrical loads.
 - Physical J9/J10 sensor correlation, CR02.1/CR02.7 functions, and most
   format-04 telemetry meanings.
-- Any remote write, actuator/service command, or operating-stove control.
+- Automatic format-04 state/level verification and high-level physical-control
+  execution, despite the low-level normal-control bytes now being live-proven.
 - A recoverable in-circuit method for preserving firmware-2.02 program memory.
 - Firmware-loader erase/program acknowledgements or interrupted-transfer recovery.
 
@@ -148,8 +162,9 @@ arbitrarily many valid telemetry frames until the configured serial timeout.
 Opening a port can still transition DTR/RTS even when no payload is transmitted.
 The low-level 0.4 layer also exposes generic A/C/D writes, optional fresh
 readback verification, raw byte exchange, and JSON transaction plans behind a
-second state-change acknowledgement. These new write paths are offline-tested
-but have not been authorized or exercised on the physical stove. See the
+second state-change acknowledgement. The firmware-2.02 remote OFF/ON/UP/DOWN
+bytes have been exercised successfully; other write paths remain offline-only
+unless their evidence says otherwise. See the
 [low-level service layer](docs/cli/low-level-service-layer.md).
 
 The Python API builds profile-aware service models above that

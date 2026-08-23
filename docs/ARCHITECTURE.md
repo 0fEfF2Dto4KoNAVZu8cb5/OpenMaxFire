@@ -14,7 +14,7 @@ flashing, and post-flash calibration.
 
 Dangerous service functions must remain visibly separated from normal monitoring and control.
 
-The portable architecture has four boundaries:
+The portable architecture has five boundaries:
 
 - `protocol`: OS-independent request encoding, response parsing, register
   interpretation, conversions, and checksums;
@@ -22,6 +22,8 @@ The portable architecture has four boundaries:
   acquisition, and later verified control workflows;
 - `transport`: pyserial port enumeration and 8N1 I/O across COM, `/dev/tty*`,
   and `/dev/cu.*` names, plus exact JSONL traffic recording;
+- `profiles/models`: firmware-specific register, telemetry, fault, and evidence
+  semantics exposed as immutable application-facing state;
 - `cli`: user-facing safety gates and durable artifacts.
 
 No protocol or safety decision may depend on a Windows or POSIX device-name
@@ -33,6 +35,12 @@ The CLI is the authoritative, scriptable engine. A future desktop GUI should be
 a thin client of the same APIs rather than a second protocol implementation.
 Standalone Windows, Linux, and macOS releases should eventually let stove
 owners use the tool without installing Python.
+
+Fault decoding follows the same boundary. Firmware-2.02/data-format-04 uses a
+temporal `T08` flashing-indicator bitmap, while later BixCheck layouts expose
+raw `T13` alarm state plus `T09` operating state. These meanings belong in the
+profile-aware API; CLI, GUI, and Home Assistant clients must consume that model
+instead of maintaining separate fault tables.
 
 ## Permanent ESP32/ESPHome controller
 

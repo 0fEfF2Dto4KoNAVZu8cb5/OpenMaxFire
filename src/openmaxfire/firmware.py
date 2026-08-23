@@ -154,7 +154,10 @@ def parse_intel_hex(text: str | bytes) -> IntelHexImage:
 def _metadata_from_name(filename: str) -> tuple[str | None, FirmwareVariant]:
     normalized = filename.casefold()
     version = None
-    for pattern, value in (("0206", "2.06"), ("0270", "2.70"), ("0271", "2.71")):
+    # Embedded filenames also carry a build date (for example,
+    # Bixby_0270_070206.hex). Check the explicit firmware tokens before the
+    # shorter 0206 token so a 2007-02-06 date is not misidentified as v2.06.
+    for pattern, value in (("0271", "2.71"), ("0270", "2.70"), ("0206", "2.06")):
         if pattern in normalized:
             version = value
             break

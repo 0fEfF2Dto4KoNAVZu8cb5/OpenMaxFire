@@ -1,0 +1,516 @@
+{
+  "audit_span": {
+    "event_count": 8417,
+    "first_sequence": 1,
+    "last_sequence": 8417,
+    "rx_bytes": 8346,
+    "schema": "openmaxfire.audit-span.v1",
+    "sha256": "51f293c586823a233d0d44b68331623dbfa6b4d0da0640d5ef11639b119089a2",
+    "tx_bytes": 292
+  },
+  "completed_utc": "2026-08-23T22:07:05.248199+00:00",
+  "connection": {
+    "baudrate": 9600,
+    "port": "/dev/ttyUSB0",
+    "simulated": false,
+    "timeout": 1.0
+  },
+  "detection": null,
+  "identity": {
+    "data_format": "04",
+    "firmware_version": "2.02",
+    "probe_ok": true,
+    "profile_key": "fw202-format04",
+    "recognized_static_pairing": true,
+    "registers": {
+      "CR00": "00",
+      "CR08": "04",
+      "CR0B": "02",
+      "CR0C": "02",
+      "CR0D": "00",
+      "CR0E": "00"
+    }
+  },
+  "mode": "physical",
+  "openmaxfire_version": "0.7.0",
+  "requested": {
+    "baud": "9600",
+    "include_control": true,
+    "include_start_test": true,
+    "port": "/dev/ttyUSB0"
+  },
+  "safety_confirmations": [
+    "The controller is cold/off and no startup or shutdown transition is active.",
+    "The interface is verified 5 V TTL, with adapter VCC and J3 pin 3 disconnected.",
+    "J3 ground/TX/RX were traced for this exact 9067-0604 board revision.",
+    "There are no exposed mains conductors and I will not move internal wiring while powered.",
+    "I understand this default phase sends reads only, but opening the serial port is not electrically passive."
+  ],
+  "schema": "openmaxfire.live-validation.v1",
+  "session_status": "completed",
+  "started_utc": "2026-08-23T22:03:57.617249+00:00",
+  "steps": [
+    {
+      "audit_span": {
+        "event_count": 0,
+        "first_sequence": null,
+        "last_sequence": null,
+        "rx_bytes": 0,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tx_bytes": 0
+      },
+      "created_utc": "2026-08-23T22:04:09.569369+00:00",
+      "key": "identity-repeat",
+      "message": "all identity reads matched",
+      "observations": {
+        "identities": [
+          {
+            "data_format": "04",
+            "firmware_version": "2.02",
+            "probe_ok": true,
+            "profile_key": "fw202-format04",
+            "recognized_static_pairing": true,
+            "registers": {
+              "CR00": "00",
+              "CR08": "04",
+              "CR0B": "02",
+              "CR0C": "02",
+              "CR0D": "00",
+              "CR0E": "00"
+            }
+          }
+        ],
+        "repeats": 1,
+        "stable": true
+      },
+      "status": "pass",
+      "title": "Repeated controller identity"
+    },
+    {
+      "audit_span": {
+        "event_count": 646,
+        "first_sequence": 249,
+        "last_sequence": 894,
+        "rx_bytes": 631,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "eb5557e86bdf316eaa36bccb0c426b23c61d30b580827a3c6f8cea00a95c319b",
+        "tx_bytes": 60
+      },
+      "created_utc": "2026-08-23T22:04:16.974887+00:00",
+      "key": "cold-baseline-01",
+      "message": "complete CR00-CR0E typed snapshot",
+      "observations": {
+        "controller_registers": {
+          "CR00": "00",
+          "CR01": "00",
+          "CR02": "12",
+          "CR03": "08",
+          "CR04": "0D",
+          "CR05": "00",
+          "CR06": "03",
+          "CR07": "2D",
+          "CR08": "04",
+          "CR09": "77",
+          "CR0A": "3C",
+          "CR0B": "02",
+          "CR0C": "02",
+          "CR0D": "00",
+          "CR0E": "00"
+        },
+        "path": "snapshots/cold-baseline-01.json",
+        "telemetry_bytes": {
+          "T00": "0F",
+          "T01": "0D",
+          "T02": "05",
+          "T03": "77",
+          "T04": "3B",
+          "T05": "3B",
+          "T06": "00",
+          "T07": "00",
+          "T08": "00",
+          "T09": "07",
+          "T0A": "00",
+          "T0B": "00",
+          "T0C": "20",
+          "T0D": "00",
+          "T0E": "00",
+          "T0F": "00",
+          "T10": "02",
+          "T11": "D0",
+          "T12": "00",
+          "T13": "BA",
+          "T14": "0F",
+          "T15": "0F"
+        },
+        "unknown_cr02_bits": {
+          "bit_1": true,
+          "bit_7": false
+        }
+      },
+      "status": "pass",
+      "title": "Cold Baseline cycle 1"
+    },
+    {
+      "audit_span": {
+        "event_count": 0,
+        "first_sequence": null,
+        "last_sequence": null,
+        "rx_bytes": 0,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tx_bytes": 0
+      },
+      "created_utc": "2026-08-23T22:04:16.974926+00:00",
+      "key": "eeprom-backup",
+      "message": "--skip-eeprom was supplied",
+      "observations": {},
+      "status": "skipped",
+      "title": "Complete EEPROM backup and integrity"
+    },
+    {
+      "audit_span": {
+        "event_count": 0,
+        "first_sequence": null,
+        "last_sequence": null,
+        "rx_bytes": 0,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tx_bytes": 0
+      },
+      "created_utc": "2026-08-23T22:04:16.974943+00:00",
+      "key": "physical-inputs",
+      "message": "--skip-interactive-inputs was supplied",
+      "observations": {},
+      "status": "skipped",
+      "title": "Guided physical-input correlation"
+    },
+    {
+      "audit_span": {
+        "event_count": 0,
+        "first_sequence": null,
+        "last_sequence": null,
+        "rx_bytes": 0,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tx_bytes": 0
+      },
+      "created_utc": "2026-08-23T22:04:33.271506+00:00",
+      "key": "remote-off-cold",
+      "message": "a no-op OFF while already off cannot prove command acceptance",
+      "observations": {},
+      "status": "skipped",
+      "title": "Remote OFF while already cold/off"
+    },
+    {
+      "audit_span": {
+        "event_count": 5929,
+        "first_sequence": 2489,
+        "last_sequence": 8417,
+        "rx_bytes": 5894,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "a5dec7830dcb98ae13252c1ac90fd30299e2cb8f8f4e4501805839992ffd0c99",
+        "tx_bytes": 148
+      },
+      "created_utc": "2026-08-23T22:07:05.246695+00:00",
+      "key": "remote-on-start",
+      "message": "operator-observed startup and recovery; exact traffic preserved",
+      "observations": {
+        "poll_snapshots": [
+          {
+            "age_seconds": 1.7e-05,
+            "alarms": {
+              "ash_drawer_warning": false,
+              "firebox_door_warning": false,
+              "raw": null
+            },
+            "controller_registers": {
+              "CR00": "00",
+              "CR01": "00",
+              "CR02": "12",
+              "CR03": "08",
+              "CR04": "0D",
+              "CR05": "00",
+              "CR06": "03",
+              "CR07": "2D",
+              "CR08": "04",
+              "CR09": "77",
+              "CR0A": "3B",
+              "CR0B": "02",
+              "CR0C": "02",
+              "CR0D": "00",
+              "CR0E": "00"
+            },
+            "current_heat_level": null,
+            "data_format": "04",
+            "evidence": "live-validated cold/off on controller serial 5215",
+            "firmware_version": "2.02",
+            "fresh": true,
+            "igniter_state": null,
+            "observed_utc": "2026-08-23T22:07:05.244711+00:00",
+            "operating_state": null,
+            "panel_buttons": {
+              "down": false,
+              "off": false,
+              "on": false,
+              "raw": 0,
+              "up": false
+            },
+            "physical_inputs": {
+              "ash_drawer_open": false,
+              "bit_1_unresolved": true,
+              "bit_7_unresolved": false,
+              "burn_drive_limit": false,
+              "feeder_wheel_sensor": true,
+              "firebox_door_open": false,
+              "fuel_a_corn": false,
+              "raw": 18
+            },
+            "profile_key": "fw202-format04",
+            "status_payloads": {},
+            "target_heat_level": null,
+            "telemetry": {
+              "ash_drawer_timer_raw": null,
+              "ash_level": null,
+              "ash_target": null,
+              "blocked_flue_drop_limit": null,
+              "board_temperature_c": null,
+              "board_temperature_f": null,
+              "board_temperature_raw": null,
+              "convection_percent": null,
+              "display_led_raw": null,
+              "exhaust_fan_count": null,
+              "exhaust_fan_rpm": null,
+              "exhaust_phase_count": null,
+              "exhaust_phase_microseconds": null,
+              "exhaust_target_count": null,
+              "exhaust_target_rpm": null,
+              "fan_pot_raw": 119,
+              "fan_trim_percent": null,
+              "feed_cycle_calibration_seconds": null,
+              "feed_cycle_calibration_ticks": null,
+              "feed_cycle_seconds": null,
+              "feed_cycle_table_seconds": null,
+              "feed_cycle_table_ticks": null,
+              "feed_off_seconds": null,
+              "feed_off_ticks": null,
+              "feed_on_seconds": null,
+              "feed_on_ticks": null,
+              "feed_pot_raw": 59,
+              "feed_trim_percent": null,
+              "fire_door_timer_raw": null,
+              "flag_mode": null,
+              "flag_status_raw": null,
+              "format04_firebox_related_raw": 0,
+              "format04_state_unresolved_raw": 7,
+              "igniter_current_raw": null,
+              "iic_status_raw": null,
+              "lean_burn_drop_limit": null,
+              "thermocouple_points": null
+            },
+            "telemetry_bytes": {
+              "T00": "43",
+              "T01": "0D",
+              "T02": "05",
+              "T03": "77",
+              "T04": "3B",
+              "T05": "3B",
+              "T06": "00",
+              "T07": "00",
+              "T08": "00",
+              "T09": "07",
+              "T0A": "00",
+              "T0B": "00",
+              "T0C": "20",
+              "T0D": "00",
+              "T0E": "00",
+              "T0F": "00",
+              "T10": "02",
+              "T11": "D0",
+              "T12": "00",
+              "T13": "BA",
+              "T14": "0F",
+              "T15": "0F"
+            },
+            "thermostat_open": false
+          }
+        ],
+        "post_shutdown_snapshot_error": null,
+        "requests_hex": [
+          "43 57 30 45 31 32",
+          "43 57 30 45 31 31"
+        ],
+        "shutdown_observed": "unknown",
+        "start_observed": "yes"
+      },
+      "status": "indeterminate",
+      "title": "Remote ON/start and OFF recovery"
+    },
+    {
+      "audit_span": {
+        "event_count": 1603,
+        "first_sequence": 3820,
+        "last_sequence": 5422,
+        "rx_bytes": 1587,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "15ccb300c4585fb3d2c327417a583d6844b4538c4effe579caed6575ae148ef7",
+        "tx_bytes": 66
+      },
+      "created_utc": "2026-08-23T22:05:51.130567+00:00",
+      "key": "remote-up",
+      "message": "operator observation retained; post-command snapshot captured",
+      "observations": {
+        "after": {
+          "age_seconds": 9e-06,
+          "alarms": {
+            "ash_drawer_warning": false,
+            "firebox_door_warning": false,
+            "raw": null
+          },
+          "controller_registers": {
+            "CR00": "00",
+            "CR01": "00",
+            "CR02": "92",
+            "CR03": "09",
+            "CR04": "0D",
+            "CR05": "88",
+            "CR06": "03",
+            "CR07": "2D",
+            "CR08": "04",
+            "CR09": "77",
+            "CR0A": "3C",
+            "CR0B": "02",
+            "CR0C": "02",
+            "CR0D": "00",
+            "CR0E": "00"
+          },
+          "current_heat_level": null,
+          "data_format": "04",
+          "evidence": "live-validated cold/off on controller serial 5215",
+          "firmware_version": "2.02",
+          "fresh": true,
+          "igniter_state": null,
+          "observed_utc": "2026-08-23T22:05:51.129817+00:00",
+          "operating_state": null,
+          "panel_buttons": {
+            "down": false,
+            "off": false,
+            "on": false,
+            "raw": 0,
+            "up": false
+          },
+          "physical_inputs": {
+            "ash_drawer_open": false,
+            "bit_1_unresolved": true,
+            "bit_7_unresolved": true,
+            "burn_drive_limit": false,
+            "feeder_wheel_sensor": true,
+            "firebox_door_open": false,
+            "fuel_a_corn": false,
+            "raw": 146
+          },
+          "profile_key": "fw202-format04",
+          "status_payloads": {},
+          "target_heat_level": null,
+          "telemetry": {
+            "ash_drawer_timer_raw": null,
+            "ash_level": null,
+            "ash_target": null,
+            "blocked_flue_drop_limit": null,
+            "board_temperature_c": null,
+            "board_temperature_f": null,
+            "board_temperature_raw": null,
+            "convection_percent": null,
+            "display_led_raw": null,
+            "exhaust_fan_count": null,
+            "exhaust_fan_rpm": null,
+            "exhaust_phase_count": null,
+            "exhaust_phase_microseconds": null,
+            "exhaust_target_count": null,
+            "exhaust_target_rpm": null,
+            "fan_pot_raw": 119,
+            "fan_trim_percent": null,
+            "feed_cycle_calibration_seconds": null,
+            "feed_cycle_calibration_ticks": null,
+            "feed_cycle_seconds": null,
+            "feed_cycle_table_seconds": null,
+            "feed_cycle_table_ticks": null,
+            "feed_off_seconds": null,
+            "feed_off_ticks": null,
+            "feed_on_seconds": null,
+            "feed_on_ticks": null,
+            "feed_pot_raw": 60,
+            "feed_trim_percent": null,
+            "fire_door_timer_raw": null,
+            "flag_mode": null,
+            "flag_status_raw": null,
+            "format04_firebox_related_raw": 137,
+            "format04_state_unresolved_raw": 7,
+            "igniter_current_raw": null,
+            "iic_status_raw": null,
+            "lean_burn_drop_limit": null,
+            "thermocouple_points": null
+          },
+          "telemetry_bytes": {
+            "T00": "08",
+            "T01": "0D",
+            "T02": "06",
+            "T03": "77",
+            "T04": "3C",
+            "T05": "08",
+            "T06": "89",
+            "T07": "00",
+            "T08": "03",
+            "T09": "07",
+            "T0A": "00",
+            "T0B": "01",
+            "T0C": "30",
+            "T0D": "00",
+            "T0E": "3F",
+            "T0F": "43",
+            "T10": "02",
+            "T11": "D0",
+            "T12": "00",
+            "T13": "BA",
+            "T14": "0F",
+            "T15": "08"
+          },
+          "thermostat_open": false
+        },
+        "operator_observed_expected_effect": "yes",
+        "post_command_snapshot_error": null,
+        "queued_frames_ingested_after_observation": 215,
+        "queued_frames_ingested_before_command": 0,
+        "request_ascii": "CW0E14",
+        "request_hex": "43 57 30 45 31 34"
+      },
+      "status": "pass",
+      "title": "Remote UP while running"
+    },
+    {
+      "audit_span": {
+        "event_count": 2546,
+        "first_sequence": 5423,
+        "last_sequence": 7968,
+        "rx_bytes": 2544,
+        "schema": "openmaxfire.audit-span.v1",
+        "sha256": "c83df490f345b1c1dbf1da00f611423c5c0e28aac9ccd8c7915579afae0e1775",
+        "tx_bytes": 10
+      },
+      "created_utc": "2026-08-23T22:06:30.613572+00:00",
+      "key": "remote-down-restore",
+      "message": "operator observation retained; post-command snapshot was unavailable",
+      "observations": {
+        "after": null,
+        "operator_observed_expected_effect": "yes",
+        "post_command_snapshot_error": "no matching CR00 response before serial timeout after 0 frame(s)",
+        "queued_frames_ingested_after_observation": 183,
+        "queued_frames_ingested_before_command": 214,
+        "request_ascii": "CW0E18",
+        "request_hex": "43 57 30 45 31 38"
+      },
+      "status": "pass",
+      "title": "Remote DOWN and level restoration while running"
+    }
+  ]
+}

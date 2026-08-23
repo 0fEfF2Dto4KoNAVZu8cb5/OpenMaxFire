@@ -65,6 +65,14 @@ from .firmware_catalog import (
     FirmwareCorpusValidation,
     validate_firmware_corpus,
 )
+from .faults import (
+    FORMAT04_FAULT_PATTERNS,
+    FORMAT04_INDICATOR_HOLD_SECONDS,
+    FaultIndication,
+    FaultIndicatorPattern,
+    decode_format04_indicator_mask,
+    indicator_lights,
+)
 from .loader import (
     LoaderBlockReceipt,
     LoaderPlan,
@@ -175,6 +183,12 @@ __all__ = [
     "parse_transaction_plan",
     "replay_capture",
     "AlarmState",
+    "FaultIndication",
+    "FaultIndicatorPattern",
+    "FORMAT04_FAULT_PATTERNS",
+    "FORMAT04_INDICATOR_HOLD_SECONDS",
+    "decode_format04_indicator_mask",
+    "indicator_lights",
     "PanelButtons",
     "PhysicalInputs",
     "StoveSnapshot",

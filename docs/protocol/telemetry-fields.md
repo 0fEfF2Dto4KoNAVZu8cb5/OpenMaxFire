@@ -10,6 +10,8 @@ unvalidated on a physical stove for the preserved 2.06/2.70/2.71 images.
 > format-05/07 logical table position-for-position. Live format-04 correlations
 > are documented separately in
 > [the firmware-2.02 report](../reverse-engineering/live-fw202-format04.md).
+> Its profile-specific flashing-light and fault behavior is documented in
+> [fault and flashing-indicator protocol](faults.md).
 
 ## Wire framing
 
@@ -117,6 +119,11 @@ for T12 IIC status or T13 alarm status. It formats those bytes as hexadecimal.
 For T14 it retains the raw byte and separately displays the low-three-bit mode
 as one through eight. Semantic names for those controller bits therefore
 remain a firmware/live-correlation question rather than a BixCheck feature.
+
+This later-format T13 behavior is deliberately separate from the live
+format-04 controller. On firmware 2.02, T13 remained `BA` in both cold/off and
+feeder-wheel-fault captures, while T08 alternated `00`/`80` with physical light
+8. OpenMaxFire does not apply either profile's slot meaning to the other.
 
 ## 2.71 producer sources
 

@@ -1,9 +1,9 @@
 # Cross-platform service tool
 
-Status: the portable read-only foundation is implemented, tested offline, and
-live-validated for read-only use on serial 5215's firmware 2.02/data-format 04
-controller at 9,600 baud. Writes remain unvalidated and excluded from the
-documented workflow.
+Status: the portable foundation is implemented, tested offline, and
+live-validated on serial 5215's firmware 2.02/data-format 04 controller at
+9,600 baud. Remote OFF/ON/UP/DOWN bytes are live-validated; unrelated writes
+remain unvalidated and excluded from the documented workflow.
 
 `maxfirectl` uses one Python codebase on Windows, Linux, and macOS. The protocol,
 identity, backup, and safety logic does not contain OS-specific port assumptions.
@@ -204,6 +204,12 @@ Format-04 names are limited to the correlations established on serial 5215.
 In particular, format-04 `T09=07` is retained as unresolved raw data rather than
 being passed through the later BixCheck 5.5 state decoder.
 
+Format-04 fault indicators are temporal. The monitor accumulates nonzero T08
+bits across an eight-second observed-stream window so a snapshot taken while a
+physical fault lamp is dark still reports the active light and recognized
+factory pattern. Later formats retain BixCheck's T13 Alarm status as raw data;
+they do not use the format-04 T08 decoder.
+
 ## Offline capture replay
 
 `replay` never opens a serial port and does not require the live-I/O acknowledgement:
@@ -221,11 +227,12 @@ reports parsed-frame, malformed-line, received-byte, and trailing-byte counts.
 Use `--output final-snapshot.json` to save the final decoded state without
 altering the original capture.
 
-## Low-level writes remain unvalidated
+## Most low-level writes remain unvalidated
 
 Version 0.4 adds generic A/C/D writes, optional fresh readback, exact-byte raw
 exchange, and validated register transaction plans. They require a second
-state-change acknowledgement and remain offline-tested only. The read-only
+state-change acknowledgement. Remote front-panel writes are now live-validated
+on firmware 2.02; other write addresses remain offline-tested only. The read-only
 monitor, backup, identify, capture, and replay workflows still never emit a
 write. Known `CW0FC4`, `EA`, `E3`, and `ED` loader traffic is blocked from raw
 and transaction mode. See [Low-level service layer](low-level-service-layer.md).
@@ -237,5 +244,7 @@ GitHub Actions runs the offline suite on Windows, Ubuntu, and macOS with Python
 identity ordering, A-space reads, backup integrity, port normalization, traffic
 recording, real-firmware emulation, and loader separation. Live-derived
 regressions cover a partial first line, 32 interleaved telemetry frames, and
-four preserved format-04 door/drawer/thermostat replay cases. Archive integrity
-is verified separately on Linux.
+four preserved format-04 door/drawer/thermostat replay cases. A preserved
+flashing-light-8 capture additionally verifies temporal fault retention when
+the final instantaneous `T08` sample is zero. Archive integrity is verified
+separately on Linux.

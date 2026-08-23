@@ -18,6 +18,12 @@ def addressed(address: int, value: int) -> AddressedResponse:
 
 
 class MonitorStateTests(unittest.TestCase):
+    def test_indicator_hold_must_be_positive_and_finite(self):
+        for value in (0, -1, float("inf"), float("nan"), True):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    MonitorState(format04_indicator_hold=value)
+
     def test_snapshot_preserves_raw_values_and_decodes_evidence_backed_fields(self):
         state = MonitorState(stale_after=10.0)
         observed = 1_000_000_000
@@ -59,6 +65,10 @@ class MonitorStateTests(unittest.TestCase):
         self.assertNotIn("bixcheck_55_igniter_display", decoded)
         self.assertTrue(decoded["warning_flash_bits"]["firebox_door"])
         self.assertTrue(decoded["warning_flash_bits"]["ash_drawer"])
+        self.assertFalse(decoded["warning_flash_bits"]["feeder_wheel"])
+        self.assertEqual(decoded["fault_indicators"]["active_mask"], "1F")
+        self.assertEqual(decoded["fault_indicators"]["lights"], [1, 2, 3, 4, 5])
+        self.assertIsNone(decoded["fault_indicators"]["fault_code"])
         self.assertEqual(decoded["format04_live_correlations"]["fan_pot_raw"], 0x78)
         self.assertEqual(decoded["format04_live_correlations"]["feed_pot_raw"], 0x49)
         self.assertEqual(
@@ -80,6 +90,43 @@ class MonitorStateTests(unittest.TestCase):
         decoded = state.snapshot(now_monotonic_ns=3)["decoded"]
         self.assertEqual(decoded["operating_state"]["label"], "TSTAT L 4")
         self.assertEqual(decoded["bixcheck_55_igniter_display"]["label"], "L R good")
+
+    def test_format04_fault_indicator_survives_dark_flash_phase_then_clears(self):
+        state = MonitorState(format04_indicator_hold=8.0)
+        state.observe(addressed(0x08, 0x04), monotonic_ns=0)
+        state.observe(TelemetryResponse(0x08, (0x80,), b"T0880"), monotonic_ns=0)
+        state.observe(
+            TelemetryResponse(0x08, (0x00,), b"T0800"),
+            monotonic_ns=7_000_000_000,
+        )
+
+        dark_phase = state.snapshot(now_monotonic_ns=7_000_000_000)["decoded"]
+        self.assertEqual(dark_phase["fault_indicators"]["instantaneous_raw"], "00")
+        self.assertEqual(dark_phase["fault_indicators"]["active_mask"], "80")
+        self.assertEqual(
+            dark_phase["fault_indicators"]["fault_code"],
+            "feeder_wheel_failure",
+        )
+        self.assertTrue(dark_phase["warning_flash_bits"]["feeder_wheel"])
+
+        state.observe(
+            TelemetryResponse(0x08, (0x00,), b"T0800"),
+            monotonic_ns=9_000_000_000,
+        )
+        cleared = state.snapshot(now_monotonic_ns=9_000_000_000)["decoded"]
+        self.assertEqual(cleared["fault_indicators"]["active_mask"], "00")
+        self.assertEqual(cleared["fault_indicators"]["lights"], [])
+        self.assertFalse(cleared["warning_flash_bits"]["feeder_wheel"])
+
+    def test_later_format_exposes_raw_bixcheck_alarm_without_format04_decode(self):
+        state = MonitorState()
+        state.observe(addressed(0x08, 0x07), monotonic_ns=1)
+        state.observe(TelemetryResponse(0x13, (0xA5,), b"T13a5"), monotonic_ns=2)
+        decoded = state.snapshot(now_monotonic_ns=2)["decoded"]
+        self.assertEqual(decoded["alarm_status"]["source"], "T13")
+        self.assertEqual(decoded["alarm_status"]["raw"], "A5")
+        self.assertFalse(decoded["alarm_status"]["decoded"])
+        self.assertNotIn("fault_indicators", decoded)
 
     def test_snapshot_marks_missing_or_old_data_stale(self):
         empty = MonitorState(stale_after=2.0).snapshot(now_monotonic_ns=0)
@@ -183,6 +230,44 @@ class CaptureReplayTests(unittest.TestCase):
                 self.assertEqual(observed, expected)
                 self.assertEqual(snapshot["controller_registers"]["CR08"], "04")
                 self.assertEqual(format04["t09_meaning_unresolved_raw"], 0x07)
+
+    def test_preserved_fault8_capture_retains_alarm_across_final_dark_phase(self):
+        capture = (
+            Path(__file__).resolve().parents[1]
+            / "research"
+            / "live"
+            / "2026-08-23-fw202-control-faults"
+            / "captures"
+            / "fw202-fault8-traffic.jsonl"
+        )
+        replay = replay_capture(capture)
+        snapshot = replay.state.snapshot(
+            now_monotonic_ns=replay.last_monotonic_ns or 0,
+            source="replay",
+        )
+        fault = snapshot["decoded"]["fault_indicators"]
+
+        self.assertEqual(replay.parsed_frames, 351)
+        self.assertEqual(replay.malformed_lines, 0)
+        self.assertEqual(snapshot["telemetry_bytes"]["T08"], "00")
+        self.assertEqual(snapshot["telemetry_bytes"]["T13"], "BA")
+        self.assertEqual(fault["instantaneous_raw"], "00")
+        self.assertEqual(fault["active_mask"], "80")
+        self.assertEqual(fault["lights"], [8])
+        self.assertEqual(fault["fault_code"], "feeder_wheel_failure")
+        self.assertTrue(snapshot["decoded"]["warning_flash_bits"]["feeder_wheel"])
+
+    def test_replay_exposes_configurable_indicator_hold(self):
+        capture = (
+            Path(__file__).resolve().parents[1]
+            / "research"
+            / "live"
+            / "2026-08-22-fw202-format04"
+            / "captures"
+            / "fw202-identify-door-open.jsonl"
+        )
+        replay = replay_capture(capture, format04_indicator_hold=12.5)
+        self.assertEqual(replay.state.format04_indicator_hold, 12.5)
 
 
 if __name__ == "__main__":

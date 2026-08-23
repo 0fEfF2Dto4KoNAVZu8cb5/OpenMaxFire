@@ -302,7 +302,9 @@ class MaxFireClient:
     def remote_button(self, button: RemoteButton) -> CommandReceipt:
         """Send a reconstructed BixCheck front-panel remote-control action.
 
-        WARNING: statically confirmed in BixCheck 5.5.01, but not yet live-tested.
+        The bytes are live-validated on firmware 2.02. A write receipt confirms
+        transmission only; it is not proof that the controller accepted or
+        completed the requested state transition.
         """
 
         return self.send_raw(encode_remote_button(button))

@@ -1,8 +1,8 @@
 """Typed normal-control planning and outcome models.
 
-Plans are deliberately separate from transmission.  No known controller profile
-marks normal control as physically validated, so generated operations remain
-non-executable until live state/result semantics are established.
+Plans are deliberately separate from transmission. The low-level firmware-2.02
+OFF/ON/UP/DOWN bytes are physically validated, but reliable state/result
+verification is not. High-level physical execution therefore remains blocked.
 """
 
 from __future__ import annotations

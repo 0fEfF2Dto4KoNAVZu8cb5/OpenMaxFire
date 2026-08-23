@@ -40,6 +40,11 @@ class FirmwareApiTests(unittest.TestCase):
         self.assertEqual(image.program_words[1], 0x1678)
         self.assertEqual(image.configuration_word, 0x3F72)
 
+    def test_version_token_wins_over_ambiguous_build_date(self):
+        image = fixture("Bixby_0270_070206.hex")
+        self.assertEqual(image.firmware_version, "2.70")
+        self.assertEqual(image.variant, FirmwareVariant.EMBEDDED)
+
     def test_loader_blocks_use_reconstructed_framing(self):
         block = build_program_blocks(fixture())[0]
         self.assertEqual(block.word_address, 0)

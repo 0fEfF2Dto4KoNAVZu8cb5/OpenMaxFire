@@ -341,7 +341,7 @@ def execute_control(
         raise PermissionError("normal control was not explicitly authorized")
     if not session.simulated_backend:
         raise CapabilityUnavailableError(
-            "physical normal-control execution remains unvalidated and blocked"
+            "high-level physical normal-control verification remains incomplete and blocked"
         )
     unsafe_blocker = any(
         "stale" in blocker or "profile" in blocker for blocker in plan.blockers

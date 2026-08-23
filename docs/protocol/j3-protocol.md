@@ -124,7 +124,9 @@ All three BixCheck builds encode these writes to controller register 0x0E:
 | UP | `0x14` | `CW0E14` |
 | DOWN | `0x18` | `CW0E18` |
 
-They are software-confirmed but have not been sent to a stove.
+All four were successfully sent to and physically observed on the live
+firmware-2.02 controller. This validates the command bytes, but a serial write
+receipt alone still does not prove a requested transition completed.
 
 The complete `CW00`-`CW0F` dispatcher, including actuator/service registers and
 the excluded loader key, is in [controller-writes.md](controller-writes.md).

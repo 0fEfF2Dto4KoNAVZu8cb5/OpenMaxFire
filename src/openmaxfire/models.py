@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Mapping
 
+from .faults import decode_format04_indicator_mask
 from .profiles import ControllerProfile, TelemetryLayout
 from .protocol import (
     IgniterState,
@@ -52,9 +53,22 @@ class PhysicalInputs:
 
 @dataclass(frozen=True, slots=True)
 class AlarmState:
+    # ``raw`` remains the later-format BixCheck T13 Alarm status byte.  Format
+    # 04 uses the explicit indicator fields below because its live T13 value
+    # did not change between cold/off and the feeder-wheel fault.
     raw: int | None = None
+    raw_source: str | None = None
+    indicator_source: str | None = None
+    indicator_instantaneous_raw: int | None = None
+    indicator_active_mask: int | None = None
+    indicator_hold_seconds: float | None = None
+    indicator_lights: tuple[int, ...] = ()
+    fault_code: str | None = None
+    fault_label: str | None = None
+    fault_evidence: str | None = None
     firebox_door_warning: bool | None = None
     ash_drawer_warning: bool | None = None
+    feeder_wheel_warning: bool | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,6 +180,8 @@ def decode_stove_snapshot(
     fresh: bool,
     age_seconds: float | None,
     observed_utc: str | None,
+    format04_indicator_mask: int | None = None,
+    format04_indicator_hold_seconds: float | None = None,
 ) -> StoveSnapshot:
     """Decode raw latest values under one explicit controller profile."""
 
@@ -203,8 +219,17 @@ def decode_stove_snapshot(
     current_level = None
     target_level = None
     alarm_raw = None
+    alarm_raw_source = None
+    indicator_source = None
+    indicator_instantaneous_raw = None
+    indicator_active_mask = None
+    indicator_lights: tuple[int, ...] = ()
+    fault_code = None
+    fault_label = None
+    fault_evidence = None
     firebox_warning = None
     ash_warning = None
+    feeder_warning = None
     values: dict[str, object] = {}
 
     if later_layout:
@@ -257,6 +282,7 @@ def decode_stove_snapshot(
                 values[name] = telemetry[index]
         if 0x13 in telemetry:
             alarm_raw = telemetry[0x13]
+            alarm_raw_source = "T13"
         if 0x14 in telemetry:
             values["flag_mode"] = (telemetry[0x14] & 0x07) + 1
         if 0x18 in telemetry:
@@ -284,7 +310,7 @@ def decode_stove_snapshot(
         if isinstance(feed_on, int) and isinstance(feed_off, int):
             values["feed_cycle_seconds"] = _seconds(feed_on + feed_off)
         evidence = profile.evidence
-    else:
+    elif data_format == 0x04:
         if 0x03 in telemetry:
             values["fan_pot_raw"] = telemetry[0x03]
         if 0x04 in telemetry:
@@ -292,8 +318,21 @@ def decode_stove_snapshot(
         if 0x06 in telemetry:
             values["format04_firebox_related_raw"] = telemetry[0x06]
         if 0x08 in telemetry:
-            firebox_warning = bool(telemetry[0x08] & 0x08)
-            ash_warning = bool(telemetry[0x08] & 0x10)
+            indicator_source = "T08"
+            indicator_instantaneous_raw = telemetry[0x08]
+            indicator_active_mask = (
+                telemetry[0x08]
+                if format04_indicator_mask is None
+                else format04_indicator_mask
+            )
+            indication = decode_format04_indicator_mask(indicator_active_mask)
+            indicator_lights = indication.lights
+            fault_code = indication.code
+            fault_label = indication.label
+            fault_evidence = indication.evidence
+            firebox_warning = bool(indicator_active_mask & 0x08)
+            ash_warning = bool(indicator_active_mask & 0x10)
+            feeder_warning = bool(indicator_active_mask & 0x80)
         if 0x09 in telemetry:
             values["format04_state_unresolved_raw"] = telemetry[0x09]
         if 0x0C in telemetry:
@@ -307,6 +346,8 @@ def decode_stove_snapshot(
             if profile
             else "unknown profile; only common controller inputs were decoded"
         )
+    else:
+        evidence = "unknown profile; only common controller inputs were decoded"
 
     return StoveSnapshot(
         profile_key=profile.key if profile else None,
@@ -320,8 +361,22 @@ def decode_stove_snapshot(
         thermostat_open=thermostat_open,
         alarms=AlarmState(
             raw=alarm_raw,
+            raw_source=alarm_raw_source,
+            indicator_source=indicator_source,
+            indicator_instantaneous_raw=indicator_instantaneous_raw,
+            indicator_active_mask=indicator_active_mask,
+            indicator_hold_seconds=(
+                format04_indicator_hold_seconds
+                if indicator_source is not None
+                else None
+            ),
+            indicator_lights=indicator_lights,
+            fault_code=fault_code,
+            fault_label=fault_label,
+            fault_evidence=fault_evidence,
             firebox_door_warning=firebox_warning,
             ash_drawer_warning=ash_warning,
+            feeder_wheel_warning=feeder_warning,
         ),
         operating_state=operating_state,
         igniter_state=igniter_state,

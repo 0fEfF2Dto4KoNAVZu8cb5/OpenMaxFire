@@ -11,7 +11,7 @@ OpenMaxFire separates evidence into five levels:
 - **Emulator-confirmed**: executed from preserved firmware under an explicitly
   incomplete synthetic hardware model.
 - **Live-validated**: observed through preserved raw traffic on serial 5215's
-  physical controller while cold/off.
+  physical controller under the documented test condition.
 - **Owner-reported**: reported by the stove owner but not independently measured.
 
 ## Established facts
@@ -33,7 +33,7 @@ OpenMaxFire separates evidence into five levels:
 | Requests | Reads are exactly 4 bytes, uppercase, with no terminator; live `CR00` was `43 52 30 30` | `regio()` plus live traffic |
 | Responses | Addressed replies are six characters plus LF; firmware emits lowercase hex; live format-04 telemetry uses one-byte `Txxvv` and auxiliary `DWxxyy` lines | BixCheck/firmware paths plus live traffic |
 | UART generation | SPBRG changes `0x40`→`0x20`; exact intended PC rates imply a 10 MHz oscillator | Firmware plus BixCheck DCB setup |
-| Remote buttons | OFF=`CW0E11`, ON=`CW0E12`, UP=`CW0E14`, DOWN=`CW0E18` | All BixCheck tables/action paths |
+| Remote buttons | OFF=`CW0E11`, ON=`CW0E12`, UP=`CW0E14`, DOWN=`CW0E18`; all four produced the expected physical response on firmware 2.02 | BixCheck tables/action paths plus preserved live control traffic and operator observations |
 | Telemetry | All 91 periodic producer slots mapped/executed; logical 16-bit fields use adjacent big-endian T slots; 2.71 adds periodic T1E and event T20 | Decoded tables, firmware producers, emulator sender traces |
 | Telemetry conversions | T00 C/F, pot trim, RPM, phase µs, 1/120-second feed values, timer units, and exact T09 display rules recovered | BixCheck update assembly and vendor manual |
 | Operating state | T09 is RAM 0x4C; reset/cooldown/off/startup/operating/ramping/ash-dump handlers and structural transitions mapped in all generations | Firmware dispatcher/transition sites plus BixCheck display decoder |
@@ -51,9 +51,10 @@ OpenMaxFire separates evidence into five levels:
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
-| Python API | Version 0.7 adds exact-byte audit trails/spans, an authenticated four-image firmware corpus, a retry-bounded simulator-only loader state machine, programmed-memory comparison, loader/controller fault injection, and structured interrupted workflow receipts; physical state-changing and loader paths remain blocked | 135 portable offline tests in the work export (one full-corpus test runs when preserved images are present), preserved serial 5215 replay fixtures, virtual endpoints, static analysis, and live read-only sessions |
+| Python API | Version 0.7 foundations plus profile-aware fault state: format-04 flashing indicators are retained across dark phases, later-format T13 remains raw, factory patterns carry explicit evidence, and the live feeder-wheel capture is a replay fixture; high-level physical state-changing and loader services remain blocked | Portable offline tests, preserved serial 5215 replay fixtures, virtual endpoints, static analysis, and live read/control sessions |
 | EEPROM | Three independent A00-AFF reads agree; checksum EFCE matches; format 04, model `Bixby Model 115`, stored serial `2060`, date string `01102007` | Live-validated backup and two raw traffic logs |
-| Format-04 telemetry | ~3.58 s burst cycle; T03 fan trim, T04 feed trim, T06 firebox-related dynamic value, T08 flashing door/drawer warning bits, T0C bit 08 thermostat-open | Live A/B and A-B-A cold/off captures |
+| Format-04 telemetry | ~3.58 s burst cycle; T03 fan trim, T04 feed trim, T06 firebox-related dynamic value, T08 flashing-light bitmap with lights 4/5/8 live-correlated to `08`/`10`/`80`, and T0C bit 08 thermostat-open | Live A/B and A-B-A input captures plus feeder-wheel fault capture |
+| Fault reporting | Format-04 T08 is an instantaneous flashing-indicator bitmap; the API retains bits across an eight-second observed stream window. Later BixCheck instead exposes T07 display LED, T09 state, and raw T13 Alarm mode | Live 2.02 light-4/light-5/light-8 captures plus static BixCheck reconstruction |
 
 ## Important unresolved items
 
@@ -63,7 +64,7 @@ OpenMaxFire separates evidence into five levels:
 | M/I families | Outer dispatch known; CW0D emits `I` plus LF, but general payload semantics remain unresolved | Deeper data-flow analysis or controlled capture |
 | Board routing | Full 9067-0604 marking and both PCB sides are photographed; J3 continuity is owner-measured, but pin 3 and some under-component routing remain unresolved | Additional protected net tracing only as needed |
 | Input wiring | Door/drawer/thermostat/fuel/buttons/pots are live-validated; CR02.1/CR02.7 and live J9/J10 behavior remain unnamed/unvalidated | Cold/off correlation or passive observation without actuator writes |
-| Telemetry conversions | Later format-05/07 map is statically decoded; live format 04 differs and only several fields are correlated | Additional cold/off correlation, then operating capture under a separate safe plan |
+| Telemetry conversions | Later format-05/07 map is statically decoded; live format 04 differs and only several fields, inputs, and fault indicators are correlated | Additional controlled operating captures and recovered 2.02 firmware/software |
 | Table-only telemetry | BixCheck 5.5.01 names TFD-TFF, but no producer is recovered in periodic 2.71 firmware; T20 is a separate event path | Passive capture or newly identified conditional producer |
 | EEPROM semantics | Live format-04 backup/checksum/identity are preserved; stored serial/date differ from the appliance nameplate and many calibration meanings rely on labels | Compare another format-04 unit or recovered 2.02 BixCheck/firmware |
 | Checkout thresholds | Buttons, pots, doors, thermostat, exhaust CR05, feeder CR07, and igniter result bits are mapped; several engineering units/state meanings remain unresolved | Trace remaining manual/no-op cases and conversions |
@@ -71,13 +72,12 @@ OpenMaxFire separates evidence into five levels:
 
 ## Current boundary
 
-Read-only J3 access is now established for serial 5215. The next safety boundary
-is any state-changing command or operating-stove test: neither is authorized by
-the cold/off session. Firmware 2.02 program memory remains unpreserved, J3-3 is
-unresolved, and no recovery path has been proven on sacrificial hardware. The
-version-0.7 API can own an audited detected session, run read-only Checkout,
-execute configuration/control/Checkout workflows against simulation, validate
-the preserved firmware corpus, and exercise loader retries/recovery faults only
-against an isolated loader simulator. Known loader-entry markers and every
-physical state-changing service remain blocked. A matching readback verifies a
-byte only, not physical actuator behavior or overall controller safety.
+Read-only J3 access and the four normal-control button bytes are now established
+for serial 5215. The direct low-level button path remains explicitly authorized
+and human-observed; the high-level API executor still fails closed because
+format-04 state/target-level verification and recovery timing are unresolved.
+Firmware 2.02 program memory remains unpreserved, J3-3 is unresolved, and no
+firmware recovery path has been proven on sacrificial hardware. Configuration,
+Checkout actuators, and loader execution remain simulator-only. A matching
+register readback verifies a byte only, not physical actuator behavior or
+overall controller safety.

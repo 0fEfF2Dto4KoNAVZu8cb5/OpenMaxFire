@@ -17,6 +17,7 @@ from .client import MaxFireClient, StoveIdentity
 from .configuration import ConfigurationImage
 from .discovery import DetectionStatus, TransportFactory, detect_controller
 from .errors import OpenMaxFireError, UnsupportedControllerError
+from .faults import FORMAT04_INDICATOR_HOLD_SECONDS
 from .models import StoveSnapshot
 from .monitor import MonitorState
 from .profiles import ControllerCapabilities, ControllerProfile, select_profile
@@ -50,6 +51,7 @@ class ControllerSession:
         connection: ConnectionInfo,
         *,
         stale_after: float = 10.0,
+        format04_indicator_hold: float = FORMAT04_INDICATOR_HOLD_SECONDS,
         audit: AuditTrail | None = None,
     ):
         if select_profile(identity) != profile:
@@ -58,7 +60,11 @@ class ControllerSession:
         self.identity = identity
         self.profile = profile
         self.connection = connection
-        self.monitor = MonitorState(stale_after=stale_after, profile=profile)
+        self.monitor = MonitorState(
+            stale_after=stale_after,
+            format04_indicator_hold=format04_indicator_hold,
+            profile=profile,
+        )
         self.audit = audit
         self._closed = False
         self._last_control_monotonic: float | None = None
@@ -73,6 +79,7 @@ class ControllerSession:
         timeout: float = 0.35,
         request_delay: float = 0.0,
         stale_after: float = 10.0,
+        format04_indicator_hold: float = FORMAT04_INDICATOR_HOLD_SECONDS,
         audit: AuditTrail | None = None,
     ) -> "ControllerSession":
         """Identify an already-open client and take ownership of it."""
@@ -103,6 +110,7 @@ class ControllerSession:
             profile,
             connection,
             stale_after=stale_after,
+            format04_indicator_hold=format04_indicator_hold,
             audit=audit,
         )
 
@@ -116,6 +124,7 @@ class ControllerSession:
         timeout: float = 0.35,
         request_delay: float = 0.10,
         stale_after: float = 10.0,
+        format04_indicator_hold: float = FORMAT04_INDICATOR_HOLD_SECONDS,
         transport_factory: TransportFactory = SerialTransport,
         audit: AuditTrail | None = None,
     ) -> "ControllerSession":
@@ -153,6 +162,7 @@ class ControllerSession:
             timeout=timeout,
             request_delay=request_delay,
             stale_after=stale_after,
+            format04_indicator_hold=format04_indicator_hold,
             audit=audit,
         )
 
@@ -163,6 +173,7 @@ class ControllerSession:
         *,
         allow_writes: bool = False,
         stale_after: float = 10.0,
+        format04_indicator_hold: float = FORMAT04_INDICATOR_HOLD_SECONDS,
         controller: object | None = None,
         audit: AuditTrail | None = None,
     ) -> "ControllerSession":
@@ -183,6 +194,7 @@ class ControllerSession:
             baudrate=selected.baudrates[0],
             timeout=0.01,
             stale_after=stale_after,
+            format04_indicator_hold=format04_indicator_hold,
             audit=audit,
         )
 

@@ -6,6 +6,11 @@ Status: live-validated on the cold, non-firing controller from appliance serial
 5215. Only read requests were sent. No `CW`, `AW`, Downloader, bootloader,
 remote-ON, or actuator command was used.
 
+> **Later evidence:** A separately preserved 2026-08-23 session subsequently
+> live-validated the normal OFF/ON/UP/DOWN command bytes and captured flashing
+> fault light 8. The original read-only scope above describes the 2026-08-22
+> corpus only. See [the addendum below](#2026-08-23-control-and-fault-addendum).
+
 The byte-identical JSONL traffic logs, EEPROM artifact, adapter inventory, and
 checksums are preserved under
 [`research/live/2026-08-22-fw202-format04/`](../../research/live/2026-08-22-fw202-format04/).
@@ -238,6 +243,52 @@ CR0A=0x49
 
 This corresponds to no button pressed, wood selected, both doors closed,
 thermostat jumper installed, fan trim centered, and the original feed setting.
+
+## 2026-08-23 control and fault addendum
+
+The later session is preserved under
+[`research/live/2026-08-23-fw202-control-faults/`](../../research/live/2026-08-23-fw202-control-faults/).
+It extends—but does not rewrite—the original cold/off evidence boundary.
+
+### Normal control
+
+The controller received the recovered front-panel commands and the operator
+observed the corresponding physical behavior:
+
+| Action | Exact request |
+| --- | --- |
+| OFF | `CW0E11` |
+| ON | `CW0E12` |
+| UP | `CW0E14` |
+| DOWN | `CW0E18` |
+
+The generated validation report remains conservative where an automated
+format-04 state snapshot could not independently verify the transition. The
+low-level bytes are physically validated; the high-level API executor remains
+blocked pending reliable format-04 state and level decoding.
+
+### Flashing light 8
+
+The fault capture began while the single rightmost/light-8 indicator was
+already flashing. Seventeen `T08` samples were received in about 30 seconds:
+ten were `00` and seven were `80`. The maximum interval between `80` samples
+was approximately 6.14 seconds. The last raw value was zero, so both original
+latest-value snapshots missed the fault despite the physical lamp continuing
+to flash.
+
+This establishes `T08.7`/`0x80` as format-04 flashing light 8, which the owner
+manual names feeder-wheel failure. Together with the earlier live `0x08`
+firebox/light-4 and `0x10` ash-drawer/light-5 cases, the evidence supports a
+one-bit-per-light bitmap. Other factory patterns are decoded from that layout
+but retain an inferred rather than live-confirmed serial evidence label.
+
+`T13` remained `BA`, matching the cold/off evidence. This reinforces the
+profile boundary: later BixCheck labels T13 Alarm status, but it is not the
+validated fault source for this format-04 controller.
+
+The API now retains a nonzero T08 bit for eight seconds of subsequent observed
+T08 stream time. This interval exceeds the longest live gap with margin.
+Serial loss marks the snapshot stale rather than advancing the clearing clock.
 
 ## Software consequences
 

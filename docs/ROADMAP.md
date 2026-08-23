@@ -92,7 +92,10 @@ protocol or controller logic.
   and core numeric conversions to the vendor telemetry fields.
 - [ ] Complete remaining status/flag meanings, physical calibration, table-only
   TFD-TFF provenance, and M/I payload semantics.
-- [ ] Expose stove identity, state, heat level, alarms, temperatures, fan values, door timers, and ash values.
+- [x] Expose profile-aware alarm state, including temporal format-04 flashing
+  indicators and later-format raw BixCheck alarm status.
+- [ ] Complete stove state, heat level, temperatures, fan values, door timers,
+  ash values, and remaining alarm semantics.
 - [x] Add decoded JSONL snapshot logging and offline replay against preserved
   live serial-capture fixtures, including format-04 door/drawer/thermostat A/B cases.
 - [ ] Add a flattened CSV export after the stable monitor field set is validated live.
@@ -107,7 +110,8 @@ protocol or controller logic.
 - [x] Prevent possible write echoes from satisfying readback matching; require
   an actual addressed `R` response.
 - [x] Isolate known loader traffic from generic raw/transaction commands.
-- [ ] Validate OFF, ON, UP, and DOWN individually.
+- [x] Validate OFF, ON, UP, and DOWN individually on firmware 2.02 with exact
+  traffic preservation and operator-observed physical response.
 - [ ] Read back state after every command.
 - [x] Add offline idempotent OFF/ON/UP/DOWN/set-level planning with profile and
   stale-state checks; live rate limits, lockouts, and recovery remain pending.

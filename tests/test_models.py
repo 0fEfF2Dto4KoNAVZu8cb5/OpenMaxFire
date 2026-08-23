@@ -47,6 +47,9 @@ class TypedSnapshotTests(unittest.TestCase):
         self.assertEqual(snapshot.target_heat_level, 4)
         self.assertTrue(snapshot.operating_state.thermostat)
         self.assertEqual(snapshot.alarms.raw, 0xA5)
+        self.assertEqual(snapshot.alarms.raw_source, "T13")
+        self.assertIsNone(snapshot.alarms.indicator_active_mask)
+        self.assertIsNone(snapshot.alarms.indicator_hold_seconds)
 
     def test_format04_does_not_apply_later_state_decoder(self):
         state = MonitorState()
@@ -66,6 +69,11 @@ class TypedSnapshotTests(unittest.TestCase):
         self.assertEqual(typed.telemetry.format04_state_unresolved_raw, 0x4B)
         self.assertTrue(typed.alarms.firebox_door_warning)
         self.assertTrue(typed.alarms.ash_drawer_warning)
+        self.assertFalse(typed.alarms.feeder_wheel_warning)
+        self.assertEqual(typed.alarms.indicator_source, "T08")
+        self.assertEqual(typed.alarms.indicator_active_mask, 0x18)
+        self.assertEqual(typed.alarms.indicator_lights, (4, 5))
+        self.assertIsNone(typed.alarms.fault_code)
 
 
 if __name__ == "__main__":

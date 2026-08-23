@@ -163,7 +163,13 @@ COMMON_CONTROLLER_WRITES = _frozen_map(
         0x0B: ControllerWriteDefinition(0x0B, "feed_motor_sensor_test", True, False, "static"),
         0x0C: ControllerWriteDefinition(0x0C, "controller_service_unresolved", True, False, "static/partial"),
         0x0D: ControllerWriteDefinition(0x0D, "igniter_workflow", True, False, "static"),
-        0x0E: ControllerWriteDefinition(0x0E, "remote_front_panel", True, False, "static"),
+        0x0E: ControllerWriteDefinition(
+            0x0E,
+            "remote_front_panel",
+            True,
+            False,
+            "static; live on firmware 2.02",
+        ),
         0x0F: ControllerWriteDefinition(0x0F, "reset_or_loader", True, False, "static"),
     }
 )
@@ -199,7 +205,7 @@ PROFILES: tuple[ControllerProfile, ...] = (
         baudrates=(9600,),
         telemetry_layout=TelemetryLayout.FORMAT_04,
         telemetry_last_periodic=0x15,
-        evidence="live-validated cold/off on controller serial 5215",
+        evidence="live-validated read/control/fault behavior on controller serial 5215",
         capabilities=_capabilities(live_read=True),
         controller_registers=COMMON_CONTROLLER_REGISTERS,
         controller_writes=COMMON_CONTROLLER_WRITES,

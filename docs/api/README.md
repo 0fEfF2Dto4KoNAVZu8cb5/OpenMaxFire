@@ -52,8 +52,8 @@ escape hatch rather than the implementation of high-level parity.
 | Identification | Offline foundation complete | Read-only port/baud probing, exact profile selection, capability negotiation, explicit no-response and unsupported results | Live-validate automatic detection on additional controllers |
 | Session facade | Foundation complete | Owned connection, identity/profile/capabilities, typed polling/iteration, configuration images, and backup documents | Add async subscriptions only when a client requires them |
 | EEPROM backup | Read path complete | Lossless A00-AFF read, identity metadata, checksum diagnostics, and shared import/validation model | Additional live fixtures from other formats/controllers |
-| Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, format-04 conservative decoding, format-05/07 conversions, replay | Resolve remaining flags, physical calibration, M/I payloads, and live-validate later formats |
-| Normal control | Simulator workflow complete; physical execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, exact audit spans, and interruption receipts | Live-validate OFF/ON/UP/DOWN and define physical recovery timing before enabling the executor |
+| Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, temporal format-04 fault indicators, raw later-format alarm status, format-05/07 conversions, and replay | Resolve remaining flags, physical calibration, M/I payloads, and live-validate later formats |
+| Normal control | Low-level commands live-validated on 2.02; verified service execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, exact audit spans, interruption receipts, and preserved physical OFF/ON/UP/DOWN traffic | Resolve format-04 state/level verification and recovery timing before enabling the high-level physical executor |
 | Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, complete A00-AFF verification, audit spans, and interruption receipts | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
 | Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; audit spans; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
 | Firmware images | Offline validation complete | Strict Intel HEX/PIC14 parsing, delivery-layout classification, compatibility/migration reports, E3 block construction, and an authenticated four-image corpus catalog/validator | Add calibration-preservation policy for any future physical programming |
@@ -81,6 +81,8 @@ version-aware, and sufficient for BixCheck parity.
 - Preserve raw values alongside decoded values and their evidence/provenance.
 - Represent state, heat level, alarms, temperatures, fans, feed, door/drawer,
   thermostat, ash, flue, lean-burn, timers, and freshness.
+- Retain flashing indicators across their dark phase without treating stale
+  serial traffic as proof that a fault cleared.
 - Support polling, unsolicited-frame ingestion, subscriptions, and offline replay
   through the same state model.
 - Never fabricate a semantic value for an unknown firmware/data-format field.
@@ -201,10 +203,29 @@ Version 0.7 fills the largest remaining offline/API gaps:
 
 See [v0.7 audit, firmware corpus, and loader laboratory](v0.7-audit-loader-lab.md).
 
+## Current main after v0.7
+
+The live firmware-2.02 control/fault session adds two evidence-backed API
+improvements without weakening the physical-write gates:
+
+1. `AlarmState` separates format-04 `T08` flashing indicators from later
+   BixCheck `T13` raw alarm status.
+2. `MonitorState` retains format-04 indicator bits across the lamp's dark phase
+   using observed telemetry time, with a configurable eight-second default.
+3. All factory-documented light combinations have stable machine codes and
+   evidence labels. Lights 4, 5, and 8 are live-confirmed; other bit positions
+   remain explicitly inferred.
+4. Exact physical OFF/ON/UP/DOWN and feeder-wheel-fault captures are preserved
+   as replay fixtures. Low-level control is live-proven, but the high-level
+   service remains blocked until format-04 state verification is reliable.
+
+See the [fault-state API contract](fault-model.md).
+
 ## Remaining implementation order
 
-1. Live-validate normal control before allowing the existing verified executor
-   to operate on a physical session.
+1. Decode and live-validate format-04 operating state/target level so the
+   already live-proven OFF/ON/UP/DOWN bytes can receive machine verification
+   before the high-level executor operates on a physical session.
 2. Validate the simulator-proven configuration workflow first on recoverable
    hardware before allowing physical apply/restore.
 3. Live-validate each Checkout actuator/cleanup pair before physical execution.

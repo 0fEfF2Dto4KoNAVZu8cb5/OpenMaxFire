@@ -108,9 +108,9 @@ class SerialTransport:
 
     BixCheck uses 8N1, enables DTR/RTS, and disables hardware and software flow
     control. BixCheck 5.0.21 selects 9,600 baud; 5.5.00/5.5.01 select either
-    9,600 or 19,200 baud. Callers still choose the rate explicitly because the
-    cable, J3 electrical interface, and physical controller have not been
-    validated.
+    9,600 or 19,200 baud. Firmware 2.02 and the J3 TTL-UART path have been
+    live-validated at 9,600 baud; callers still choose the rate explicitly
+    because preserved later firmware generations have not been live-tested.
 
     Opening a serial device can transition DTR/RTS even when no payload is
     transmitted. A receive-only capture is therefore not an electrically

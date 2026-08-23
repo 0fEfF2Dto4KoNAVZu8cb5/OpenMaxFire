@@ -20,6 +20,7 @@ files remain under `preservation/original/`; raw live evidence remains under
 | --- | --- |
 | Reusable Python API | [API architecture and roadmap](api/README.md) |
 | Current API milestone | [v0.7 audit and loader laboratory](api/v0.7-audit-loader-lab.md) |
+| Fault-state API | [Fault model](api/fault-model.md) |
 | Cross-platform CLI | [Service-tool guide](cli/cross-platform-service-tool.md) |
 | Low-level CLI layer | [Low-level service layer](cli/low-level-service-layer.md) |
 
@@ -34,6 +35,7 @@ layers. Controller semantics and safety rules belong in the API.
 | Quick register reference | [Serial command cheat sheet](protocol/serial-command-cheat-sheet.md) |
 | Controller writes | [Controller write map](protocol/controller-writes.md) |
 | Telemetry | [Telemetry fields](protocol/telemetry-fields.md) |
+| Faults and flashing indicators | [Fault protocol](protocol/faults.md) |
 | Firmware 2.02 live session | [Live format-04 report](reverse-engineering/live-fw202-format04.md) |
 | Guided physical validation | [Live-validation session](research/live-validation-session.md) |
 

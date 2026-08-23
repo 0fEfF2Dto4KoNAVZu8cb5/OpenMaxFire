@@ -1,8 +1,9 @@
 """Low-level MaxFire 110/115 J3 protocol primitives.
 
 The framing and transformations here were reconstructed from all three
-preserved BixCheck executables.  They have NOT yet been validated on a physical
-stove.  Keep that distinction explicit in downstream software.
+preserved BixCheck executables. Register reads and the remote front-panel
+OFF/ON/UP/DOWN writes have also been live-validated on firmware 2.02/data
+format 04. Other writes retain their narrower static or emulator evidence.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ WRITE_OPCODE = "W"
 ADDRESSED_UNITS = frozenset("ACD")
 CONTROL_PREFIXES = frozenset((0x01, 0x02, 0x03))
 
-# Statically reconstructed from BixCheck 5.5.01:
+# Reconstructed from BixCheck 5.5.01 and live-validated on firmware 2.02:
 # remote front-panel actions are writes to controller register 0x0E.
 REMOTE_BUTTON_REGISTER = 0x0E
 
@@ -155,7 +156,7 @@ def encode_write_register(
 
 
 def encode_remote_button(button: RemoteButton) -> bytes:
-    """Encode the statically reconstructed BixCheck remote-button write."""
+    """Encode a reconstructed and firmware-2.02-validated remote-button write."""
 
     try:
         button = RemoteButton(button)

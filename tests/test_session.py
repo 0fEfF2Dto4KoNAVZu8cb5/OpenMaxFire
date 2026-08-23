@@ -33,6 +33,16 @@ class ControllerSessionTests(unittest.TestCase):
         self.assertEqual(snapshot.operating_state.phase, "operating")
         self.assertEqual(snapshot.target_heat_level, 4)
 
+    def test_session_exposes_format04_indicator_hold(self):
+        with ControllerSession.simulated(
+            "fw202-format04", format04_indicator_hold=12.5
+        ) as session:
+            snapshot = session.poll_snapshot()
+            self.assertEqual(session.monitor.format04_indicator_hold, 12.5)
+            self.assertEqual(snapshot.alarms.indicator_active_mask, 0x00)
+            self.assertEqual(snapshot.alarms.indicator_lights, ())
+            self.assertIsNone(snapshot.alarms.fault_code)
+
     def test_snapshot_iterator_is_bounded_and_reuses_state(self):
         with ControllerSession.simulated() as session:
             snapshots = list(session.iter_snapshots(cycles=2, interval=0))

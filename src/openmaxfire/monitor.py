@@ -16,6 +16,10 @@ from pathlib import Path
 from typing import Mapping, TextIO
 
 from .client import StoveIdentity
+from .faults import (
+    FORMAT04_INDICATOR_HOLD_SECONDS,
+    decode_format04_indicator_mask,
+)
 from .models import StoveSnapshot, decode_stove_snapshot
 from .profiles import (
     ControllerProfile,
@@ -70,13 +74,23 @@ class MonitorState:
         self,
         *,
         stale_after: float = 10.0,
+        format04_indicator_hold: float = FORMAT04_INDICATOR_HOLD_SECONDS,
         profile: ControllerProfile | None = None,
     ):
         if not isinstance(stale_after, (int, float)) or not math.isfinite(stale_after):
             raise ValueError("stale_after must be a finite number")
         if stale_after <= 0:
             raise ValueError("stale_after must be greater than zero")
+        if (
+            isinstance(format04_indicator_hold, bool)
+            or not isinstance(format04_indicator_hold, (int, float))
+            or not math.isfinite(format04_indicator_hold)
+        ):
+            raise ValueError("format04_indicator_hold must be a finite number")
+        if format04_indicator_hold <= 0:
+            raise ValueError("format04_indicator_hold must be greater than zero")
         self.stale_after = float(stale_after)
+        self.format04_indicator_hold = float(format04_indicator_hold)
         self.profile = profile
         self.controller: dict[int, int] = {}
         self.telemetry: dict[int, int] = {}
@@ -87,6 +101,8 @@ class MonitorState:
         self.status_frame_count = 0
         self.last_monotonic_ns: int | None = None
         self.last_observed_utc: str | None = None
+        self._t08_latest_sample_ns: int | None = None
+        self._t08_bit_last_on_ns: list[int | None] = [None] * 8
 
     def observe(
         self,
@@ -115,6 +131,11 @@ class MonitorState:
                 address = frame.index + offset
                 if address <= 0xFF:
                     self.telemetry[address] = value
+                    if address == 0x08:
+                        self._t08_latest_sample_ns = observed_ns
+                        for bit in range(8):
+                            if value & (1 << bit):
+                                self._t08_bit_last_on_ns[bit] = observed_ns
             return
         if isinstance(frame, StatusResponse):
             self.status_frame_count += 1
@@ -150,6 +171,26 @@ class MonitorState:
         )
         return age, age >= self.stale_after
 
+    def _format04_indicator_mask(self) -> int | None:
+        """Return T08 bits observed recently enough to span a dark flash phase.
+
+        The age calculation uses the latest *observed T08 sample*, not wall
+        time.  If serial traffic stops, the overall snapshot becomes stale but
+        a previously observed alarm is not falsely reported as cleared.
+        """
+
+        if self._t08_latest_sample_ns is None:
+            return None
+        hold_ns = int(self.format04_indicator_hold * 1_000_000_000)
+        mask = 0
+        for bit, last_on_ns in enumerate(self._t08_bit_last_on_ns):
+            if (
+                last_on_ns is not None
+                and self._t08_latest_sample_ns - last_on_ns <= hold_ns
+            ):
+                mask |= 1 << bit
+        return mask
+
     def typed_snapshot(
         self,
         *,
@@ -171,6 +212,8 @@ class MonitorState:
                 round(age_seconds, 6) if age_seconds is not None else None
             ),
             observed_utc=self.last_observed_utc,
+            format04_indicator_mask=self._format04_indicator_mask(),
+            format04_indicator_hold_seconds=self.format04_indicator_hold,
         )
 
     def _decoded_inputs(self) -> dict[str, object]:
@@ -208,9 +251,24 @@ class MonitorState:
         )
         if (value := self.telemetry.get(0x08)) is not None:
             if data_format == 0x04:
+                active_mask = self._format04_indicator_mask()
+                active_mask = value if active_mask is None else active_mask
+                indication = decode_format04_indicator_mask(active_mask)
+                decoded["fault_indicators"] = {
+                    "source": "T08",
+                    "instantaneous_raw": f"{value:02X}",
+                    "active_mask": f"{active_mask:02X}",
+                    "hold_seconds": self.format04_indicator_hold,
+                    "lights": list(indication.lights),
+                    "fault_code": indication.code,
+                    "fault_label": indication.label,
+                    "evidence": indication.evidence,
+                    "recognized": indication.recognized,
+                }
                 decoded["warning_flash_bits"] = {
-                    "firebox_door": bool(value & 0x08),
-                    "ash_drawer": bool(value & 0x10),
+                    "firebox_door": bool(active_mask & 0x08),
+                    "ash_drawer": bool(active_mask & 0x10),
+                    "feeder_wheel": bool(active_mask & 0x80),
                 }
             if later_layout:
                 decoded["bixcheck_55_igniter_display"] = asdict(
@@ -218,6 +276,13 @@ class MonitorState:
                 )
         if (value := self.telemetry.get(0x09)) is not None and later_layout:
             decoded["operating_state"] = asdict(decode_operating_state(value))
+        if (value := self.telemetry.get(0x13)) is not None and later_layout:
+            decoded["alarm_status"] = {
+                "source": "T13",
+                "raw": f"{value:02X}",
+                "decoded": False,
+                "evidence": "BixCheck displays Alarm mode as raw hexadecimal",
+            }
 
         # These fields were correlated on serial 5215's format-04 controller.
         # They remain explicitly nested under a format-specific key.
@@ -304,8 +369,9 @@ class MonitorState:
             "decoded": decoded,
             "evidence_boundary": (
                 "Raw values are preserved. Named format-04 telemetry fields are limited to "
-                "cold/off correlations from serial 5215; writes and operating-stove control "
-                "remain unvalidated."
+                "live correlations from serial 5215. Fault lights 4, 5, and 8 are "
+                "live-confirmed; other named fault patterns come from the factory manual "
+                "with serial bit positions inferred from the confirmed bitmap."
             ),
         }
 
@@ -368,6 +434,8 @@ def format_monitor_summary(snapshot: Mapping[str, object]) -> str:
     operating = operating if isinstance(operating, Mapping) else {}
     warnings = decoded.get("warning_flash_bits")
     warnings = warnings if isinstance(warnings, Mapping) else {}
+    fault = decoded.get("fault_indicators")
+    fault = fault if isinstance(fault, Mapping) else {}
 
     freshness = "STALE" if snapshot.get("stale") else "fresh"
     age = snapshot.get("age_seconds")
@@ -397,6 +465,13 @@ def format_monitor_summary(snapshot: Mapping[str, object]) -> str:
         parts.append("door-warning=on")
     if warnings.get("ash_drawer"):
         parts.append("drawer-warning=on")
+    if warnings.get("feeder_wheel"):
+        parts.append("feeder-warning=on")
+    if fault.get("fault_code"):
+        parts.append(f"fault={fault['fault_code']}")
+    elif fault.get("lights"):
+        lights = ",".join(str(item) for item in fault["lights"])
+        parts.append(f"fault-lights={lights}")
     if "fan_pot_raw" in format04:
         parts.append(f"fan-pot={format04['fan_pot_raw']}")
     elif "fan_trim_raw" in format04:
@@ -411,11 +486,19 @@ def format_monitor_summary(snapshot: Mapping[str, object]) -> str:
     return " ".join(parts)
 
 
-def replay_capture(path: str | Path, *, stale_after: float = 10.0) -> ReplayResult:
+def replay_capture(
+    path: str | Path,
+    *,
+    stale_after: float = 10.0,
+    format04_indicator_hold: float = FORMAT04_INDICATOR_HOLD_SECONDS,
+) -> ReplayResult:
     """Replay exact RX chunks from an ``openmaxfire.serial-capture.v1`` log."""
 
     source = Path(path)
-    state = MonitorState(stale_after=stale_after)
+    state = MonitorState(
+        stale_after=stale_after,
+        format04_indicator_hold=format04_indicator_hold,
+    )
     session_metadata: Mapping[str, object] = {}
     traffic_events = 0
     rx_chunks = 0

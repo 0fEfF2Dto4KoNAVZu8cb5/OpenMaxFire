@@ -12,7 +12,7 @@ from .firmware import (
     LOADER_IDENTIFY_REQUEST,
     LOADER_IDENTIFY_RESPONSE,
 )
-from .profiles import ControllerProfile, PROFILES_BY_KEY
+from .profiles import ControllerProfile, PROFILES_BY_KEY, TelemetryLayout
 from .protocol import ProtocolError, RegisterRequest, decode_register_request
 from .transport import SerialSettings
 
@@ -93,7 +93,11 @@ class SimulatedController:
         self.registers.update(
             {("D", address): value for address, value in (d_space or {}).items()}
         )
-        self.telemetry = {0x08: 0x07, 0x09: 0x43}
+        self.telemetry = (
+            {0x08: 0x00, 0x09: 0x07}
+            if self.profile.telemetry_layout is TelemetryLayout.FORMAT_04
+            else {0x08: 0x07, 0x09: 0x43}
+        )
         if telemetry:
             self.telemetry.update(telemetry)
         self.faults = faults or SimulationFaults()

@@ -2,6 +2,19 @@
 
 ## 2026-08-23
 
+- Preserved an audited live normal-control session on firmware 2.02. Exact
+  `CW0E12`, `CW0E14`, `CW0E18`, and `CW0E11` requests produced the expected
+  operator-observed ON, UP, DOWN, and OFF behavior.
+- Captured the controller while the single rightmost/light-8 problem indicator
+  was visibly flashing. Raw traffic alternated T08 between `00` and `80`; T13
+  remained `BA`. This live-correlates T08.7 with factory feeder-wheel fault
+  light 8 and rejects later-format T13 semantics for this format-04 profile.
+- Added a profile-aware fault API. Format-04 T08 bits are retained across an
+  eight-second observed-stream window, exact factory light combinations return
+  stable machine codes and evidence levels, and later BixCheck T13 remains raw.
+- Added byte-exact control/fault preservation, checksum manifests, protocol/API
+  documentation, and replay regression coverage for a final T08=00 dark phase.
+
 - Added the version-0.5 reusable Python API foundations without adding CLI,
   GUI, or Home Assistant policy: exact controller profiles/capabilities,
   read-only baud detection, typed profile-aware snapshots, and a common error

@@ -9,6 +9,10 @@ parsing these files directly.
 | --- | --- |
 | [`registers.yaml`](registers.yaml) | Cross-version serial framing and controller-register evidence, with explicit live/static confidence |
 
+The human-readable [fault protocol](../docs/protocol/faults.md) explains the
+profile boundary between firmware-2.02 T08 flashing indicators and later
+BixCheck T13 alarm status.
+
 Human-readable protocol references live under [`docs/protocol/`](../docs/protocol/).
 Unknown meanings remain unknown, and later-format semantics are not applied to
 the live 2.02/format-04 controller without supporting evidence.

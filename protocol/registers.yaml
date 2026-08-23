@@ -59,7 +59,22 @@ remote_buttons:
     on: 0x12
     up: 0x14
     down: 0x18
-  confidence: confirmed_static_not_live
+  confidence: live_on_fw202_and_static_all_preserved_generations
+
+telemetry_overrides:
+  fw202-format04:
+    T08:
+      meaning: instantaneous_flashing_indicator_bitmap
+      bit_to_light: {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8}
+      live_confirmed_masks: [0x08, 0x10, 0x80]
+      zero_during_dark_phase: true
+      temporal_hold_seconds_default: 8.0
+      confidence: lights_4_5_8_live_other_bits_factory_pattern_inferred
+  bixcheck5-static:
+    T07: {meaning: display_led, confidence: static}
+    T08: {meaning: igniter_state_low_three_bits, confidence: static}
+    T09: {meaning: operating_state, confidence: static}
+    T13: {meaning: alarm_status_raw, named_bit_decode: false, confidence: static}
 
 registers:
   CR00: {kind: constant, value: 0x00, meaning: communication_probe, confidence: live_and_static}
