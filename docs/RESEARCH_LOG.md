@@ -245,3 +245,27 @@
   blocked `CW0FC4`, `EA`, `E3`, and `ED` from generic raw/transaction paths.
   Loader support remains a separate unfinished state machine; no physical
   write or loader traffic was issued during this implementation pass.
+- Added the version-0.5 controller-aware API foundations: exact profiles and
+  read-only discovery, conservative typed snapshots, configuration schemas and
+  plans, all 45 Checkout definitions, Intel HEX/PIC14 validation, control
+  planning, and a writes-disabled simulator/fault backend.
+- Added the version-0.6 `ControllerSession` facade, typed snapshot iteration,
+  configuration backup access, bounded read-only Checkout execution, and
+  simulator-only configuration, normal-control, and actuator-cleanup workflows
+  with authorization, stale-source checks, interlocks, and full verification.
+- Added version-0.7 exact-byte `AuditTrail` sessions and digestable workflow
+  spans, then attached them to control, configuration, Checkout, and loader
+  results. Failed initial identity now closes both the owned transport and audit
+  sink.
+- Added an authenticated public catalog/validator for all four preserved
+  firmware images, checking exact path, size, SHA-256, version, delivery
+  variant, program-word count, and configuration word.
+- Added the isolated loader laboratory: typed plans/results, `EA`/`EB`
+  identification, reconstructed `E3` frames, ordered `E7`/`E4` block
+  acknowledgements, bounded retries, `ED`/`E4` completion, progress receipts,
+  programmed-memory comparison, and deterministic disconnect/corruption
+  injection. The executor accepts only its concrete simulator transport and
+  contains no `CW0FC4`, erase, reset, or physical serial path.
+- Expanded the portable API-only suite to 131 passing tests plus one preserved-
+  corpus integration test that runs when the full archive is present. No live
+  state-changing or loader traffic was issued.

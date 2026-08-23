@@ -1,8 +1,23 @@
+schema: openmaxfire.protocol-register-map.v2
+
+purpose: static_and_live_evidence_index
+runtime_authority: src/openmaxfire/profiles.py
+scope:
+  static_baseline: firmware_2.71_data_format_07
+  live_overrides: firmware_2.02_data_format_04_controller_serial_5215
+  warning: later_format_constants_and_telemetry_must_not_be_applied_to_format_04_without_evidence
+
 firmware:
-  image: Bixby_0271_080315.hex
-  sha256: dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b
+  baseline_image: Bixby_0271_080315.hex
+  baseline_sha256: dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b
   mcu: PIC16F877A
   protocol: ascii_hex
+
+known_profiles:
+  fw202-format04: {firmware: "2.02", data_format: 0x04, baud: 9600, evidence: live_cold_off}
+  fw206-format05: {firmware: "2.06", data_format: 0x05, baud: 9600, evidence: vendor_static_emulator}
+  fw270-format07: {firmware: "2.70", data_format: 0x07, baud: 19200, evidence: vendor_static_emulator}
+  fw271-format07: {firmware: "2.71", data_format: 0x07, baud: 19200, evidence: vendor_static_emulator}
 
 serial:
   data_bits: 8
@@ -12,13 +27,9 @@ serial:
     BixCheck_5.0.21: [9600]
     BixCheck_5.5.00: [9600, 19200]
     BixCheck_5.5.01: [9600, 19200]
-  expected_pairing:
-    firmware_2.06: 9600
-    firmware_2.70: 19200
-    firmware_2.71: 19200
-  oscillator_inference: 10MHz
-  oscillator_physically_verified: false
-  physically_verified: false
+  oscillator: 10MHz
+  oscillator_physically_verified: true
+  physically_verified_profiles: [fw202-format04]
 
 commands:
   read:
@@ -33,11 +44,13 @@ commands:
 responses:
   addressed: "{unit}{opcode}{address:02X}{value:02X}"
   telemetry_one_byte: "T{index:02X}{value:02X}"
-  telemetry_two_bytes: "T{index:02X}{value0:02X}{value1:02X}"
+  telemetry_two_bytes_logical: "adjacent one-byte T slots, high byte then low byte"
   accepted_terminators: [0x0D, 0x0A]
+  firmware_observed_terminator: 0x0A
   incoming_hex_case: either
+  firmware_observed_hex_case: lowercase
   leading_control_bytes_stripped: [0x01, 0x02, 0x03]
-  live_verified: false
+  live_verified_profiles: [fw202-format04]
 
 remote_buttons:
   register: 0x0E
@@ -46,27 +59,31 @@ remote_buttons:
     on: 0x12
     up: 0x14
     down: 0x18
-  live_verified: false
+  confidence: confirmed_static_not_live
 
 registers:
-  CR00: {kind: constant, value: 0x00, confidence: confirmed_static}
+  CR00: {kind: constant, value: 0x00, meaning: communication_probe, confidence: live_and_static}
   CR01:
     kind: ram
     source: "bank1:0x53"
     meaning: front_panel_button_code
-    values: {none_pressed: 0x00, off_button: 0x01, on_button: 0x02, up_button: 0x04, down_button: 0x08}
-    confidence: confirmed_static_not_live
+    values:
+      none_pressed: {value: 0x00, confidence: live_and_static}
+      off_button: {value: 0x01, confidence: live_and_static}
+      on_button: {value: 0x02, confidence: confirmed_static_not_live}
+      up_button: {value: 0x04, confidence: live_and_static}
+      down_button: {value: 0x08, confidence: live_and_static}
   CR02:
     kind: packed_bits
     meaning: physical_and_mux_inputs
     bits:
-      0: {source: RD3_MUX_0, meaning: burn_drive_limit_switch, polarity: unverified}
+      0: {source: RD3_MUX_0, meaning: burn_drive_limit_switch, confidence: confirmed_static_not_live}
       1: {source: RD3_MUX_1, meaning: unknown}
-      2: {source: RD3_MUX_2, meaning: fuel_select_switch, set: fuel_A_corn, clear: fuel_B_wood}
+      2: {source: RD3_MUX_2, meaning: fuel_select_switch, set: fuel_A_corn, clear: fuel_B_wood, confidence: live_and_static}
       3: {source: mux_internal_state, meaning: unknown}
       4: {source: RD0, meaning: feeder_wheel_sensor_current_state, connector: J9, polarity: unverified}
-      5: {source: RD1, meaning: firebox_door_safety_switch, set: open, clear: closed}
-      6: {source: RD4, meaning: ash_bin_door_switch, set: open, clear: closed}
+      5: {source: RD1, meaning: firebox_door_safety_switch, set: open, clear: closed, confidence: live_and_static}
+      6: {source: RD4, meaning: ash_drawer_switch, set: open, clear: closed, confidence: live_and_static}
       7: {source: RE1, meaning: unknown_physical_input}
   CR03:
     kind: packed_bits
@@ -92,7 +109,7 @@ registers:
     bits:
       0: {source: "RAM_0x2D.bit0", meaning: unknown}
       1: {source: "RAM_0x2D.bit1", meaning: unknown}
-      2: {source: RB4, meaning: thermostat_input, polarity: unverified}
+      2: {source: RB4, meaning: thermostat_input, set: open, clear: closed, confidence: live_and_static}
   CR07:
     kind: derived
     source: "RD0 cycle -> RAM_0x47:0x46 -> RAM_0x45:0x44"
@@ -102,10 +119,19 @@ registers:
     timebase: "RB0 external-interrupt ticks while RB1 feed-motor output is active"
     engineering_units: unresolved
     confidence: confirmed_static_not_live
-  CR08: {kind: constant, value: 0x07, meaning: stove_data_format, confidence: confirmed_static}
-  CR09: {kind: ram, source: "AN3 -> 0x2E", meaning: fan_potentiometer}
-  CR0A: {kind: ram, source: "AN4 -> 0x2F", meaning: feed_potentiometer}
-  CR0B: {kind: constant, value: 0x02, meaning: firmware_major, confidence: confirmed_static}
-  CR0C: {kind: constant, value: 0x71, meaning: firmware_minor, confidence: confirmed_static}
-  CR0D: {kind: constant, value: 0x00, meaning: unknown}
-  CR0E: {kind: constant_on_read, value: 0x00, write_role: remote_buttons}
+  CR08:
+    kind: constant_by_profile
+    meaning: stove_data_format
+    values: {fw202-format04: 0x04, fw206-format05: 0x05, fw270-format07: 0x07, fw271-format07: 0x07}
+  CR09: {kind: ram, source: "AN3 -> 0x2E", meaning: fan_potentiometer, confidence: live_and_static}
+  CR0A: {kind: ram, source: "AN4 -> 0x2F", meaning: feed_potentiometer, confidence: live_and_static}
+  CR0B: {kind: constant, value: 0x02, meaning: firmware_major, confidence: live_and_static}
+  CR0C:
+    kind: constant_by_profile
+    meaning: firmware_minor
+    values: {fw202-format04: 0x02, fw206-format05: 0x06, fw270-format07: 0x70, fw271-format07: 0x71}
+  CR0D: {kind: constant, value: 0x00, meaning: firmware_reserved, confidence: live_and_static}
+  CR0E:
+    kind: constant_on_read_by_profile
+    meaning: version_readback_and_remote_button_write_register
+    values: {fw202-format04: 0x00, fw206-format05: 0x21, fw270-format07: 0x02, fw271-format07: 0x00}

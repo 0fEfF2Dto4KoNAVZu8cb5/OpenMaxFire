@@ -67,7 +67,7 @@ OpenMaxFire separates evidence into five levels:
 | Table-only telemetry | BixCheck 5.5.01 names TFD-TFF, but no producer is recovered in periodic 2.71 firmware; T20 is a separate event path | Passive capture or newly identified conditional producer |
 | EEPROM semantics | Live format-04 backup/checksum/identity are preserved; stored serial/date differ from the appliance nameplate and many calibration meanings rely on labels | Compare another format-04 unit or recovered 2.02 BixCheck/firmware |
 | Checkout thresholds | Buttons, pots, doors, thermostat, exhaust CR05, feeder CR07, and igniter result bits are mapped; several engineering units/state meanings remain unresolved | Trace remaining manual/no-op cases and conversions |
-| Downloader | Framing/identify mapped; erase/program acknowledgements and recovery unproven | Isolated emulation, then sacrificial bench controller only |
+| Downloader | Framing, identify, ordered block acknowledgements, retry policy, and completion are modeled in the isolated API simulator; physical entry timing, erase semantics, verification limits, reset, and recovery remain unproven | Sacrificial, externally recoverable bench controller only |
 
 ## Current boundary
 
@@ -75,8 +75,9 @@ Read-only J3 access is now established for serial 5215. The next safety boundary
 is any state-changing command or operating-stove test: neither is authorized by
 the cold/off session. Firmware 2.02 program memory remains unpreserved, J3-3 is
 unresolved, and no recovery path has been proven on sacrificial hardware. The
-version-0.6 API can own a detected session, run read-only Checkout, and execute
-configuration/control/Checkout workflows against simulation, but known loader
-markers and every physical state-changing service remain blocked. A matching
-readback verifies a byte only, not physical actuator behavior or overall
-controller safety.
+version-0.7 API can own an audited detected session, run read-only Checkout,
+execute configuration/control/Checkout workflows against simulation, validate
+the preserved firmware corpus, and exercise loader retries/recovery faults only
+against an isolated loader simulator. Known loader-entry markers and every
+physical state-changing service remain blocked. A matching readback verifies a
+byte only, not physical actuator behavior or overall controller safety.

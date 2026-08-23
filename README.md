@@ -172,17 +172,22 @@ python tools/pic14_emulator.py project --repo-root .
 
 ## Repository map
 
-- `preservation/original/` - recovered files as received, plus provenance and hashes
+- [`preservation/`](preservation/README.md) - recovered files as received, provenance, manifests, and hashes
 - `reverse-engineering/` - EXE tables/call graphs, firmware, disassembly,
   comparisons, and emulation traces
-- `research/live/` - byte-identical physical traffic, EEPROM, adapter, and
+- [`research/`](research/README.md) - byte-identical physical traffic, EEPROM, adapter, and
   checksum evidence
-- `docs/api/` - Python API boundary, capability matrix, and completion roadmap
-- `docs/cli/` - command-line client behavior and usage
-- `docs/` - hardware, protocol, BixCheck, automation, status, history, and project roadmap
-- `src/openmaxfire/` - modern Python protocol/transport foundation
-- `tools/` - reproducible Debian analysis helpers
-- `tests/` - offline protocol tests
+- [`docs/`](docs/README.md) - documentation index, research status, safety boundary, and roadmaps
+- [`docs/api/`](docs/api/README.md) - reusable Python API boundary and completion roadmap
+- [`docs/cli/`](docs/cli/cross-platform-service-tool.md) - command-line client behavior and usage
+- [`protocol/`](protocol/README.md) - machine-readable evidence maps; runtime behavior lives in the Python API
+- `src/openmaxfire/` - reusable Python protocol, transport, profile, service, audit, and simulation API
+- [`tools/`](tools/README.md) - deterministic static-analysis, emulation, integrity, and virtual-lab helpers
+- [`tests/`](tests/README.md) - portable API tests and deterministic analysis regression tests
+- [`examples/`](examples/read-only-register-plan.json) - presentation-neutral example plans
+- [`.github/workflows/`](.github/workflows/cross-platform-tests.yml) - cross-platform tests and archive-integrity verification
+
+Contribution and preservation rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Start with [the research status](docs/STATUS.md),
 [the Python API roadmap](docs/api/README.md),

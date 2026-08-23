@@ -2,9 +2,29 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .coverage
+.coverage.*
+.mypy_cache/
 .pytest_cache/
+.ruff_cache/
+.tox/
+.nox/
+htmlcov/
+coverage.xml
 .venv/
 venv/
 build/
 dist/
 vendor/originals/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Root-level bench captures are working copies. Their curated, checksummed
+# preservation copies live under research/live/2026-08-22-fw202-format04/.
+/first-*.jsonl
+/fw202-*.jsonl
+/fw202-*/
+/maxfire-adapter-identification.json
+/maxfire-fw202-format04-eeprom*.json
+/results.txt
