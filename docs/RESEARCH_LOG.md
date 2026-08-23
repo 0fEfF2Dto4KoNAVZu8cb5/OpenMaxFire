@@ -18,6 +18,15 @@
 - Added idempotent normal-control planning and an API-compatible simulated
   controller/transport with writes disabled by default and deterministic fault
   injection. The portable suite now contains 102 passing offline tests.
+- Added the version-0.6 `ControllerSession` facade for exact detection,
+  connection ownership, profile/capability access, typed polling/iteration,
+  configuration images, and backup documents.
+- Added bounded read-only execution for all currently machine-evaluable
+  Checkout tests. Manual and actuator-only cases explicitly return `not_run`.
+- Added simulator-only configuration, normal-control, and Checkout workflow
+  execution. These enforce authorization, stale-source rejection, whole-image
+  verification, rate/input interlocks, and unconditional actuator cleanup while
+  hard-blocking physical state changes. The portable suite now has 116 tests.
 
 ## 2026-08-18
 

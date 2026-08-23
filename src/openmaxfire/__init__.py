@@ -99,6 +99,16 @@ from .simulator import (
     SimulatedTransportFactory,
     SimulationFaults,
 )
+from .session import ConnectionInfo, ControllerSession
+from .services import (
+    READ_ONLY_CHECKOUT_TESTS,
+    ConfigurationExecutionOutcome,
+    ConfigurationExecutionResult,
+    ReadOnlyCheckoutRunner,
+    execute_configuration_plan,
+    execute_control,
+    execute_simulated_checkout,
+)
 
 __all__ = [
     "CommandReceipt",
@@ -181,6 +191,15 @@ __all__ = [
     "SimulatedTransport",
     "SimulatedTransportFactory",
     "SimulationFaults",
+    "ConnectionInfo",
+    "ControllerSession",
+    "READ_ONLY_CHECKOUT_TESTS",
+    "ReadOnlyCheckoutRunner",
+    "ConfigurationExecutionOutcome",
+    "ConfigurationExecutionResult",
+    "execute_configuration_plan",
+    "execute_control",
+    "execute_simulated_checkout",
 ]
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"

@@ -58,6 +58,7 @@ class SimulatedController:
         controller_registers: Mapping[int, int] | None = None,
         eeprom: bytes | bytearray | memoryview | None = None,
         d_space: Mapping[int, int] | None = None,
+        telemetry: Mapping[int, int] | None = None,
         faults: SimulationFaults | None = None,
     ):
         self.profile = (
@@ -78,6 +79,9 @@ class SimulatedController:
         self.registers.update(
             {("D", address): value for address, value in (d_space or {}).items()}
         )
+        self.telemetry = {0x08: 0x07, 0x09: 0x43}
+        if telemetry:
+            self.telemetry.update(telemetry)
         self.faults = faults or SimulationFaults()
         self.requests: list[RegisterRequest] = []
 
@@ -94,16 +98,48 @@ class SimulatedController:
             value = self.faults.read_overrides.get(key, self.registers.get(key, 0))
             prefix = self.faults.malformed_prefix_once
             self.faults.malformed_prefix_once = b""
-            return prefix + f"{request.unit}R{request.address:02x}{value:02x}\n".encode(
+            unsolicited = b""
+            if request.unit == "C" and request.address == 0x00:
+                unsolicited = b"".join(
+                    f"T{index:02x}{item:02x}\n".encode("ascii")
+                    for index, item in sorted(self.telemetry.items())
+                )
+            response = f"{request.unit}R{request.address:02x}{value:02x}\n".encode(
                 "ascii"
             )
+            return prefix + unsolicited + response
         assert request.value is not None
         if not self.allow_writes:
             return b"IWRITE-BLOCKED\n"
         self.registers[key] = request.value
+        if request.unit == "C" and request.address == 0x01:
+            raw = bytes(self.registers[("A", address)] for address in range(0x100))
+            checksummed = ConfigurationImage(raw).with_checksum().raw
+            self.registers[("A", 0x00)] = checksummed[0x00]
+            self.registers[("A", 0x01)] = checksummed[0x01]
+        if request.unit == "C" and request.address == 0x0E:
+            self._apply_remote_button(request.value)
         return f"{request.unit}W{request.address:02x}{request.value:02x}\n".encode(
             "ascii"
+        ) + (
+            f"T09{self.telemetry[0x09]:02x}\n".encode("ascii")
+            if request.unit == "C" and request.address == 0x0E
+            else b""
         )
+
+    def _apply_remote_button(self, value: int) -> None:
+        state = self.telemetry.get(0x09, 0x43) & 0x7F
+        family = (state >> 4) & 0x07
+        level = (state & 0x07) + 1 if family in (4, 5) else 4
+        if value == 0x11:
+            self.telemetry[0x09] = 0x20
+        elif value == 0x12:
+            if family in (0, 1, 2):
+                self.telemetry[0x09] = 0x30
+        elif value == 0x14:
+            self.telemetry[0x09] = 0x40 | (min(8, level + 1) - 1)
+        elif value == 0x18:
+            self.telemetry[0x09] = 0x40 | (max(1, level - 1) - 1)
 
 
 class SimulatedTransport:

@@ -44,21 +44,22 @@ escape hatch rather than the implementation of high-level parity.
 
 | API area | Status | Present foundation | Remaining API work |
 | --- | --- | --- | --- |
-| Serial transport | Foundation complete | Cross-platform port listing, bounded I/O, timing, JSONL traffic recording | Add connection probing without unsafe writes |
+| Serial transport | Foundation complete | Cross-platform port listing, bounded I/O, timing, JSONL traffic recording, and read-only connection probing | Live-validate automatic detection on additional host/controller combinations |
 | Protocol framing | Foundation complete | Strict A/C/D requests, addressed replies, telemetry/status parsing | Extend only when new valid frame families are established |
 | Register access | Foundation complete | Generic A/C/D read/write, exact response matching, optional fresh readback | Resolve D-space semantics and classify controller writes |
 | Raw exchange | Foundation complete | Exact-byte exchange with known loader markers blocked | Keep loader traffic outside this API |
 | Transactions | Foundation complete | Validated ordered read/write/delay plans, authorization, fail-fast readback | Add typed cleanup/finally behavior and richer failure receipts |
 | Identification | Offline foundation complete | Read-only port/baud probing, exact profile selection, capability negotiation, explicit no-response and unsupported results | Live-validate automatic detection on additional controllers |
-| EEPROM backup | Read path complete | Lossless A00-AFF read, identity metadata, checksum diagnostics | Stable import/validation model shared by restore |
+| Session facade | Foundation complete | Owned connection, identity/profile/capabilities, typed polling/iteration, configuration images, and backup documents | Add async subscriptions only when a client requires them |
+| EEPROM backup | Read path complete | Lossless A00-AFF read, identity metadata, checksum diagnostics, and shared import/validation model | Additional live fixtures from other formats/controllers |
 | Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, format-04 conservative decoding, format-05/07 conversions, replay | Resolve remaining flags, physical calibration, M/I payloads, and live-validate later formats |
-| Normal control | Planning complete; execution blocked | Typed OFF/ON/UP/DOWN/set-level plans, idempotence, stale/profile checks, structured outcomes | Live-validate commands and add an authorized executor with rate limits, lockouts, recovery, and fresh-state verification |
-| Configuration | Offline schema/planning complete | Lossless images, format-05/07 field schemas, ranges/transforms, checksum validation, typed edits, diff, restore planning, identity preservation, full-image verification plan | Mandatory backup plus authorized executor; live-validate write order and whole-image readback; reconstruct format-04 fields and expert formatting |
-| Checkout | Catalog/planning complete | All 45 reachable tests as data, passive predicates, format-specific commands, blockers, cleanup metadata, result/report types | Observation providers and a bounded executor with unconditional cleanup; live actuator validation |
+| Normal control | Simulator workflow complete; physical execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, structured outcomes | Live-validate OFF/ON/UP/DOWN and define physical recovery timing before enabling the executor |
+| Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, and complete A00-AFF verification in simulation | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
+| Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
 | Firmware images | Offline foundation complete | Strict Intel HEX validation, PIC14 address mapping, delivery-layout classification, compatibility/migration reports, E3 block construction | Add calibration-preservation policy for actual programming and validate against every preserved image in CI |
 | Firmware loader | Deliberately blocked | Constants, E3 frames, compatibility gates, and explicit unsupported state | Loader identify, enter, erase, ack/retry state machine, interruption recovery, verification, reset, and sacrificial-hardware validation |
 | Error/result model | Foundation complete | Stable base exceptions plus domain-specific detection, control, Checkout, transaction, configuration, and firmware results | Use the common taxonomy in future live service executors |
-| Simulation | API foundation complete | Public controller/transport/factory with deterministic identity, EEPROM, writes-disabled default, and fault injection | Add scenario timelines and actuator/loader models only as semantics are proven |
+| Simulation | Service workflow foundation complete | Public controller/transport/factory, telemetry/state transitions, firmware checksum behavior, writes-disabled default, and fault injection | Add richer timelines and loader models only as semantics are proven |
 
 The register-level mechanics are close to complete. Most remaining work is the
 controller-aware semantic and workflow layer that makes those mechanics safe,
@@ -158,12 +159,31 @@ Version 0.5 implements the no-hardware portions of every service domain:
 See [v0.5 API reference and evidence boundary](v0.5-foundations.md) for the
 public objects, examples, and precise execution limits.
 
+## Implemented v0.6 service layer
+
+Version 0.6 composes the v0.5 domains into presentation-neutral workflows:
+
+1. `ControllerSession` owns one connection, exact identity/profile, accumulated
+   monitor state, typed polling/iteration, and read-only configuration access.
+2. `ReadOnlyCheckoutRunner` automates every currently machine-evaluable
+   non-writing Checkout test and never fabricates manual or actuator success.
+3. Configuration apply verifies its source is still current, records a backup
+   hash, runs only with explicit authorization on the simulator, persists the
+   firmware checksum, and compares every A00-AFF byte afterward.
+4. Normal control adds authorization, idempotence, rate limiting, input
+   interlocks, simulated state transitions, and fresh resulting-state checks.
+5. The simulated Checkout executor guarantees cleanup in `finally`, including
+   when its observation provider fails.
+
+See [v0.6 unified sessions and safe workflows](v0.6-services.md).
+
 ## Remaining implementation order
 
-1. Live-validate normal control and add the verified control executor.
-2. Add mandatory-backup configuration apply/restore execution and validate it
-   first on recoverable hardware.
-3. Add Checkout observation providers and an executor that guarantees cleanup.
+1. Live-validate normal control before allowing the existing verified executor
+   to operate on a physical session.
+2. Validate the simulator-proven configuration workflow first on recoverable
+   hardware before allowing physical apply/restore.
+3. Live-validate each Checkout actuator/cleanup pair before physical execution.
 4. Resolve the loader acknowledgements/recovery path in emulation and then on a
    sacrificial controller before enabling any erase/program operation.
 5. Fill remaining telemetry/configuration semantics only as new evidence lands.

@@ -109,6 +109,9 @@ protocol or controller logic.
 - [ ] Read back state after every command.
 - [x] Add offline idempotent OFF/ON/UP/DOWN/set-level planning with profile and
   stale-state checks; live rate limits, lockouts, and recovery remain pending.
+- [x] Execute and verify complete control workflows against the public simulator
+  with authorization, rate limiting, and door/drawer interlocks; physical use
+  remains blocked.
 - [ ] Never infer success from transmission alone.
 - [ ] Expose only the everyday safe subset to Home Assistant.
 
@@ -123,14 +126,20 @@ protocol or controller logic.
 - [x] Add offline range validation, version/data-format checks, typed edits,
   diff/restore plans, checksum persistence, identity preservation, and a
   whole-image verification contract; execution remains blocked.
+- [x] Execute the complete configuration plan against simulation with an exact
+  pre-write image check, backup hash, CW01 checksum persistence, and A00-AFF
+  post-write comparison; physical use remains blocked.
 - [ ] Keep full memory formatting behind a separate expert workflow.
 
 ## Phase 5 - service and factory Checkout parity
 
 - [x] Represent all 45 reachable documented tests as a machine-readable API catalog.
-- [ ] Keep actuator tests separate from normal-operation APIs.
-- [ ] Require explicit test context and operator confirmation.
+- [x] Keep actuator tests separate from normal-operation APIs.
+- [x] Require explicit API authorization for simulated actuator workflows;
+  operator confirmation remains a client responsibility.
 - [x] Add structured Checkout result/report models with configuration-backup identity.
+- [x] Add a bounded read-only runner for every machine-evaluable passive test
+  and a simulator-only actuator executor with unconditional cleanup.
 - [ ] Add raw/debug communication tools for research.
 
 ## Phase 6 - firmware servicing

@@ -68,6 +68,17 @@ class ControlResult:
     after: StoveSnapshot | None
     message: str = ""
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "openmaxfire.control-result.v1",
+            "action": self.action.value,
+            "outcome": self.outcome.value,
+            "requests_hex": [request.hex(" ").upper() for request in self.requests],
+            "before": self.before.to_dict() if self.before else None,
+            "after": self.after.to_dict() if self.after else None,
+            "message": self.message,
+        }
+
 
 def _operation(button: RemoteButton) -> TransactionOperation:
     return TransactionOperation(

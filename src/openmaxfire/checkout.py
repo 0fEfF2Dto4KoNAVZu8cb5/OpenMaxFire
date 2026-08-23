@@ -316,6 +316,14 @@ class CheckoutResult:
     observations: Mapping[str, object]
     message: str = ""
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "test_number": self.test_number,
+            "outcome": self.outcome.value,
+            "observations": dict(self.observations),
+            "message": self.message,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class CheckoutReport:
@@ -333,3 +341,14 @@ class CheckoutReport:
         return self.complete and all(
             result.outcome is CheckoutOutcome.PASS for result in self.results
         )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "openmaxfire.checkout-report.v1",
+            "profile_key": self.profile_key,
+            "configuration_checksum": self.configuration_checksum,
+            "configuration_backup_sha256": self.configuration_backup_sha256,
+            "complete": self.complete,
+            "passed": self.passed,
+            "results": [result.to_dict() for result in self.results],
+        }
