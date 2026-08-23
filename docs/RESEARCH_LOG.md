@@ -269,3 +269,12 @@
 - Expanded the portable API-only suite to 131 passing tests plus one preserved-
   corpus integration test that runs when the full archive is present. No live
   state-changing or loader traffic was issued.
+- Added a guided physical-validation harness outside the reusable API. Its
+  default path is read-only and preserves audited discovery, repeated identity,
+  complete snapshots, EEPROM integrity, and one-at-a-time input/trim evidence.
+  Remote OFF/UP/DOWN and ON/start are isolated behind progressively stronger
+  command-line, safety-checklist, and per-command authorization gates. The
+  harness contains no configuration, Checkout-actuator, raw, or loader path.
+- Added four offline validation-harness regressions, bringing the work-export
+  suite to 135 passing tests plus the conditional full-corpus integration test.
+  No physical traffic was issued while developing the harness.

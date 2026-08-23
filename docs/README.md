@@ -35,6 +35,7 @@ layers. Controller semantics and safety rules belong in the API.
 | Controller writes | [Controller write map](protocol/controller-writes.md) |
 | Telemetry | [Telemetry fields](protocol/telemetry-fields.md) |
 | Firmware 2.02 live session | [Live format-04 report](reverse-engineering/live-fw202-format04.md) |
+| Guided physical validation | [Live-validation session](research/live-validation-session.md) |
 
 ## Static analysis and hardware
 

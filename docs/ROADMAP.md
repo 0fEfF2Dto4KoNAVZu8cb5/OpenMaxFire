@@ -68,6 +68,8 @@ protocol or controller logic.
 - [x] Repeat polling while operating the fire door, ash drawer, thermostat,
   fuel switch, trim pots, and OFF/UP/DOWN panel buttons; intentionally exclude
   physical ON.
+- [x] Add an audited guided validation harness for repeatable identity, snapshot,
+  EEPROM-integrity, input, trim, and separately gated remote-control sessions.
 - [ ] Correlate CR05 and CR07 with passive J10/J9 observations; do not run
   factory actuator tests through the unfinished interface.
 - [ ] Identify the physical function of CR02.1 by cold/off correlation.

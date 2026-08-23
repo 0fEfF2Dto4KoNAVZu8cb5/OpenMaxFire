@@ -11,6 +11,7 @@ controller behavior belongs in the `openmaxfire` package and its separate CLI.
 | `analyze_bixby_hex.sh` | Legacy convenience wrapper for firmware inspection | None |
 | `virtual_serial_lab.py` | Local synthetic serial endpoint and demo | Synthetic only |
 | `experimental_read_only_monitor.py` | Historical research monitor retained for comparison; current behavior is in the package/CLI | Serial reads only when explicitly run |
+| `live_validation_session.py` | Guided, timestamped controller validation with exact traffic, repeated identities, EEPROM integrity, physical-input correlation, and separately gated remote-control evidence | Read-only by default; optional remote buttons require explicit gates |
 | `verify_archive.sh` | Verify preserved and derived archive hashes and inventory | None |
 
 Run deterministic project regeneration from the repository root:

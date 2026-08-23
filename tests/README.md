@@ -14,6 +14,7 @@ python -m unittest discover -s tests -v
 | Service domains | `test_control.py`, `test_configuration.py`, `test_checkout.py`, `test_services.py`, `test_backup.py` | Plans, interlocks, workflows, cleanup, backups, and structured results |
 | Firmware laboratory | `test_firmware.py`, `test_firmware_catalog.py`, `test_loader.py`, `test_simulator.py` | Intel HEX, preserved corpus, loader framing/retries, corruption, and isolated simulation |
 | Deterministic analysis | `test_bixcheck_analysis.py`, `test_firmware_pipeline.py`, `test_pic14_emulator.py` | Reproducibility and static/emulator regression coverage |
+| Live-validation harness | `test_live_validation_tool.py` | Offline workflow, evidence files, conservative expectations, and overwrite refusal |
 | CLI adapter | `test_cli.py` | Presentation-layer argument and safety gates without redefining controller semantics |
 
 The cross-platform workflow runs on Python 3.11 and 3.13 under Linux, Windows,
