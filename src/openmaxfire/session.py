@@ -79,7 +79,11 @@ class ControllerSession:
 
         if audit is not None:
             client.transport = RecordingTransport(client.transport, audit)
-        identity = client.identify(request_delay=request_delay)
+        try:
+            identity = client.identify(request_delay=request_delay)
+        except Exception:
+            client.close()
+            raise
         profile = select_profile(identity)
         if profile is None:
             client.close()

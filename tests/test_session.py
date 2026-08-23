@@ -1,7 +1,13 @@
 import unittest
 
+from openmaxfire.audit import AuditTrail
+from openmaxfire.client import MaxFireClient
 from openmaxfire.session import ControllerSession
-from openmaxfire.simulator import SimulatedTransportFactory
+from openmaxfire.simulator import (
+    SimulatedController,
+    SimulatedTransport,
+    SimulatedTransportFactory,
+)
 
 
 class ControllerSessionTests(unittest.TestCase):
@@ -43,6 +49,20 @@ class ControllerSessionTests(unittest.TestCase):
         self.assertTrue(image.checksum_valid)
         self.assertEqual(document["raw_hex"], image.raw.hex().upper())
         self.assertEqual(document["controller_identity"]["profile_key"], "fw206-format05")
+
+    def test_failed_identity_closes_owned_transport_and_audit(self):
+        base = SimulatedTransport(SimulatedController(), responsive=False)
+        audit = AuditTrail(session_id="failed-identity")
+        with self.assertRaises(TimeoutError):
+            ControllerSession.from_client(
+                MaxFireClient(base),
+                port="SIM0",
+                baudrate=9600,
+                timeout=0.01,
+                audit=audit,
+            )
+        self.assertTrue(base.closed)
+        self.assertTrue(audit.closed)
 
 
 if __name__ == "__main__":
