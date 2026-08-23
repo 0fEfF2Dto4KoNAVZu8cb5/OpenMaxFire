@@ -2,6 +2,11 @@
 
 Snapshot date: 2026-08-23
 
+This is the CLI-facing guide to the register-level service primitives. The
+authoritative separation of the reusable Python package from the CLI, future
+GUI, and Home Assistant clients is defined in the
+[Python API roadmap](../api/README.md).
+
 OpenMaxFire 0.4 provides the first complete register-level foundation beneath
 future Monitor, Checkout, configuration, and GUI workflows. These primitives
 are offline-tested. No A/C/D write, actuator action, or firmware-loader

@@ -93,8 +93,8 @@ reviewed.
 
 1. Preserve original Bixby software, firmware, manuals, release notes, photographs, and hardware documentation without modifying the originals.
 2. Fully document the MaxFire 110/115 J3 protocol and controller register space.
-3. Replace essentially all BixCheck functions with a cross-platform Windows,
-   Linux, and macOS CLI/application.
+3. Implement essentially all BixCheck machine-facing behavior in a reusable,
+   cross-platform Python API, then expose it through separate CLI and GUI clients.
 4. Build a fail-out-of-the-way ESP32/ESPHome interface for normal telemetry, faults, start/stop, heat level, command verification, and Home Assistant exposure.
 5. Keep the factory controller, front panel, thermostat inputs, combustion logic, and safety behavior authoritative.
 
@@ -158,12 +158,15 @@ python tools/pic14_emulator.py project --repo-root .
   comparisons, and emulation traces
 - `research/live/` - byte-identical physical traffic, EEPROM, adapter, and
   checksum evidence
-- `docs/` - hardware, protocol, BixCheck, automation, status, history, and roadmap
+- `docs/api/` - Python API boundary, capability matrix, and completion roadmap
+- `docs/cli/` - command-line client behavior and usage
+- `docs/` - hardware, protocol, BixCheck, automation, status, history, and project roadmap
 - `src/openmaxfire/` - modern Python protocol/transport foundation
 - `tools/` - reproducible Debian analysis helpers
 - `tests/` - offline protocol tests
 
 Start with [the research status](docs/STATUS.md),
+[the Python API roadmap](docs/api/README.md),
 [the firmware-2.02/data-format-04 live report](docs/reverse-engineering/live-fw202-format04.md),
 [the bare-controller photographs](docs/hardware/bare-controller-photographs.md),
 [the MaxFire owner-manual analysis](docs/manuals/maxfire-owner-manual-2020866-rev-a.md),

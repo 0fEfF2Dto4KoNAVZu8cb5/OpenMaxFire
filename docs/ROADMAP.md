@@ -1,5 +1,11 @@
 # Roadmap
 
+This file tracks project-wide research, preservation, validation, packaging,
+and hardware work. The reusable Python implementation has its own
+[API architecture and completion roadmap](api/README.md). CLI, future GUI, and
+Home Assistant work are separate clients of that API and must not duplicate
+protocol or controller logic.
+
 ## Phase 0 - preservation foundation
 
 - [x] Preserve recovered vendor ZIP packages and standalone BixCheck 5.5.01 executable.
