@@ -19,6 +19,13 @@ class Transport(Protocol):
     def close(self) -> None: ...
 
 
+class TrafficRecorder(Protocol):
+    """Minimal sink accepted by :class:`RecordingTransport`."""
+
+    def record(self, direction: str, data: bytes) -> None: ...
+    def close(self) -> None: ...
+
+
 @dataclass(frozen=True, slots=True)
 class SerialPortInfo:
     """Portable subset of pyserial's platform-specific port metadata."""
@@ -206,7 +213,7 @@ class JsonlTrafficRecorder:
 class RecordingTransport:
     """Transport decorator that records exact TX/RX chunks without altering them."""
 
-    def __init__(self, transport: Transport, recorder: JsonlTrafficRecorder):
+    def __init__(self, transport: Transport, recorder: TrafficRecorder):
         self.transport = transport
         self.recorder = recorder
 

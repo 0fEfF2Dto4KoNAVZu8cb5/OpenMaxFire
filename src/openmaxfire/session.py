@@ -12,6 +12,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable, Iterator
 
+from .audit import AuditTrail
 from .client import MaxFireClient, StoveIdentity
 from .configuration import ConfigurationImage
 from .discovery import DetectionStatus, TransportFactory, detect_controller
@@ -19,7 +20,7 @@ from .errors import OpenMaxFireError, UnsupportedControllerError
 from .models import StoveSnapshot
 from .monitor import MonitorState
 from .profiles import ControllerCapabilities, ControllerProfile, select_profile
-from .transport import SerialSettings, SerialTransport, Transport
+from .transport import RecordingTransport, SerialSettings, SerialTransport, Transport
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +50,7 @@ class ControllerSession:
         connection: ConnectionInfo,
         *,
         stale_after: float = 10.0,
+        audit: AuditTrail | None = None,
     ):
         if select_profile(identity) != profile:
             raise ValueError("identity does not exactly match the supplied profile")
@@ -57,6 +59,7 @@ class ControllerSession:
         self.profile = profile
         self.connection = connection
         self.monitor = MonitorState(stale_after=stale_after, profile=profile)
+        self.audit = audit
         self._closed = False
         self._last_control_monotonic: float | None = None
 
@@ -70,9 +73,12 @@ class ControllerSession:
         timeout: float = 0.35,
         request_delay: float = 0.0,
         stale_after: float = 10.0,
+        audit: AuditTrail | None = None,
     ) -> "ControllerSession":
         """Identify an already-open client and take ownership of it."""
 
+        if audit is not None:
+            client.transport = RecordingTransport(client.transport, audit)
         identity = client.identify(request_delay=request_delay)
         profile = select_profile(identity)
         if profile is None:
@@ -93,6 +99,7 @@ class ControllerSession:
             profile,
             connection,
             stale_after=stale_after,
+            audit=audit,
         )
 
     @classmethod
@@ -106,6 +113,7 @@ class ControllerSession:
         request_delay: float = 0.10,
         stale_after: float = 10.0,
         transport_factory: TransportFactory = SerialTransport,
+        audit: AuditTrail | None = None,
     ) -> "ControllerSession":
         """Open an exact baud or safely detect it using identity reads only."""
 
@@ -141,6 +149,7 @@ class ControllerSession:
             timeout=timeout,
             request_delay=request_delay,
             stale_after=stale_after,
+            audit=audit,
         )
 
     @classmethod
@@ -151,6 +160,7 @@ class ControllerSession:
         allow_writes: bool = False,
         stale_after: float = 10.0,
         controller: object | None = None,
+        audit: AuditTrail | None = None,
     ) -> "ControllerSession":
         """Create a session over the public in-memory simulator."""
 
@@ -169,6 +179,7 @@ class ControllerSession:
             baudrate=selected.baudrates[0],
             timeout=0.01,
             stale_after=stale_after,
+            audit=audit,
         )
 
     @property
@@ -297,4 +308,7 @@ class ControllerSession:
 def _is_simulated_transport(transport: Transport) -> bool:
     from .simulator import SimulatedTransport
 
-    return isinstance(transport, SimulatedTransport)
+    current: object = transport
+    while isinstance(current, RecordingTransport):
+        current = current.transport
+    return isinstance(current, SimulatedTransport)

@@ -10,10 +10,11 @@ from __future__ import annotations
 import hashlib
 import math
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Callable, Iterable, Mapping
 
+from .audit import AuditSpan
 from .checkout import (
     CheckoutKind,
     CheckoutOutcome,
@@ -51,6 +52,23 @@ class ReadOnlyCheckoutRunner:
         return self._configuration
 
     def run_test(
+        self,
+        number: int,
+        *,
+        timeout_seconds: float = 0.0,
+        poll_interval: float = 0.10,
+    ) -> CheckoutResult:
+        checkpoint = (
+            self.session.audit.checkpoint() if self.session.audit is not None else 0
+        )
+        result = self._run_test(
+            number,
+            timeout_seconds=timeout_seconds,
+            poll_interval=poll_interval,
+        )
+        return replace(result, audit_span=_audit_span(self.session, checkpoint))
+
+    def _run_test(
         self,
         number: int,
         *,
@@ -200,8 +218,9 @@ class ConfigurationExecutionResult:
     profile_key: str
     prewrite_backup_sha256: str
     transaction: Mapping[str, object] | None
-    observed: ConfigurationImage
+    observed: ConfigurationImage | None
     message: str = ""
+    audit_span: AuditSpan | None = None
 
     @property
     def verified(self) -> bool:
@@ -214,9 +233,14 @@ class ConfigurationExecutionResult:
             "profile_key": self.profile_key,
             "prewrite_backup_sha256": self.prewrite_backup_sha256,
             "transaction": dict(self.transaction) if self.transaction else None,
-            "observed_checksum": f"{self.observed.stored_checksum:04X}",
+            "observed_checksum": (
+                f"{self.observed.stored_checksum:04X}"
+                if self.observed is not None
+                else None
+            ),
             "verified": self.verified,
             "message": self.message,
+            "audit_span": self.audit_span.to_dict() if self.audit_span else None,
             "evidence_boundary": "simulator execution only",
         }
 
@@ -229,6 +253,7 @@ def execute_configuration_plan(
 ) -> ConfigurationExecutionResult:
     """Execute and fully verify a configuration plan on the simulator only."""
 
+    checkpoint = session.audit.checkpoint() if session.audit is not None else 0
     if plan.profile_key != session.profile.key:
         raise VerificationError("configuration plan profile does not match session")
     before = session.read_configuration_image()
@@ -243,6 +268,7 @@ def execute_configuration_plan(
             None,
             before,
             "configuration already matches target",
+            _audit_span(session, checkpoint),
         )
     if not authorize:
         raise PermissionError("configuration writes were not explicitly authorized")
@@ -250,29 +276,41 @@ def execute_configuration_plan(
         raise CapabilityUnavailableError(
             "physical configuration execution remains unvalidated and blocked"
         )
-    transaction = execute_transaction(
-        session.client,
-        TransactionPlan(plan.operations, "simulated configuration apply"),
-        allow_writes=True,
-    )
-    observed = session.read_configuration_image()
+    try:
+        transaction = execute_transaction(
+            session.client,
+            TransactionPlan(plan.operations, "simulated configuration apply"),
+            allow_writes=True,
+        )
+        observed = session.read_configuration_image()
+    except Exception as exc:
+        return ConfigurationExecutionResult(
+            ConfigurationExecutionOutcome.FAILED,
+            session.profile.key,
+            backup_sha,
+            None,
+            None,
+            f"configuration execution interrupted: {exc}",
+            _audit_span(session, checkpoint),
+        )
     transaction_ok = bool(transaction.get("success"))
     verified = transaction_ok and observed == plan.target and observed.checksum_valid
     return ConfigurationExecutionResult(
-        (
+        outcome=(
             ConfigurationExecutionOutcome.VERIFIED
             if verified
             else ConfigurationExecutionOutcome.FAILED
         ),
-        session.profile.key,
-        backup_sha,
-        transaction,
-        observed,
-        (
+        profile_key=session.profile.key,
+        prewrite_backup_sha256=backup_sha,
+        transaction=transaction,
+        observed=observed,
+        message=(
             "complete A00-AFF image and checksum match"
             if verified
             else "post-write verification failed"
         ),
+        audit_span=_audit_span(session, checkpoint),
     )
 
 
@@ -286,6 +324,7 @@ def execute_control(
 ) -> ControlResult:
     """Execute and verify normal control against the simulator only."""
 
+    checkpoint = session.audit.checkpoint() if session.audit is not None else 0
     before = session.poll_snapshot()
     plan = plan_control(action, session.profile, before, target_level=target_level)
     if plan.already_satisfied:
@@ -296,6 +335,7 @@ def execute_control(
             before=before,
             after=before,
             message="requested controller state is already satisfied",
+            audit_span=_audit_span(session, checkpoint),
         )
     if not authorize:
         raise PermissionError("normal control was not explicitly authorized")
@@ -315,15 +355,26 @@ def execute_control(
             raise SafetyInterlockError("ash drawer is open")
     session.claim_control_window(minimum_interval)
     requests: list[bytes] = []
-    for operation in plan.operations:
-        assert operation.address is not None and operation.value is not None
-        receipt = session.client.write_register(
-            operation.address,
-            operation.value,
-            unit=operation.unit or "C",
+    try:
+        for operation in plan.operations:
+            assert operation.address is not None and operation.value is not None
+            receipt = session.client.write_register(
+                operation.address,
+                operation.value,
+                unit=operation.unit or "C",
+            )
+            requests.append(receipt.request)
+        after = session.poll_snapshot()
+    except Exception as exc:
+        return ControlResult(
+            action=plan.action,
+            outcome=ControlOutcome.INDETERMINATE,
+            requests=tuple(requests),
+            before=before,
+            after=None,
+            message=f"control execution or verification was interrupted: {exc}",
+            audit_span=_audit_span(session, checkpoint),
         )
-        requests.append(receipt.request)
-    after = session.poll_snapshot()
     verified = _control_verified(plan.action, before, after, plan.target_level)
     return ControlResult(
         action=plan.action,
@@ -332,6 +383,7 @@ def execute_control(
         before=before,
         after=after,
         message=plan.verification,
+        audit_span=_audit_span(session, checkpoint),
     )
 
 
@@ -374,6 +426,7 @@ def execute_simulated_checkout(
 ) -> CheckoutResult:
     """Exercise an actuator plan with unconditional cleanup in simulation."""
 
+    checkpoint = session.audit.checkpoint() if session.audit is not None else 0
     test = checkout_test(number)
     if test.kind is not CheckoutKind.ACTUATOR:
         return ReadOnlyCheckoutRunner(session).run_test(number)
@@ -441,4 +494,14 @@ def execute_simulated_checkout(
             outcome = CheckoutOutcome.INDETERMINATE
             observations["cleanup_errors"] = cleanup_errors
             message = "mandatory cleanup failed"
-    return CheckoutResult(number, outcome, observations, message)
+    return CheckoutResult(
+        number,
+        outcome,
+        observations,
+        message,
+        _audit_span(session, checkpoint),
+    )
+
+
+def _audit_span(session: ControllerSession, checkpoint: int) -> AuditSpan | None:
+    return session.audit.span(checkpoint) if session.audit is not None else None

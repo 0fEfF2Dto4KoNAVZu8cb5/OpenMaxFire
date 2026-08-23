@@ -12,6 +12,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Mapping
 
+from .audit import AuditSpan
 from .profiles import Capability, CapabilityState, ControllerProfile
 from .transactions import TransactionOperation
 
@@ -315,6 +316,7 @@ class CheckoutResult:
     outcome: CheckoutOutcome
     observations: Mapping[str, object]
     message: str = ""
+    audit_span: AuditSpan | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -322,6 +324,7 @@ class CheckoutResult:
             "outcome": self.outcome.value,
             "observations": dict(self.observations),
             "message": self.message,
+            "audit_span": self.audit_span.to_dict() if self.audit_span else None,
         }
 
 

@@ -6,6 +6,12 @@ from dataclasses import dataclass, field
 from typing import Mapping
 
 from .configuration import ConfigurationImage
+from .firmware import (
+    LOADER_COMPLETE_REQUEST,
+    LOADER_COMPLETE_RESPONSE,
+    LOADER_IDENTIFY_REQUEST,
+    LOADER_IDENTIFY_RESPONSE,
+)
 from .profiles import ControllerProfile, PROFILES_BY_KEY
 from .protocol import ProtocolError, RegisterRequest, decode_register_request
 from .transport import SerialSettings
@@ -45,6 +51,14 @@ class SimulationFaults:
     drop_reads: set[tuple[str, int]] = field(default_factory=set)
     read_overrides: dict[tuple[str, int], int] = field(default_factory=dict)
     malformed_prefix_once: bytes = b""
+    disconnect_after_requests: int | None = None
+
+    def __post_init__(self) -> None:
+        if (
+            self.disconnect_after_requests is not None
+            and self.disconnect_after_requests < 0
+        ):
+            raise ValueError("disconnect_after_requests must be nonnegative or None")
 
 
 class SimulatedController:
@@ -86,6 +100,11 @@ class SimulatedController:
         self.requests: list[RegisterRequest] = []
 
     def handle(self, command: bytes) -> bytes:
+        if (
+            self.faults.disconnect_after_requests is not None
+            and len(self.requests) >= self.faults.disconnect_after_requests
+        ):
+            raise OSError("simulated controller disconnected")
         try:
             request = decode_register_request(command)
         except ProtocolError:
@@ -200,3 +219,115 @@ class SimulatedTransportFactory:
         )
         self.transports.append(transport)
         return transport
+
+
+@dataclass(slots=True)
+class SimulatedLoaderFaults:
+    """Deterministic fault injection for the isolated loader simulator."""
+
+    identify_failures: int = 0
+    block_failures: dict[int, int] = field(default_factory=dict)
+    completion_failures: int = 0
+    disconnect_after_blocks: int | None = None
+    corrupt_word_address: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.identify_failures < 0 or self.completion_failures < 0:
+            raise ValueError("loader failure counts must be nonnegative")
+        if any(address < 0 or failures < 0 for address, failures in self.block_failures.items()):
+            raise ValueError("loader block fault values must be nonnegative")
+        if self.disconnect_after_blocks is not None and self.disconnect_after_blocks < 0:
+            raise ValueError("disconnect_after_blocks must be nonnegative or None")
+
+
+class SimulatedLoaderTransport:
+    """Strict binary-loader endpoint for offline state-machine validation.
+
+    This simulator does not model ``CW0FC4`` or a boot window.  It starts in
+    loader mode by construction and accepts only the reconstructed binary
+    identify, program-block, and completion frames.
+    """
+
+    def __init__(self, *, faults: SimulatedLoaderFaults | None = None):
+        self.faults = faults or SimulatedLoaderFaults()
+        self.incoming = bytearray()
+        self.writes: list[bytes] = []
+        self.programmed_words: dict[int, int] = {}
+        self.blocks_accepted = 0
+        self.identified = False
+        self.completed = False
+        self.closed = False
+
+    def write(self, data: bytes) -> None:
+        if self.closed:
+            raise OSError("simulated loader transport is closed")
+        if (
+            self.faults.disconnect_after_blocks is not None
+            and self.blocks_accepted >= self.faults.disconnect_after_blocks
+        ):
+            raise OSError("simulated loader disconnected")
+        payload = bytes(data)
+        self.writes.append(payload)
+        if payload == LOADER_IDENTIFY_REQUEST:
+            if self.faults.identify_failures:
+                self.faults.identify_failures -= 1
+                self.incoming.extend(b"\x00")
+            else:
+                self.identified = True
+                self.incoming.extend(LOADER_IDENTIFY_RESPONSE)
+            return
+        if payload == LOADER_COMPLETE_REQUEST:
+            if not self.identified:
+                self.incoming.extend(b"\x00")
+            elif self.faults.completion_failures:
+                self.faults.completion_failures -= 1
+                self.incoming.extend(b"\x00")
+            else:
+                self.completed = True
+                self.incoming.extend(LOADER_COMPLETE_RESPONSE)
+            return
+        self._program_block(payload)
+
+    def _program_block(self, frame: bytes) -> None:
+        if not self.identified or len(frame) < 7 or frame[0] != 0xE3:
+            self.incoming.extend(b"\x00")
+            return
+        word_address = (frame[1] << 8) | frame[2]
+        byte_count = frame[3]
+        checksum = frame[4]
+        data = frame[5:]
+        valid = (
+            2 <= byte_count <= 32
+            and byte_count % 2 == 0
+            and len(data) == byte_count
+            and sum(data) & 0xFF == checksum
+            and word_address + byte_count // 2 <= 0x2000
+        )
+        remaining_failures = self.faults.block_failures.get(word_address, 0)
+        if not valid or remaining_failures:
+            if remaining_failures:
+                self.faults.block_failures[word_address] = remaining_failures - 1
+            self.incoming.extend(b"\x00")
+            return
+        for offset in range(0, byte_count, 2):
+            address = word_address + offset // 2
+            value = data[offset] | (data[offset + 1] << 8)
+            if address == self.faults.corrupt_word_address:
+                value ^= 1
+            self.programmed_words[address] = value
+        self.blocks_accepted += 1
+        self.incoming.extend(b"\xE7\xE4")
+
+    def read(self, size: int = 1) -> bytes:
+        if self.closed:
+            raise OSError("simulated loader transport is closed")
+        if size < 1:
+            raise ValueError("read size must be positive")
+        if not self.incoming:
+            return b""
+        chunk = bytes(self.incoming[:size])
+        del self.incoming[:size]
+        return chunk
+
+    def close(self) -> None:
+        self.closed = True

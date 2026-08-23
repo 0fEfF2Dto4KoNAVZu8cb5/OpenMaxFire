@@ -1,5 +1,6 @@
 import unittest
 
+from openmaxfire.audit import AuditTrail
 from openmaxfire.checkout import CheckoutOutcome
 from openmaxfire.configuration import plan_configuration_update
 from openmaxfire.control import ControlOutcome
@@ -101,6 +102,38 @@ class SimulatedWorkflowTests(unittest.TestCase):
         self.assertEqual(off.outcome, ControlOutcome.VERIFIED)
         self.assertEqual(off.after.operating_state.phase, "off")
         self.assertEqual(off.to_dict()["outcome"], "verified")
+
+    def test_control_disconnect_after_write_returns_indeterminate_audit_receipt(self):
+        controller = SimulatedController("fw271-format07", allow_writes=True)
+        audit = AuditTrail(session_id="control-fault")
+        with ControllerSession.simulated(controller=controller, audit=audit) as session:
+            # A control call first performs 15 reads, then one button write.  Fail
+            # the first verification-poll request after that write is accepted.
+            controller.faults.disconnect_after_requests = len(controller.requests) + 16
+            result = execute_control(
+                session, "up", authorize=True, minimum_interval=0
+            )
+        self.assertEqual(result.outcome, ControlOutcome.INDETERMINATE)
+        self.assertIsNone(result.after)
+        self.assertEqual(len(result.requests), 1)
+        self.assertGreater(result.audit_span.event_count, 0)
+
+    def test_configuration_disconnect_returns_failed_receipt(self):
+        controller = SimulatedController("fw271-format07", allow_writes=True)
+        audit = AuditTrail(session_id="configuration-fault")
+        with ControllerSession.simulated(controller=controller, audit=audit) as session:
+            current = session.read_configuration_image()
+            plan = plan_configuration_update(
+                current, {"fuel_a.fan.level_1": 0x42}, session.profile
+            )
+            # Allow the executor's stale-image guard plus one write, then fail
+            # the first verified readback.
+            controller.faults.disconnect_after_requests = len(controller.requests) + 257
+            result = execute_configuration_plan(session, plan, authorize=True)
+        self.assertEqual(result.outcome, ConfigurationExecutionOutcome.FAILED)
+        self.assertIsNone(result.observed)
+        self.assertIn("interrupted", result.message)
+        self.assertGreater(result.audit_span.event_count, 0)
 
     def test_open_door_blocks_non_off_control(self):
         controller = SimulatedController(

@@ -44,22 +44,22 @@ escape hatch rather than the implementation of high-level parity.
 
 | API area | Status | Present foundation | Remaining API work |
 | --- | --- | --- | --- |
-| Serial transport | Foundation complete | Cross-platform port listing, bounded I/O, timing, JSONL traffic recording, and read-only connection probing | Live-validate automatic detection on additional host/controller combinations |
+| Serial transport | Foundation complete | Cross-platform port listing, bounded I/O, read-only probing, legacy JSONL capture, and API-native exact-byte `AuditTrail` sessions/spans | Live-validate automatic detection on additional host/controller combinations |
 | Protocol framing | Foundation complete | Strict A/C/D requests, addressed replies, telemetry/status parsing | Extend only when new valid frame families are established |
 | Register access | Foundation complete | Generic A/C/D read/write, exact response matching, optional fresh readback | Resolve D-space semantics and classify controller writes |
 | Raw exchange | Foundation complete | Exact-byte exchange with known loader markers blocked | Keep loader traffic outside this API |
-| Transactions | Foundation complete | Validated ordered read/write/delay plans, authorization, fail-fast readback | Add typed cleanup/finally behavior and richer failure receipts |
+| Transactions | Foundation complete | Validated ordered read/write/delay plans, authorization, fail-fast readback, and transport-level audit evidence | Add cleanup only to domain workflows that require it; do not guess generic rollback semantics |
 | Identification | Offline foundation complete | Read-only port/baud probing, exact profile selection, capability negotiation, explicit no-response and unsupported results | Live-validate automatic detection on additional controllers |
 | Session facade | Foundation complete | Owned connection, identity/profile/capabilities, typed polling/iteration, configuration images, and backup documents | Add async subscriptions only when a client requires them |
 | EEPROM backup | Read path complete | Lossless A00-AFF read, identity metadata, checksum diagnostics, and shared import/validation model | Additional live fixtures from other formats/controllers |
 | Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, format-04 conservative decoding, format-05/07 conversions, replay | Resolve remaining flags, physical calibration, M/I payloads, and live-validate later formats |
-| Normal control | Simulator workflow complete; physical execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, structured outcomes | Live-validate OFF/ON/UP/DOWN and define physical recovery timing before enabling the executor |
-| Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, and complete A00-AFF verification in simulation | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
-| Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
-| Firmware images | Offline foundation complete | Strict Intel HEX validation, PIC14 address mapping, delivery-layout classification, compatibility/migration reports, E3 block construction | Add calibration-preservation policy for actual programming and validate against every preserved image in CI |
-| Firmware loader | Deliberately blocked | Constants, E3 frames, compatibility gates, and explicit unsupported state | Loader identify, enter, erase, ack/retry state machine, interruption recovery, verification, reset, and sacrificial-hardware validation |
-| Error/result model | Foundation complete | Stable base exceptions plus domain-specific detection, control, Checkout, transaction, configuration, and firmware results | Use the common taxonomy in future live service executors |
-| Simulation | Service workflow foundation complete | Public controller/transport/factory, telemetry/state transitions, firmware checksum behavior, writes-disabled default, and fault injection | Add richer timelines and loader models only as semantics are proven |
+| Normal control | Simulator workflow complete; physical execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, exact audit spans, and interruption receipts | Live-validate OFF/ON/UP/DOWN and define physical recovery timing before enabling the executor |
+| Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, complete A00-AFF verification, audit spans, and interruption receipts | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
+| Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; audit spans; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
+| Firmware images | Offline validation complete | Strict Intel HEX/PIC14 parsing, delivery-layout classification, compatibility/migration reports, E3 block construction, and an authenticated four-image corpus catalog/validator | Add calibration-preservation policy for any future physical programming |
+| Firmware loader | Offline state machine complete; physical execution absent | Plan/result models, `EA/EB` identify, `E3` frames, ordered `E7/E4` acknowledgements, 30-retry policy, `ED/E4` completion, progress receipts, audit, corruption/interruption injection, and final simulated-memory comparison | Resolve erase semantics, boot-window timing, recovery, verification limits, reset, and sacrificial-hardware validation before adding any serial executor |
+| Error/result model | Foundation complete | Stable exceptions plus typed detection, control, Checkout, transaction, configuration, firmware, audit, and loader results; interrupted simulator workflows fail indeterminate/failed | Use the common taxonomy in future physically validated executors |
+| Simulation | Broad offline workflow complete | Register and isolated loader transports, writes-disabled default, telemetry/state transitions, checksum behavior, retries, corruption, disconnects, and cleanup faults | Add only evidence-backed timing/peripheral behavior |
 
 The register-level mechanics are close to complete. Most remaining work is the
 controller-aware semantic and workflow layer that makes those mechanics safe,
@@ -117,8 +117,10 @@ version-aware, and sufficient for BixCheck parity.
 
 - Parse and validate both recovered firmware delivery layouts.
 - Identify the controller/loader and reject incompatible images before erase.
-- Implement loader entry as a dedicated state transition.
-- Model erase, block programming, acknowledgements, retry limits, and progress.
+- Keep loader entry as a dedicated future live state transition; it is not in
+  the normal register client or the current loader simulator.
+- Model proven block programming, acknowledgements, retry limits, and progress;
+  do not invent an erase exchange that has not been reconstructed.
 - Recover or provide a deterministic recovery result after interrupted transfer.
 - Verify programmed contents where the loader permits it, reset cleanly, and
   report post-flash calibration/restoration requirements.
@@ -177,6 +179,28 @@ Version 0.6 composes the v0.5 domains into presentation-neutral workflows:
 
 See [v0.6 unified sessions and safe workflows](v0.6-services.md).
 
+## Implemented v0.7 audit and loader laboratory
+
+Version 0.7 fills the largest remaining offline/API gaps:
+
+1. `AuditTrail` records exact TX/RX chunks in memory and optionally flushes each
+   event to JSONL. Stable checkpoints produce byte-counted, SHA-256 audit spans
+   that are attached to control, configuration, Checkout, and loader results.
+2. A typed loader planner and retry-bounded state machine implement only the
+   statically established `EA`/`EB`, `E3`/`E7`/`E4`, and `ED`/`E4` exchanges.
+3. The loader executor accepts only `SimulatedLoaderTransport`; it has no port
+   constructor and no `CW0FC4` entry, erase, reset, or live-write path.
+4. The loader simulator validates block length/checksum/address, reconstructs
+   programmed PIC14 words, and injects identify/block/completion failures,
+   disconnects, and silent corruption.
+5. `FIRMWARE_CORPUS` authenticates the four preserved images by path, size,
+   SHA-256, version, variant, program-word count, and configuration word.
+6. Control and configuration workflows now return structured interrupted
+   results with their exact audit evidence rather than allowing an ambiguous
+   post-write transport failure to masquerade as success.
+
+See [v0.7 audit, firmware corpus, and loader laboratory](v0.7-audit-loader-lab.md).
+
 ## Remaining implementation order
 
 1. Live-validate normal control before allowing the existing verified executor
@@ -184,8 +208,9 @@ See [v0.6 unified sessions and safe workflows](v0.6-services.md).
 2. Validate the simulator-proven configuration workflow first on recoverable
    hardware before allowing physical apply/restore.
 3. Live-validate each Checkout actuator/cleanup pair before physical execution.
-4. Resolve the loader acknowledgements/recovery path in emulation and then on a
-   sacrificial controller before enabling any erase/program operation.
+4. Resolve loader entry timing, erase semantics, readback limits, reset, and
+   interruption recovery on a sacrificial controller before creating a live
+   loader transport; the offline acknowledgement/retry model is complete.
 5. Fill remaining telemetry/configuration semantics only as new evidence lands.
 
 Physical validation remains an evidence gate for declaring an API operation

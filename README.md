@@ -26,7 +26,12 @@ simulator. Unvalidated state-changing execution remains deliberately blocked.
 Version 0.6 adds an owned controller session, typed snapshot iteration, an
 automated read-only Checkout runner, and simulator-only configuration,
 normal-control, and actuator-cleanup workflows. Real state-changing execution
-continues to fail closed.
+continues to fail closed. Version 0.7 adds API-native exact-byte audit trails
+and digestable workflow receipts, authenticates the complete four-image
+firmware corpus, and implements the reconstructed binary loader as a strict
+simulator-only state machine with retries, progress, corruption/disconnect
+faults, and final memory comparison. It still contains no physical flashing
+path, bootloader-entry write, or erase command.
 
 > **Have an unlisted version?** If you have any BixCheck software, MaxFire
 > firmware, manual, hardware documentation, or related material from a version
@@ -150,7 +155,7 @@ but have not been authorized or exercised on the physical stove. See the
 The Python API builds profile-aware service models above that
 low-level layer without adding presentation-specific behavior. See the
 [API architecture](docs/api/README.md) and
-[v0.6 service reference](docs/api/v0.6-services.md).
+[v0.7 audit/loader laboratory](docs/api/v0.7-audit-loader-lab.md).
 
 Run the read-only virtual endpoint without hardware:
 

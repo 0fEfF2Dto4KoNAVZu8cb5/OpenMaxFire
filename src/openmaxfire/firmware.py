@@ -1,8 +1,8 @@
 """Firmware-image validation and binary loader block construction.
 
-The image and framing APIs are offline only.  No loader transport or erase/
-program state machine is exposed because acknowledgement and recovery behavior
-have not been proven on sacrificial hardware.
+The image and framing APIs are offline only.  The separate loader module can
+exercise the reconstructed exchange against a strict simulator, but no live
+loader transport or erase/program entry path is exposed.
 """
 
 from __future__ import annotations

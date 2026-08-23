@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from .audit import AuditSpan
 from .models import StoveSnapshot
 from .profiles import Capability, CapabilityState, ControllerProfile
 from .protocol import REMOTE_BUTTON_REGISTER, RemoteButton
@@ -67,6 +68,7 @@ class ControlResult:
     before: StoveSnapshot | None
     after: StoveSnapshot | None
     message: str = ""
+    audit_span: AuditSpan | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -77,6 +79,7 @@ class ControlResult:
             "before": self.before.to_dict() if self.before else None,
             "after": self.after.to_dict() if self.after else None,
             "message": self.message,
+            "audit_span": self.audit_span.to_dict() if self.audit_span else None,
         }
 
 

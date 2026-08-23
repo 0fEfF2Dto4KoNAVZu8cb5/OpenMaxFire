@@ -1,5 +1,7 @@
 """OpenMaxFire - open tooling for Bixby MaxFire 110/115."""
 
+from .audit import AuditEvent, AuditSpan, AuditTrail
+
 from .checkout import (
     CHECKOUT_TESTS,
     CheckoutOutcome,
@@ -56,6 +58,24 @@ from .firmware import (
     loader_state_machine_supported,
     parse_intel_hex,
 )
+from .firmware_catalog import (
+    FIRMWARE_CORPUS,
+    FirmwareCorpusEntry,
+    FirmwareCorpusReport,
+    FirmwareCorpusValidation,
+    validate_firmware_corpus,
+)
+from .loader import (
+    LoaderBlockReceipt,
+    LoaderPlan,
+    LoaderPolicy,
+    LoaderResult,
+    LoaderState,
+    build_loader_plan,
+    execute_loader_plan,
+    live_loader_supported,
+    loader_simulation_supported,
+)
 from .models import (
     AlarmState,
     PanelButtons,
@@ -95,6 +115,8 @@ from .transactions import (
 )
 from .simulator import (
     SimulatedController,
+    SimulatedLoaderFaults,
+    SimulatedLoaderTransport,
     SimulatedTransport,
     SimulatedTransportFactory,
     SimulationFaults,
@@ -111,6 +133,9 @@ from .services import (
 )
 
 __all__ = [
+    "AuditEvent",
+    "AuditSpan",
+    "AuditTrail",
     "CommandReceipt",
     "Capability",
     "CapabilityState",
@@ -187,7 +212,23 @@ __all__ = [
     "build_program_blocks",
     "loader_state_machine_supported",
     "parse_intel_hex",
+    "FIRMWARE_CORPUS",
+    "FirmwareCorpusEntry",
+    "FirmwareCorpusReport",
+    "FirmwareCorpusValidation",
+    "validate_firmware_corpus",
+    "LoaderBlockReceipt",
+    "LoaderPlan",
+    "LoaderPolicy",
+    "LoaderResult",
+    "LoaderState",
+    "build_loader_plan",
+    "execute_loader_plan",
+    "live_loader_supported",
+    "loader_simulation_supported",
     "SimulatedController",
+    "SimulatedLoaderFaults",
+    "SimulatedLoaderTransport",
     "SimulatedTransport",
     "SimulatedTransportFactory",
     "SimulationFaults",
@@ -202,4 +243,4 @@ __all__ = [
     "execute_simulated_checkout",
 ]
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"

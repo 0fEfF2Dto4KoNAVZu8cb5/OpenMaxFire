@@ -151,7 +151,11 @@ protocol or controller logic.
 - [x] Distinguish Downloader and PICkit firmware layouts and preserve their exact word-level delta.
 - [x] Implement strict Intel HEX/PIC14 images, metadata, target/data-format
   compatibility checks, and reconstructed E3 program-block planning.
-- [ ] Add interrupted-transfer recovery and post-flash calibration guidance.
+- [x] Add an isolated simulator-only identify/program/complete state machine,
+  bounded acknowledgement retries, progress receipts, exact audit spans,
+  disconnect/corruption injection, and final simulated-memory comparison.
+- [ ] Resolve physical loader entry timing, erase semantics, readback limits,
+  interrupted-transfer recovery, reset, and post-flash calibration guidance.
 - [ ] Do not flash a production controller until recovery has been proven on spare hardware.
 
 ## Phase 7 - permanent controller
