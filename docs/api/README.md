@@ -49,16 +49,16 @@ escape hatch rather than the implementation of high-level parity.
 | Register access | Foundation complete | Generic A/C/D read/write, exact response matching, optional fresh readback | Resolve D-space semantics and classify controller writes |
 | Raw exchange | Foundation complete | Exact-byte exchange with known loader markers blocked | Keep loader traffic outside this API |
 | Transactions | Foundation complete | Validated ordered read/write/delay plans, authorization, fail-fast readback | Add typed cleanup/finally behavior and richer failure receipts |
-| Identification | Partial | Read-only controller identity sequence | Safe baud probing, profile selection, capability negotiation, unsupported-profile result |
+| Identification | Offline foundation complete | Read-only port/baud probing, exact profile selection, capability negotiation, explicit no-response and unsupported results | Live-validate automatic detection on additional controllers |
 | EEPROM backup | Read path complete | Lossless A00-AFF read, identity metadata, checksum diagnostics | Stable import/validation model shared by restore |
-| Monitor | Partial | Latest-value state, staleness, raw fields, selected decoding, replay | Complete named fields, flags, calibration, alarms, M/I payloads, and format-specific decoding |
-| Normal control | Primitive only | Reconstructed remote-button requests and generic writes | Verified OFF/ON/UP/DOWN operations, resulting-state checks, idempotence, rate limits, lockouts, and recovery |
-| Configuration | Read-only foundation | Full EEPROM backup and checksum calculation | Typed field schema, ranges, diff, compatibility checks, ordered apply, checksum write, full verification, restore, and formatting/individualization workflows |
-| Checkout | Not implemented | Static knowledge of the 45 factory tests and low-level transaction primitives | Typed test catalog, prerequisites, input evaluation, bounded actuator tests, interlocks, mandatory cleanup, and structured reports |
-| Firmware images | Research only | Recovered Downloader/PICkit layouts and static framing knowledge | Validated image objects, metadata, target compatibility, address bounds, and calibration-preservation policy |
-| Firmware loader | Not implemented | Loader traffic isolated from generic raw/register paths | Loader identify, enter, erase, program, acknowledgements, retries, verification, interruption recovery, reset, and post-flash result |
-| Error/result model | Partial | Receipts and transaction results | Stable exception/result taxonomy across discovery, monitor, control, configuration, Checkout, and loader services |
-| Simulation | Experimental | Standalone virtual serial lab and firmware emulator | Public API-compatible simulated transport/controller with deterministic scenarios and fault injection |
+| Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, format-04 conservative decoding, format-05/07 conversions, replay | Resolve remaining flags, physical calibration, M/I payloads, and live-validate later formats |
+| Normal control | Planning complete; execution blocked | Typed OFF/ON/UP/DOWN/set-level plans, idempotence, stale/profile checks, structured outcomes | Live-validate commands and add an authorized executor with rate limits, lockouts, recovery, and fresh-state verification |
+| Configuration | Offline schema/planning complete | Lossless images, format-05/07 field schemas, ranges/transforms, checksum validation, typed edits, diff, restore planning, identity preservation, full-image verification plan | Mandatory backup plus authorized executor; live-validate write order and whole-image readback; reconstruct format-04 fields and expert formatting |
+| Checkout | Catalog/planning complete | All 45 reachable tests as data, passive predicates, format-specific commands, blockers, cleanup metadata, result/report types | Observation providers and a bounded executor with unconditional cleanup; live actuator validation |
+| Firmware images | Offline foundation complete | Strict Intel HEX validation, PIC14 address mapping, delivery-layout classification, compatibility/migration reports, E3 block construction | Add calibration-preservation policy for actual programming and validate against every preserved image in CI |
+| Firmware loader | Deliberately blocked | Constants, E3 frames, compatibility gates, and explicit unsupported state | Loader identify, enter, erase, ack/retry state machine, interruption recovery, verification, reset, and sacrificial-hardware validation |
+| Error/result model | Foundation complete | Stable base exceptions plus domain-specific detection, control, Checkout, transaction, configuration, and firmware results | Use the common taxonomy in future live service executors |
+| Simulation | API foundation complete | Public controller/transport/factory with deterministic identity, EEPROM, writes-disabled default, and fault injection | Add scenario timelines and actuator/loader models only as semantics are proven |
 
 The register-level mechanics are close to complete. Most remaining work is the
 controller-aware semantic and workflow layer that makes those mechanics safe,
@@ -140,15 +140,33 @@ The API does not print, prompt, render controls, choose Home Assistant entities,
 or decide how an operator acknowledgement is displayed. Those responsibilities
 belong to their respective client projects.
 
-## Implementation order
+## Implemented v0.5 foundation
 
-1. Add safe discovery, controller profiles, and capability negotiation.
-2. Complete the typed monitor/state model.
-3. Implement and live-validate verified normal control.
-4. Build configuration diff/apply/restore with whole-image verification.
-5. Build the Checkout catalog and bounded execution engine.
-6. Build the isolated firmware-image and loader state machines.
-7. Promote the virtual lab into an API-compatible simulation/fault backend.
+Version 0.5 implements the no-hardware portions of every service domain:
+
+1. Read-only detection and exact profiles for 2.02/04, 2.06/05, 2.70/07,
+   and 2.71/07.
+2. A shared typed snapshot model with profile-driven conservative decoding.
+3. Idempotence-aware normal-control plans whose transmission remains blocked.
+4. Format-05/07 configuration schemas, edits, diffs, restore plans, firmware
+   checksum persistence through `CW0100`, and full A00-AFF verification plans.
+5. A machine-readable catalog and planner for all 45 Checkout tests.
+6. Strict Intel HEX/PIC14 images, compatibility reports, and reconstructed E3
+   loader blocks, without a live loader executor.
+7. An API-compatible simulator/fault backend and a public error taxonomy.
+
+See [v0.5 API reference and evidence boundary](v0.5-foundations.md) for the
+public objects, examples, and precise execution limits.
+
+## Remaining implementation order
+
+1. Live-validate normal control and add the verified control executor.
+2. Add mandatory-backup configuration apply/restore execution and validate it
+   first on recoverable hardware.
+3. Add Checkout observation providers and an executor that guarantees cleanup.
+4. Resolve the loader acknowledgements/recovery path in emulation and then on a
+   sacrificial controller before enabling any erase/program operation.
+5. Fill remaining telemetry/configuration semantics only as new evidence lands.
 
 Physical validation remains an evidence gate for declaring an API operation
 supported, but CLI design, GUI design, and Home Assistant entity design are not

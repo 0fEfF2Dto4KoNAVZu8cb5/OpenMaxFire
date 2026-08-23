@@ -1,5 +1,24 @@
 # Research log
 
+## 2026-08-23
+
+- Added the version-0.5 reusable Python API foundations without adding CLI,
+  GUI, or Home Assistant policy: exact controller profiles/capabilities,
+  read-only baud detection, typed profile-aware snapshots, and a common error
+  taxonomy.
+- Added lossless configuration images and exact format-05/07 schemas (71/82
+  recovered adjustments), typed edits/transforms/diffs, identity-preserving
+  restore plans, firmware checksum persistence through CW01, and whole-image
+  verification requirements. Physical execution remains blocked.
+- Represented all 45 reachable BixCheck Checkout tests as data with passive
+  predicates, format-specific actions, cleanup metadata, and report models.
+- Added strict Intel HEX/PIC14 firmware images, delivery-layout and migration
+  checks, reconstructed E3 loader blocks, and an explicit unsupported loader
+  execution boundary pending recovery validation.
+- Added idempotent normal-control planning and an API-compatible simulated
+  controller/transport with writes disabled by default and deterministic fault
+  injection. The portable suite now contains 102 passing offline tests.
+
 ## 2026-08-18
 
 - Defined the preservation-first project scope.

@@ -15,6 +15,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping, TextIO
 
+from .client import StoveIdentity
+from .models import StoveSnapshot, decode_stove_snapshot
+from .profiles import (
+    ControllerProfile,
+    TelemetryLayout,
+    profile_for_data_format,
+    select_profile,
+)
 from .protocol import (
     TELEMETRY_WORD_PAIRS,
     AddressedResponse,
@@ -58,12 +66,18 @@ class ReplayResult:
 class MonitorState:
     """Latest-value state assembled from addressed and telemetry responses."""
 
-    def __init__(self, *, stale_after: float = 10.0):
+    def __init__(
+        self,
+        *,
+        stale_after: float = 10.0,
+        profile: ControllerProfile | None = None,
+    ):
         if not isinstance(stale_after, (int, float)) or not math.isfinite(stale_after):
             raise ValueError("stale_after must be a finite number")
         if stale_after <= 0:
             raise ValueError("stale_after must be greater than zero")
         self.stale_after = float(stale_after)
+        self.profile = profile
         self.controller: dict[int, int] = {}
         self.telemetry: dict[int, int] = {}
         self.status: dict[str, bytes] = {}
@@ -108,6 +122,57 @@ class MonitorState:
             return
         raise TypeError(f"unsupported monitor frame: {type(frame).__name__}")
 
+    def _effective_profile(self) -> ControllerProfile | None:
+        if self.profile is not None:
+            return self.profile
+        required = (0x00, 0x08, 0x0B, 0x0C, 0x0D, 0x0E)
+        if all(address in self.controller for address in required):
+            identity = StoveIdentity(
+                probe=self.controller[0x00],
+                data_format=self.controller[0x08],
+                firmware_major=self.controller[0x0B],
+                firmware_minor=self.controller[0x0C],
+                reserved=self.controller[0x0D],
+                version_readback=self.controller[0x0E],
+            )
+            if (profile := select_profile(identity)) is not None:
+                return profile
+        if (data_format := self.controller.get(0x08)) is not None:
+            return profile_for_data_format(data_format)
+        return None
+
+    def _freshness(self, now_monotonic_ns: int) -> tuple[float | None, bool]:
+        if self.last_monotonic_ns is None:
+            return None, True
+        age = max(
+            0.0,
+            (now_monotonic_ns - self.last_monotonic_ns) / 1_000_000_000,
+        )
+        return age, age >= self.stale_after
+
+    def typed_snapshot(
+        self,
+        *,
+        now_monotonic_ns: int | None = None,
+    ) -> StoveSnapshot:
+        """Return the profile-driven typed API view of the latest raw state."""
+
+        now_ns = time.monotonic_ns() if now_monotonic_ns is None else now_monotonic_ns
+        if not isinstance(now_ns, int) or now_ns < 0:
+            raise ValueError("now_monotonic_ns must be a nonnegative integer")
+        age_seconds, stale = self._freshness(now_ns)
+        return decode_stove_snapshot(
+            self._effective_profile(),
+            self.controller,
+            self.telemetry,
+            self.status,
+            fresh=not stale,
+            age_seconds=(
+                round(age_seconds, 6) if age_seconds is not None else None
+            ),
+            observed_utc=self.last_observed_utc,
+        )
+
     def _decoded_inputs(self) -> dict[str, object]:
         decoded: dict[str, object] = {}
         if (value := self.controller.get(0x01)) is not None:
@@ -137,17 +202,21 @@ class MonitorState:
     def _decoded_telemetry(self) -> dict[str, object]:
         decoded: dict[str, object] = {}
         data_format = self.controller.get(0x08)
+        profile = self._effective_profile()
+        later_layout = bool(
+            profile and profile.telemetry_layout is TelemetryLayout.BIXCHECK_5
+        )
         if (value := self.telemetry.get(0x08)) is not None:
             if data_format == 0x04:
                 decoded["warning_flash_bits"] = {
                     "firebox_door": bool(value & 0x08),
                     "ash_drawer": bool(value & 0x10),
                 }
-            if data_format in (0x05, 0x07):
+            if later_layout:
                 decoded["bixcheck_55_igniter_display"] = asdict(
                     decode_igniter_state(value)
                 )
-        if (value := self.telemetry.get(0x09)) is not None and data_format in (0x05, 0x07):
+        if (value := self.telemetry.get(0x09)) is not None and later_layout:
             decoded["operating_state"] = asdict(decode_operating_state(value))
 
         # These fields were correlated on serial 5215's format-04 controller.
@@ -187,12 +256,7 @@ class MonitorState:
         now_ns = time.monotonic_ns() if now_monotonic_ns is None else now_monotonic_ns
         if not isinstance(now_ns, int) or now_ns < 0:
             raise ValueError("now_monotonic_ns must be a nonnegative integer")
-        if self.last_monotonic_ns is None:
-            age_seconds = None
-            stale = True
-        else:
-            age_seconds = max(0.0, (now_ns - self.last_monotonic_ns) / 1_000_000_000)
-            stale = age_seconds >= self.stale_after
+        age_seconds, stale = self._freshness(now_ns)
 
         words: dict[str, object] = {}
         data_format = self.controller.get(0x08)
@@ -213,6 +277,7 @@ class MonitorState:
 
         decoded = self._decoded_inputs()
         decoded.update(self._decoded_telemetry())
+        profile = self._effective_profile()
         return {
             "schema": MONITOR_SNAPSHOT_SCHEMA,
             "source": source,
@@ -222,6 +287,7 @@ class MonitorState:
             "stale": stale,
             "age_seconds": round(age_seconds, 6) if age_seconds is not None else None,
             "stale_after_seconds": self.stale_after,
+            "profile": profile.to_dict() if profile else None,
             "frame_counts": {
                 "total": self.frame_count,
                 "addressed": self.addressed_frame_count,

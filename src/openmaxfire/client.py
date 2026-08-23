@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
+from .profiles import ControllerProfile, select_profile
 from .protocol import (
     AddressedResponse,
     READ_OPCODE,
@@ -50,19 +51,11 @@ class StoveIdentity:
 
     @property
     def recognized(self) -> bool:
-        expected = {
-            (0x04, 0x02, 0x02, 0x00, 0x00),
-            (0x05, 0x02, 0x06, 0x00, 0x21),
-            (0x07, 0x02, 0x70, 0x00, 0x02),
-            (0x07, 0x02, 0x71, 0x00, 0x00),
-        }
-        return (
-            self.data_format,
-            self.firmware_major,
-            self.firmware_minor,
-            self.reserved,
-            self.version_readback,
-        ) in expected
+        return select_profile(self) is not None
+
+    @property
+    def profile(self) -> ControllerProfile | None:
+        return select_profile(self)
 
     def to_dict(self) -> dict[str, object]:
         values = {
@@ -78,6 +71,7 @@ class StoveIdentity:
             "data_format": f"{self.data_format:02X}",
             "probe_ok": self.probe == 0,
             "recognized_static_pairing": self.recognized,
+            "profile_key": self.profile.key if self.profile else None,
             "registers": values,
         }
 
@@ -197,6 +191,16 @@ class MaxFireClient:
             reserved=values[0x0D],
             version_readback=values[0x0E],
         )
+
+    def identify_profile(
+        self,
+        *,
+        request_delay: float = 0.0,
+    ) -> tuple[StoveIdentity, ControllerProfile | None]:
+        """Read identity and return its exact known profile, if any."""
+
+        identity = self.identify(request_delay=request_delay)
+        return identity, select_profile(identity)
 
     def read_eeprom(
         self,

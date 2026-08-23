@@ -18,6 +18,11 @@ replay against the preserved byte-exact traffic corpus. Version 0.4 adds the
 offline-tested low-level service foundation: generic A/C/D reads and writes,
 fresh-readback verification, exact-byte raw exchange, and validated fail-fast
 register transactions. Known loader traffic remains isolated and blocked.
+Version 0.5 adds the reusable controller-aware API foundations: exact profiles
+and read-only detection, typed state, format-05/07 configuration images and
+diff/restore planning, all 45 Checkout definitions, firmware-image validation
+and loader-block planning, idempotent control planning, and an API-compatible
+simulator. Unvalidated state-changing execution remains deliberately blocked.
 
 > **Have an unlisted version?** If you have any BixCheck software, MaxFire
 > firmware, manual, hardware documentation, or related material from a version
@@ -137,6 +142,11 @@ readback verification, raw byte exchange, and JSON transaction plans behind a
 second state-change acknowledgement. These new write paths are offline-tested
 but have not been authorized or exercised on the physical stove. See the
 [low-level service layer](docs/cli/low-level-service-layer.md).
+
+The version-0.5 Python API builds profile-aware service models above that
+low-level layer without adding presentation-specific behavior. See the
+[API architecture](docs/api/README.md) and
+[v0.5 API reference](docs/api/v0.5-foundations.md).
 
 Run the read-only virtual endpoint without hardware:
 

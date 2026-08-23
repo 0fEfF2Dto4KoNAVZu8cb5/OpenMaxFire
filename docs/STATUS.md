@@ -51,7 +51,7 @@ OpenMaxFire separates evidence into five levels:
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
-| Portable tool | Windows/Linux/macOS port discovery, timeout-bounded A/C/D read matching, identity, JSONL capture, EEPROM backup, read-only monitoring/replay, generic writes, fresh-readback verification, exact-byte exchange, and fail-fast transaction plans are implemented; write paths remain offline-only | Offline tests, preserved serial 5215 replay fixtures, virtual endpoint, and live read-only sessions |
+| Python API | Low-level A/C/D access plus v0.5 exact profiles, read-only detection, typed state, format-05/07 configuration schemas/diffs/plans, all 45 Checkout definitions, Intel HEX/PIC14 validation and E3 planning, control plans, and API-compatible simulation are implemented; unvalidated state-changing executors remain blocked | Offline tests, preserved serial 5215 replay fixtures, virtual endpoint, static analysis, and live read-only sessions |
 | EEPROM | Three independent A00-AFF reads agree; checksum EFCE matches; format 04, model `Bixby Model 115`, stored serial `2060`, date string `01102007` | Live-validated backup and two raw traffic logs |
 | Format-04 telemetry | ~3.58 s burst cycle; T03 fan trim, T04 feed trim, T06 firebox-related dynamic value, T08 flashing door/drawer warning bits, T0C bit 08 thermostat-open | Live A/B and A-B-A cold/off captures |
 
@@ -75,7 +75,8 @@ Read-only J3 access is now established for serial 5215. The next safety boundary
 is any state-changing command or operating-stove test: neither is authorized by
 the cold/off session. Firmware 2.02 program memory remains unpreserved, J3-3 is
 unresolved, and no recovery path has been proven on sacrificial hardware. The
-version-0.4 low-level layer can express A/C/D register operations and exact raw
-traffic, but known loader markers are blocked and no physical write is treated
-as validated. A matching readback verifies a byte only, not physical actuator
-behavior or overall controller safety.
+version-0.5 API can detect/profile controllers, decode typed state, and prepare
+configuration, Checkout, control, and firmware plans, but known loader markers
+and every unvalidated state-changing service remain blocked. A matching
+readback verifies a byte only, not physical actuator behavior or overall
+controller safety.

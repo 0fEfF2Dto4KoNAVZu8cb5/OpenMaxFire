@@ -107,7 +107,8 @@ protocol or controller logic.
 - [x] Isolate known loader traffic from generic raw/transaction commands.
 - [ ] Validate OFF, ON, UP, and DOWN individually.
 - [ ] Read back state after every command.
-- [ ] Add idempotent command handling, rate limits, lockouts, and failure recovery.
+- [x] Add offline idempotent OFF/ON/UP/DOWN/set-level planning with profile and
+  stale-state checks; live rate limits, lockouts, and recovery remain pending.
 - [ ] Never infer success from transmission alone.
 - [ ] Expose only the everyday safe subset to Home Assistant.
 
@@ -117,16 +118,19 @@ protocol or controller logic.
 - [x] Implement offline-tested read-only AR00-AFF readback and durable backups.
 - [x] Validate identity strings, checksum, and three identical read-only backups
   against serial 5215; restore remains unimplemented and unauthorized.
-- [ ] Map fuel A/B fan, feed, ash, startup, igniter, ash-dump, and convection-fan calibration fields.
-- [ ] Add range validation, version/data-format checks, diff preview, verify-after-write, and restore.
+- [x] Generate the recovered format-05/07 fuel A/B fan, feed, ash, startup,
+  igniter, ash-dump, convection, flag, and lean-burn field schemas.
+- [x] Add offline range validation, version/data-format checks, typed edits,
+  diff/restore plans, checksum persistence, identity preservation, and a
+  whole-image verification contract; execution remains blocked.
 - [ ] Keep full memory formatting behind a separate expert workflow.
 
 ## Phase 5 - service and factory Checkout parity
 
-- [ ] Reproduce the 45 documented tests.
+- [x] Represent all 45 reachable documented tests as a machine-readable API catalog.
 - [ ] Keep actuator tests separate from normal-operation APIs.
 - [ ] Require explicit test context and operator confirmation.
-- [ ] Generate durable Checkout reports with calibration backup.
+- [x] Add structured Checkout result/report models with configuration-backup identity.
 - [ ] Add raw/debug communication tools for research.
 
 ## Phase 6 - firmware servicing
@@ -136,7 +140,8 @@ protocol or controller logic.
 - [ ] Resolve erase/program acknowledgement semantics and validate recovery on
   sacrificial bench hardware.
 - [x] Distinguish Downloader and PICkit firmware layouts and preserve their exact word-level delta.
-- [ ] Implement firmware identity and compatibility checks.
+- [x] Implement strict Intel HEX/PIC14 images, metadata, target/data-format
+  compatibility checks, and reconstructed E3 program-block planning.
 - [ ] Add interrupted-transfer recovery and post-flash calibration guidance.
 - [ ] Do not flash a production controller until recovery has been proven on spare hardware.
 

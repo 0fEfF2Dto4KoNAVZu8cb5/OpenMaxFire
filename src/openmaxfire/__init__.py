@@ -1,7 +1,81 @@
 """OpenMaxFire - open tooling for Bixby MaxFire 110/115."""
 
+from .checkout import (
+    CHECKOUT_TESTS,
+    CheckoutOutcome,
+    CheckoutPlan,
+    CheckoutReport,
+    CheckoutResult,
+    CheckoutTestDefinition,
+    checkout_test,
+    plan_checkout_test,
+)
 from .client import CommandReceipt, MaxFireClient, StoveIdentity
+from .configuration import (
+    ConfigurationChange,
+    ConfigurationField,
+    ConfigurationImage,
+    ConfigurationPlan,
+    ConfigurationSchema,
+    ConfigurationValidation,
+    configuration_schema,
+    plan_configuration_restore,
+    plan_configuration_update,
+)
+from .control import (
+    ControlAction,
+    ControlOutcome,
+    ControlPlan,
+    ControlResult,
+    plan_control,
+)
+from .discovery import (
+    DetectionResult,
+    DetectionStatus,
+    DiscoveryReport,
+    detect_controller,
+    detect_controllers,
+)
+from .errors import (
+    CapabilityUnavailableError,
+    LoaderUnavailableError,
+    OpenMaxFireError,
+    SafetyInterlockError,
+    UnsupportedControllerError,
+    VerificationError,
+)
+from .firmware import (
+    FirmwareCompatibility,
+    FirmwareImage,
+    FirmwareImageError,
+    FirmwareVariant,
+    IntelHexImage,
+    ProgramBlock,
+    assess_firmware_compatibility,
+    build_program_blocks,
+    loader_state_machine_supported,
+    parse_intel_hex,
+)
+from .models import (
+    AlarmState,
+    PanelButtons,
+    PhysicalInputs,
+    StoveSnapshot,
+    TelemetryMeasurements,
+    decode_stove_snapshot,
+)
 from .monitor import MonitorState, replay_capture
+from .profiles import (
+    Capability,
+    CapabilityState,
+    ControllerCapabilities,
+    ControllerProfile,
+    PROFILES,
+    PROFILES_BY_KEY,
+    TelemetryLayout,
+    profile_for_data_format,
+    select_profile,
+)
 from .protocol import (
     IgniterState,
     OperatingState,
@@ -19,9 +93,35 @@ from .transactions import (
     load_transaction_plan,
     parse_transaction_plan,
 )
+from .simulator import (
+    SimulatedController,
+    SimulatedTransport,
+    SimulatedTransportFactory,
+    SimulationFaults,
+)
 
 __all__ = [
     "CommandReceipt",
+    "Capability",
+    "CapabilityState",
+    "ControllerCapabilities",
+    "ControllerProfile",
+    "PROFILES",
+    "PROFILES_BY_KEY",
+    "TelemetryLayout",
+    "profile_for_data_format",
+    "select_profile",
+    "DetectionResult",
+    "DetectionStatus",
+    "DiscoveryReport",
+    "detect_controller",
+    "detect_controllers",
+    "OpenMaxFireError",
+    "UnsupportedControllerError",
+    "CapabilityUnavailableError",
+    "SafetyInterlockError",
+    "VerificationError",
+    "LoaderUnavailableError",
     "MaxFireClient",
     "MonitorState",
     "StoveIdentity",
@@ -39,6 +139,48 @@ __all__ = [
     "load_transaction_plan",
     "parse_transaction_plan",
     "replay_capture",
+    "AlarmState",
+    "PanelButtons",
+    "PhysicalInputs",
+    "StoveSnapshot",
+    "TelemetryMeasurements",
+    "decode_stove_snapshot",
+    "ConfigurationChange",
+    "ConfigurationField",
+    "ConfigurationImage",
+    "ConfigurationPlan",
+    "ConfigurationSchema",
+    "ConfigurationValidation",
+    "configuration_schema",
+    "plan_configuration_restore",
+    "plan_configuration_update",
+    "ControlAction",
+    "ControlOutcome",
+    "ControlPlan",
+    "ControlResult",
+    "plan_control",
+    "CHECKOUT_TESTS",
+    "CheckoutOutcome",
+    "CheckoutPlan",
+    "CheckoutReport",
+    "CheckoutResult",
+    "CheckoutTestDefinition",
+    "checkout_test",
+    "plan_checkout_test",
+    "FirmwareCompatibility",
+    "FirmwareImage",
+    "FirmwareImageError",
+    "FirmwareVariant",
+    "IntelHexImage",
+    "ProgramBlock",
+    "assess_firmware_compatibility",
+    "build_program_blocks",
+    "loader_state_machine_supported",
+    "parse_intel_hex",
+    "SimulatedController",
+    "SimulatedTransport",
+    "SimulatedTransportFactory",
+    "SimulationFaults",
 ]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
