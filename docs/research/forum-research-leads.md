@@ -191,6 +191,14 @@ a mating Bixby connector, and reported that owners often had difficulty
 constructing one. The historical wording could easily be mistaken for a
 proprietary protocol.
 
+A separate [2014 J3 pinout thread](https://www.hearth.com/talk/threads/bixby-maxfire-115-j3-pin-out.126537/#post-1699996)
+contains a close-up cable photograph posted by `Bioburner`. The current
+attachment bytes, provenance, visual observations, and limits are preserved in
+the [historical J3 cable photograph record](../hardware/historical-j3-cable-photograph.md).
+Status: **forum record**. It documents that account's cable housing and visible
+conductor arrangement, but it does not establish J3 numbering or electrical
+functions.
+
 OpenMaxFire has since **live-validated** that the relevant connection is 5 V
 TTL serial using an FTDI adapter with adapter VCC disconnected. The correct J3
 pinout and evidence are documented in the
