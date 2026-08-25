@@ -14,6 +14,13 @@ files remain under `preservation/original/`; raw live evidence remains under
 | [Research log](RESEARCH_LOG.md) | Chronological record of findings and implementation milestones |
 | [Safety policy](../SAFETY.md) | Non-negotiable electrical, combustion, actuator, and firmware boundaries |
 
+## Owner and forum troubleshooting guides
+
+| Document | Purpose |
+| --- | --- |
+| [Fault-light guide](guides/fault-lights.md) | Plain-language meanings, safe first checks, and verified J9/J10 feedback notes |
+| [Common problems and first checks](guides/common-problems.md) | Symptom-based troubleshooting, cleaning and adjustment guidance, and a forum help-request checklist |
+
 ## Historical research and recovery leads
 
 | Document | Purpose |
