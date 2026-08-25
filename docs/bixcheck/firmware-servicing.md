@@ -67,8 +67,7 @@ The PIC returns `E8` when the received data checksum is wrong and `E5` when
 writing or PIC-side readback verification fails. BixCheck does not explain
 those replies separately; both enter its generic block-retry path.
 
-See [the complete protocol reconstruction]
-(../reverse-engineering/bixcheck-downloader-protocol.md).
+See the [complete protocol reconstruction](../reverse-engineering/bixcheck-downloader-protocol.md).
 
 ## What the loader changes
 
