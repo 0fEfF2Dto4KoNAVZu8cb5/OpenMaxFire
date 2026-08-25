@@ -53,7 +53,18 @@ The working adapter inventory is preserved as
 | Red | VCC | Disconnected |
 | Brown/green | Flow control | Disconnected |
 
-The preserved
+## Authoritative correct-wiring photograph
+
+![Correct live-validated FTDI wiring on J3](../../preservation/original/photos/serial-5215-bare-controller/j3-ftdi-correct-wiring-solder-side.jpg)
+
+**This is the correct, live-validated connection for serial 5215:** orange on
+J3 pin 1, yellow on J3 pin 2, no connection on J3 pin 3, and black on J3 pin 4.
+Only the orange, yellow, and black conductors terminate on J3. The loose green
+conductor visible in the cable bundle is not connected. Because this is a
+solder-side view, follow the numbered mapping rather than copying apparent
+left-to-right screen position.
+
+The older preserved
 [`j3-ftdi-incorrect-wiring-solder-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-ftdi-incorrect-wiring-solder-side.jpg)
 shows orange and yellow in the opposite positions. It records an incorrect
 pre-validation attachment, is retained only as evidence, and must not be used

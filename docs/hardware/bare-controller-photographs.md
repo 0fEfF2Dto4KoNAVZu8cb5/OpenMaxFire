@@ -3,8 +3,9 @@
 ## Evidence identity
 
 The stove owner supplied a second controller-board photograph set on
-2026-08-22 after removing the board far enough to expose both sides. OpenMaxFire
-preserves seven unique JPEG byte streams under
+2026-08-22 after removing the board far enough to expose both sides, followed
+by a photograph of the successful J3 connection. OpenMaxFire preserves eight
+unique JPEG byte streams under
 [`preservation/original/photos/serial-5215-bare-controller/`](../../preservation/original/photos/serial-5215-bare-controller/).
 
 Two received `PXL` filename pairs were byte-identical duplicates. One copy of
@@ -19,6 +20,7 @@ upload names and hashes are recorded in the preservation manifest.
 | [`j3-pic-component-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-pic-component-side.jpg) | 1536 x 1157 | PIC16F877A, `10.000` oscillator, J3, and adjacent passive network |
 | [`j3-component-side-closeup.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-component-side-closeup.jpg) | 1157 x 1536 | J3, resistor/capacitor network, PIC, and nearby logic |
 | [`pic-solder-side-routing.jpg`](../../preservation/original/photos/serial-5215-bare-controller/pic-solder-side-routing.jpg) | 1157 x 1536 | Solder-side PIC/J3-area routing |
+| [`j3-ftdi-correct-wiring-solder-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-ftdi-correct-wiring-solder-side.jpg) | 1542 x 2048 | **Authoritative correct/live-validated FTDI attachment:** orange J3-1, yellow J3-2, J3-3 unused, black J3-4 |
 | [`j3-ftdi-incorrect-wiring-solder-side.jpg`](../../preservation/original/photos/serial-5215-bare-controller/j3-ftdi-incorrect-wiring-solder-side.jpg) | 1152 x 1536 | **Incorrect/reversed FTDI attachment retained as evidence; do not copy** |
 
 The separately supplied `1000000393.jpg` completes the earlier installed-board
@@ -37,12 +39,14 @@ sequence and is retained with that set.
   a visible MAX232, USB PHY, or RS-485 transceiver.
 - Corrected owner continuity and wiring identification maps J3-1 toward PIC
   physical pin 26/RC7-RX, J3-2 toward pin 25/RC6-TX, and J3-4 to board ground.
-- The archived FTDI photograph shows black on J3-4, J3-3 unused, orange on
-  J3-2, and yellow on J3-1. **That orange/yellow placement is reversed and must
-  not be copied.** The photograph does not show the successful live connection.
-- The successful connection used black on J3-4, left J3-3 unused, placed orange
-  on J3-1, and placed yellow on J3-2. It exchanged valid 9,600-baud application
+- `j3-ftdi-correct-wiring-solder-side.jpg` is the authoritative positive
+  reference: black on J3-4, J3-3 unused, yellow on J3-2, and orange on J3-1.
+  Only those three conductors terminate on J3; the visible loose green conductor
+  is not connected. This connection exchanged valid 9,600-baud application
   traffic.
+- The older archived FTDI photograph shows black on J3-4, J3-3 unused, orange
+  on J3-2, and yellow on J3-1. **That orange/yellow placement is reversed and
+  must not be copied.**
 
 Continuity measurements are owner-performed physical evidence rather than a
 value derivable solely from pixels. The corrected live exchange independently

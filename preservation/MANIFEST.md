@@ -54,6 +54,7 @@ These files remain inside the original ZIP; hashes were recorded after non-destr
 | `original/photos/serial-5215-bare-controller/j3-pic-component-side.jpg` | `05-PXL_20260822_001605553.jpg` | `c67a97d4f8cd4527efa65d480a15a945aee3acd997c6b4ab693466916e3e3f91` | PIC16F877A, 10.000 oscillator, and J3 area |
 | `original/photos/serial-5215-bare-controller/pic-solder-side-routing.jpg` | `07-PXL_20260822_001557290.jpg` | `012592929c169baedc06441a51d182e7747e9054f38519fe456b07272f18db45` | PIC/J3-area solder-side routing |
 | `original/photos/serial-5215-bare-controller/j3-component-side-closeup.jpg` | `08-PXL_20260822_001612975.jpg` | `a60e4b265134d794219ac95d809cd61fb309b7c76bc765d9cd80ca98fe49b894` | J3 passive network and PIC close-up |
+| `original/photos/serial-5215-bare-controller/j3-ftdi-correct-wiring-solder-side.jpg` | `PXL_20260824_224411877.jpg` | `b7cc037186d02d8795d2c1884085196b59f8d93c0d0fb7d992e0526df28cf00f` | Owner-supplied authoritative photograph of the successful connection: orange J3-1, yellow J3-2, J3-3 unused, black J3-4 |
 | `original/photos/serial-5215-bare-controller/j3-ftdi-incorrect-wiring-solder-side.jpg` | `01-image-1787358640676.jpg` | `6bcaf1ac8222137a326a4e0aa899c96d4e3e29d29b8f810175a297ec7ac5f179` | Incorrect reversed orange/yellow FTDI attachment retained as evidence; do not copy |
 
 ### Supplied video pending external archive

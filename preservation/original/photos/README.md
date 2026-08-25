@@ -12,10 +12,12 @@ output board, J3 connector area, and wider stove interior. A research-facing
 index and evidence limits are in
 [`../../../docs/hardware/installed-controller-photographs.md`](../../../docs/hardware/installed-controller-photographs.md).
 
-Seven unique JPEG byte streams under
-[`serial-5215-bare-controller/`](serial-5215-bare-controller/) were supplied on
-2026-08-22. They expose the full component and solder sides, J3/PIC routing,
-complete `9067-0604` marking, `10.000` oscillator, and the working FTDI wiring.
-The received duplicate-name/hash relationships and original names are retained
-in the preservation manifest. See the
+Eight unique JPEG byte streams are preserved under
+[`serial-5215-bare-controller/`](serial-5215-bare-controller/). The original
+seven were supplied on 2026-08-22; the owner later supplied
+`PXL_20260824_224411877.jpg` as the authoritative photograph of the successful
+FTDI connection. The set exposes both board sides, J3/PIC routing, the complete
+`9067-0604` marking, the `10.000` oscillator, and clearly separated correct and
+incorrect wiring references. The received duplicate-name/hash relationships
+and original names are retained in the preservation manifest. See the
 [`bare-controller photograph index`](../../../docs/hardware/bare-controller-photographs.md).
