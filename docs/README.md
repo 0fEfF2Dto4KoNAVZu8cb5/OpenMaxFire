@@ -63,6 +63,7 @@ layers. Controller semantics and safety rules belong in the API.
 | PIC emulation | [Exhaustive emulator pass](reverse-engineering/emulator-deep-pass.md) |
 | Operating states | [Operating-state machine](reverse-engineering/operating-state-machine.md) |
 | Bare controller | [Bare-controller photographs](hardware/bare-controller-photographs.md) |
+| Historical J3 cable | [Bioburner forum photograph](hardware/historical-j3-cable-photograph.md) |
 | Permanent interface | [Candidate hardware](hardware/permanent-controller-candidate.md) and [daughterboard design](hardware/daughterboard-preliminary-design.md) |
 | Owner manual | [Model 115 manual analysis](manuals/maxfire-owner-manual-2020866-rev-a.md) |
 
