@@ -57,7 +57,7 @@ escape hatch rather than the implementation of high-level parity.
 | Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, complete A00-AFF verification, audit spans, and interruption receipts | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
 | Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; audit spans; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
 | Firmware images | Offline validation complete | Strict Intel HEX/PIC14 parsing, delivery-layout classification, compatibility/migration reports, E3 block construction, and an authenticated four-image corpus catalog/validator | Add calibration-preservation policy for any future physical programming |
-| Firmware loader | Offline state machine complete; physical execution absent | Plan/result models, `EA/EB` identify, `E3` frames, ordered `E7/E4` acknowledgements, 30-retry policy, `ED/E4` completion, progress receipts, audit, corruption/interruption injection, and final simulated-memory comparison | Resolve erase semantics, boot-window timing, recovery, verification limits, reset, and sacrificial-hardware validation before adding any serial executor |
+| Firmware loader | Offline state machine complete; physical execution absent | Plan/result models, `EA/EB` identify, `E3` frames, ordered `E7/E4` acknowledgements, 30-retry policy, `ED/E4` completion, progress receipts, audit, corruption/interruption injection, and final simulated-memory comparison | Add decoded `E5`/`E8`, four-word row, protected-address, reset-vector relocation, and exact retry behavior; validate timing and recovery on sacrificial hardware before any serial executor |
 | Error/result model | Foundation complete | Stable exceptions plus typed detection, control, Checkout, transaction, configuration, firmware, audit, and loader results; interrupted simulator workflows fail indeterminate/failed | Use the common taxonomy in future physically validated executors |
 | Simulation | Broad offline workflow complete | Register and isolated loader transports, writes-disabled default, telemetry/state transitions, checksum behavior, retries, corruption, disconnects, and cleanup faults | Add only evidence-backed timing/peripheral behavior |
 
@@ -118,14 +118,16 @@ version-aware, and sufficient for BixCheck parity.
 ### Firmware servicing
 
 - Parse and validate both recovered firmware delivery layouts.
-- Identify the controller/loader and reject incompatible images before erase.
+- Identify the controller and loader, then reject incompatible images before programming.
 - Keep loader entry as a dedicated future live state transition; it is not in
   the normal register client or the current loader simulator.
-- Model proven block programming, acknowledgements, retry limits, and progress;
-  do not invent an erase exchange that has not been reconstructed.
+- Model proven block programming, acknowledgements, retry limits, and progress.
+  There is no host-side erase exchange; the PIC erases and writes each four-word
+  Flash row inside its self-programming routine.
 - Recover or provide a deterministic recovery result after interrupted transfer.
-- Verify programmed contents where the loader permits it, reset cleanly, and
-  report post-flash calibration/restoration requirements.
+- Distinguish the PIC's per-block readback from a host-side whole-image
+  verification, reset cleanly, and report post-flash calibration/restoration
+  requirements.
 - Keep PIC ICSP program-memory preservation separate from the J3 service API;
   no J3 program-memory dump command is currently known.
 
@@ -229,9 +231,10 @@ See the [fault-state API contract](fault-model.md).
 2. Validate the simulator-proven configuration workflow first on recoverable
    hardware before allowing physical apply/restore.
 3. Live-validate each Checkout actuator/cleanup pair before physical execution.
-4. Resolve loader entry timing, erase semantics, readback limits, reset, and
-   interruption recovery on a sacrificial controller before creating a live
-   loader transport; the offline acknowledgement/retry model is complete.
+4. Add the decoded `E5`/`E8`, four-word row, `0x1E80` protection,
+   reset-vector relocation, and exact 30-attempt behavior to the simulator.
+   Then validate timing, reset, and interruption recovery on a sacrificial
+   controller before creating a live loader transport.
 5. Fill remaining telemetry/configuration semantics only as new evidence lands.
 
 Physical validation remains an evidence gate for declaring an API operation
