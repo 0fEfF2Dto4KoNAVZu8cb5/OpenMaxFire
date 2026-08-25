@@ -14,6 +14,12 @@ files remain under `preservation/original/`; raw live evidence remains under
 | [Research log](RESEARCH_LOG.md) | Chronological record of findings and implementation milestones |
 | [Safety policy](../SAFETY.md) | Non-negotiable electrical, combustion, actuator, and firmware boundaries |
 
+## Historical research and recovery leads
+
+| Document | Purpose |
+| --- | --- |
+| [Forum research leads](research/forum-research-leads.md) | Candidate firmware, possible historical recipients, repair reports, lost community documentation, confidence labels, and required verification |
+
 ## Software architecture
 
 | Area | Entry point |
