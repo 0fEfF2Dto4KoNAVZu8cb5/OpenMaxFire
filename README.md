@@ -204,7 +204,9 @@ python tools/pic14_emulator.py project --repo-root .
 
 Contribution and preservation rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Start with [the research status](docs/STATUS.md),
+Start with [the fault-light guide](docs/guides/fault-lights.md),
+[common problems and first checks](docs/guides/common-problems.md),
+[the research status](docs/STATUS.md),
 [the Python API roadmap](docs/api/README.md),
 [the firmware-2.02/data-format-04 live report](docs/reverse-engineering/live-fw202-format04.md),
 [the bare-controller photographs](docs/hardware/bare-controller-photographs.md),
