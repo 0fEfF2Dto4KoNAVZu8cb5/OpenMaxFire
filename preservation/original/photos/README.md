@@ -3,6 +3,13 @@
 This directory contains the recovered stove photographs. Their provenance and
 checksums are recorded in [`../../MANIFEST.md`](../../MANIFEST.md).
 
+A public Hearth.com attachment posted by `Bioburner` on 2014-03-24 is
+preserved without recompression under
+[`forum/hearth-126537-post-1699996/DSCN0386.webp`](forum/hearth-126537-post-1699996/DSCN0386.webp).
+It is historical evidence of a four-position J3 cable housing, not an
+authoritative electrical pinout. Provenance and interpretation limits are in
+the [historical photograph record](../../../docs/hardware/historical-j3-cable-photograph.md).
+
 The eleven JPEGs under
 [`serial-5215-installed-controller/`](serial-5215-installed-controller/) were
 supplied by the stove owner on 2026-08-21. They retain their received filenames
