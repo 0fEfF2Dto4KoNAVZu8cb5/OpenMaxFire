@@ -13,7 +13,7 @@ This report compares the three preserved generations at PIC16F877A word level. R
    Paired with the firmware divisors, this strongly implies a 10 MHz controller
    oscillator and intended rates of 9,600 for 2.06 and 19,200 for 2.70/2.71.
    The physical oscillator must still be measured.
-6. The 2.06 PICkit image is a superset-style complete programming image: it redirects reset to a serial bootloader/service region and includes 256 EEPROM defaults. The 2.06 Downloader image is the main application payload.
+6. The 2.06 PICkit image is a complete external-programmer image: it redirects reset through the resident loader at `0x1E88`, maps all 8,192 program words, and includes 256 EEPROM bytes. The 2.06 Downloader image is an application-update payload; the J3 loader protects direct targets at and above `0x1E80`, redirects application reset words `0x0000`-`0x0003` to `0x1E84`-`0x1E87`, and leaves EEPROM unchanged because the recovered Downloader images contain no EEPROM records.
 7. The experimental PIC emulator executes every CR00-CR0E receive, dispatch,
    handler, and formatter path: all 45 complete without error. Its formatter
    emits lowercase A-F nibbles in responses.
@@ -86,8 +86,9 @@ Compiled routines move between releases, so a word at the same numerical address
 
 ## Useful next work
 
-- Resolve remaining erase/program acknowledgement semantics in the PICkit-only
-  bootloader region; `EA`/`EB`, block framing, and completion are mapped.
+- Validate the decoded loader behavior on expendable hardware: `E5` write or
+  readback failure, `E8` payload-checksum failure, four-word row preservation,
+  the `0x1E80` protection boundary, retry limits, interruption, and recovery.
 - Assign the remaining CR02.1 external-multiplexer slot and verify all muxed
   inputs against the installed `9067-0604` board.
 - Resolve CR05/CR07 physical engineering units and the roles of AN1, AN2, and
