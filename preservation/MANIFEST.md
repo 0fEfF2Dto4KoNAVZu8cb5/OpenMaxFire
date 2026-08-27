@@ -4,7 +4,7 @@ Recovery dates are in UTC. Files were supplied or recovered through the OpenMaxF
 
 > **Have an unlisted version?** If you have any BixCheck software, MaxFire
 > firmware, manual, hardware documentation, or related material from a version
-> not listed in this manifest, please contact me at [openmaxfire@mailbruh.com](mailto:openmaxfire@mailbruh.com) or open a pull request so it
+> not listed in this manifest, please contact me at [contact@openmaxfire.com](mailto:contact@openmaxfire.com) or open a pull request so it
 > can be preserved and reverse-engineered.
 
 ## Original vendor packages

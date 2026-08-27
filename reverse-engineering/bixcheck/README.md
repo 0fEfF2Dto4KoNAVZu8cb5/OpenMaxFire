@@ -13,7 +13,7 @@ member against its expected SHA-256 before analysis.
 | `5.5.01/` | `BixCheck_080315.exe` | `b681f79d284bc5da6d087ce052f916853402144430d4adbceaa2ed2e911c2792` |
 
 > **Have an unlisted BixCheck version?** If you have BixCheck software from a
-> version not listed above, please contact me at [openmaxfire@mailbruh.com](mailto:openmaxfire@mailbruh.com) or open a pull request so it can
+> version not listed above, please contact me at [contact@openmaxfire.com](mailto:contact@openmaxfire.com) or open a pull request so it can
 > be preserved and reverse-engineered.
 
 ## Per-version outputs
