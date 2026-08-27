@@ -7,10 +7,16 @@ from typing import Mapping
 
 from .configuration import ConfigurationImage
 from .firmware import (
+    LOADER_CHECKSUM_ACCEPTED_RESPONSE,
+    LOADER_CHECKSUM_REJECTED_RESPONSE,
     LOADER_COMPLETE_REQUEST,
     LOADER_COMPLETE_RESPONSE,
+    LOADER_FLASH_ROW_WORDS,
     LOADER_IDENTIFY_REQUEST,
     LOADER_IDENTIFY_RESPONSE,
+    LOADER_WRITE_FAILED_RESPONSE,
+    LOADER_WRITE_VERIFIED_RESPONSE,
+    loader_effective_word_address,
 )
 from .profiles import ControllerProfile, PROFILES_BY_KEY, TelemetryLayout
 from .protocol import ProtocolError, RegisterRequest, decode_register_request
@@ -230,16 +236,37 @@ class SimulatedLoaderFaults:
     """Deterministic fault injection for the isolated loader simulator."""
 
     identify_failures: int = 0
+    checksum_failures: dict[int, int] = field(default_factory=dict)
+    write_failures: dict[int, int] = field(default_factory=dict)
+    row_write_failures: dict[int, int] = field(default_factory=dict)
+    # Backward-compatible generic unexpected-response injection.
     block_failures: dict[int, int] = field(default_factory=dict)
     completion_failures: int = 0
+    reconnect_failures: int = 0
     disconnect_after_blocks: int | None = None
+    # Deliberately models corruption after the loader's local readback so the
+    # host-side final simulator comparison remains independently testable.
     corrupt_word_address: int | None = None
 
     def __post_init__(self) -> None:
-        if self.identify_failures < 0 or self.completion_failures < 0:
+        if (
+            self.identify_failures < 0
+            or self.completion_failures < 0
+            or self.reconnect_failures < 0
+        ):
             raise ValueError("loader failure counts must be nonnegative")
-        if any(address < 0 or failures < 0 for address, failures in self.block_failures.items()):
-            raise ValueError("loader block fault values must be nonnegative")
+        fault_maps = (
+            self.checksum_failures,
+            self.write_failures,
+            self.row_write_failures,
+            self.block_failures,
+        )
+        if any(
+            address < 0 or failures < 0
+            for fault_map in fault_maps
+            for address, failures in fault_map.items()
+        ):
+            raise ValueError("loader block/row fault values must be nonnegative")
         if self.disconnect_after_blocks is not None and self.disconnect_after_blocks < 0:
             raise ValueError("disconnect_after_blocks must be nonnegative or None")
 
@@ -252,14 +279,38 @@ class SimulatedLoaderTransport:
     identify, program-block, and completion frames.
     """
 
-    def __init__(self, *, faults: SimulatedLoaderFaults | None = None):
+    def __init__(
+        self,
+        *,
+        faults: SimulatedLoaderFaults | None = None,
+        initial_program_words: Mapping[int, int] | None = None,
+    ):
         self.faults = faults or SimulatedLoaderFaults()
         self.incoming = bytearray()
         self.writes: list[bytes] = []
+        initial = dict(initial_program_words or {})
+        if any(
+            isinstance(address, bool)
+            or not isinstance(address, int)
+            or not 0 <= address < 0x2000
+            or isinstance(value, bool)
+            or not isinstance(value, int)
+            or not 0 <= value <= 0x3FFF
+            for address, value in initial.items()
+        ):
+            raise ValueError(
+                "initial program words must map 0x0000-0x1FFF to PIC14 values"
+            )
+        self.initial_flash_words: dict[int, int] = initial.copy()
+        self.flash_words: dict[int, int] = initial.copy()
         self.programmed_words: dict[int, int] = {}
+        self.row_write_attempts: dict[int, int] = {}
+        self.preserved_neighbors_verified = True
         self.blocks_accepted = 0
         self.identified = False
         self.completed = False
+        self.application_running = False
+        self.application_reconnected = False
         self.closed = False
 
     def write(self, data: bytes) -> None:
@@ -288,6 +339,8 @@ class SimulatedLoaderTransport:
                 self.incoming.extend(b"\x00")
             else:
                 self.completed = True
+                self.identified = False
+                self.application_running = True
                 self.incoming.extend(LOADER_COMPLETE_RESPONSE)
             return
         self._program_block(payload)
@@ -300,27 +353,96 @@ class SimulatedLoaderTransport:
         byte_count = frame[3]
         checksum = frame[4]
         data = frame[5:]
-        valid = (
+        structurally_valid = (
             2 <= byte_count <= 32
             and byte_count % 2 == 0
             and len(data) == byte_count
-            and sum(data) & 0xFF == checksum
             and word_address + byte_count // 2 <= 0x2000
         )
-        remaining_failures = self.faults.block_failures.get(word_address, 0)
-        if not valid or remaining_failures:
-            if remaining_failures:
-                self.faults.block_failures[word_address] = remaining_failures - 1
+        if not structurally_valid:
             self.incoming.extend(b"\x00")
             return
+
+        checksum_failures = self.faults.checksum_failures.get(word_address, 0)
+        if sum(data) & 0xFF != checksum or checksum_failures:
+            if checksum_failures:
+                self.faults.checksum_failures[word_address] = checksum_failures - 1
+            self.incoming.extend(LOADER_CHECKSUM_REJECTED_RESPONSE)
+            return
+
+        generic_failures = self.faults.block_failures.get(word_address, 0)
+        if generic_failures:
+            self.faults.block_failures[word_address] = generic_failures - 1
+            self.incoming.extend(b"\x00")
+            return
+
+        self.incoming.extend(LOADER_CHECKSUM_ACCEPTED_RESPONSE)
+        write_failures = self.faults.write_failures.get(word_address, 0)
+        if write_failures:
+            self.faults.write_failures[word_address] = write_failures - 1
+            self.incoming.extend(LOADER_WRITE_FAILED_RESPONSE)
+            return
+
+        updates_by_row: dict[int, dict[int, int]] = {}
         for offset in range(0, byte_count, 2):
-            address = word_address + offset // 2
+            source_address = word_address + offset // 2
+            target_address = loader_effective_word_address(source_address)
+            if target_address is None:
+                continue
             value = data[offset] | (data[offset + 1] << 8)
-            if address == self.faults.corrupt_word_address:
-                value ^= 1
-            self.programmed_words[address] = value
+            row_address = target_address - (target_address % LOADER_FLASH_ROW_WORDS)
+            updates_by_row.setdefault(row_address, {})[target_address] = value
+
+        for row_address, updates in sorted(updates_by_row.items()):
+            if not self._write_flash_row(row_address, updates):
+                self.incoming.extend(LOADER_WRITE_FAILED_RESPONSE)
+                return
+
+        current_targets: set[int] = set()
+        for updates in updates_by_row.values():
+            self.programmed_words.update(updates)
+            current_targets.update(updates)
+        corrupt_address = self.faults.corrupt_word_address
+        if corrupt_address is not None and corrupt_address in current_targets:
+            corrupted = self.programmed_words[corrupt_address] ^ 1
+            self.programmed_words[corrupt_address] = corrupted
+            self.flash_words[corrupt_address] = corrupted
         self.blocks_accepted += 1
-        self.incoming.extend(b"\xE7\xE4")
+        self.incoming.extend(LOADER_WRITE_VERIFIED_RESPONSE)
+
+    def _write_flash_row(self, row_address: int, updates: Mapping[int, int]) -> bool:
+        before = {
+            address: self.flash_words.get(address, 0x3FFF)
+            for address in range(row_address, row_address + LOADER_FLASH_ROW_WORDS)
+        }
+        intended = dict(before)
+        intended.update(updates)
+        for _ in range(2):
+            self.row_write_attempts[row_address] = (
+                self.row_write_attempts.get(row_address, 0) + 1
+            )
+            failures = self.faults.row_write_failures.get(row_address, 0)
+            if failures:
+                self.faults.row_write_failures[row_address] = failures - 1
+                continue
+            self.flash_words.update(intended)
+            if all(self.flash_words.get(address, 0x3FFF) == value for address, value in intended.items()):
+                for address, value in before.items():
+                    if address not in updates and self.flash_words[address] != value:
+                        self.preserved_neighbors_verified = False
+                return True
+        return False
+
+    def reconnect_application(self) -> bool:
+        """Model a close/reopen after the loader's application handoff."""
+
+        if not self.application_running:
+            return False
+        if self.faults.reconnect_failures:
+            self.faults.reconnect_failures -= 1
+            return False
+        self.application_reconnected = True
+        return True
 
     def read(self, size: int = 1) -> bytes:
         if self.closed:

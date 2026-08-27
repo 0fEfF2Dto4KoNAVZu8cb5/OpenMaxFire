@@ -20,7 +20,11 @@ from .faults import (
     FORMAT04_INDICATOR_HOLD_SECONDS,
     decode_format04_indicator_mask,
 )
-from .models import StoveSnapshot, decode_stove_snapshot
+from .models import (
+    StoveSnapshot,
+    decode_format04_state_candidate,
+    decode_stove_snapshot,
+)
 from .profiles import (
     ControllerProfile,
     TelemetryLayout,
@@ -301,6 +305,10 @@ class MonitorState:
                 format04["thermostat_telemetry_raw"] = f"{self.telemetry[0x0C]:02X}"
             if 0x09 in self.telemetry:
                 format04["t09_meaning_unresolved_raw"] = self.telemetry[0x09]
+                if self.telemetry[0x09] == 0x07:
+                    format04["t09_discriminating"] = False
+            if (candidate := decode_format04_state_candidate(self.telemetry)) is not None:
+                decoded["format04_state_candidate"] = asdict(candidate)
             if 0x09 in self.controller:
                 format04["fan_pot_raw"] = self.controller[0x09]
             if 0x0A in self.controller:
@@ -432,6 +440,8 @@ def format_monitor_summary(snapshot: Mapping[str, object]) -> str:
     format04 = format04 if isinstance(format04, Mapping) else {}
     operating = decoded.get("operating_state")
     operating = operating if isinstance(operating, Mapping) else {}
+    candidate = decoded.get("format04_state_candidate")
+    candidate = candidate if isinstance(candidate, Mapping) else {}
     warnings = decoded.get("warning_flash_bits")
     warnings = warnings if isinstance(warnings, Mapping) else {}
     fault = decoded.get("fault_indicators")
@@ -447,6 +457,8 @@ def format_monitor_summary(snapshot: Mapping[str, object]) -> str:
     ]
     if operating.get("label"):
         parts.append(f"state={operating['label']}")
+    elif candidate.get("code") and candidate.get("code") != "unclassified":
+        parts.append(f"state-candidate={candidate['code']}")
     if physical:
         parts.extend(
             (

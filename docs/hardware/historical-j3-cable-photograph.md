@@ -41,6 +41,11 @@ The original question included a proposed `Power / Ground / Data+ / Data-` assig
 
 The visible red conductor must not be assumed to be safe stove power or FTDI VCC. Historical Bixby cables may have different internal construction and color use. Wire colors are meaningful only after the cable itself has been identified or measured.
 
+**Operational decision:** even if the displayed photograph is visually read as
+placing its red conductor in “position 3,” the image supplies no pin-1 reference
+and no electrical measurement. It is not a reason to connect J3-3. OpenMaxFire
+ignores that apparent placement for wiring decisions; J3-3 stays empty.
+
 ## Relationship to the verified OpenMaxFire pinout
 
 This image is useful historical evidence for the shape of a four-position mating cable and the conductor arrangement on Bioburner's particular cable. It is **not** the authoritative OpenMaxFire wiring reference.

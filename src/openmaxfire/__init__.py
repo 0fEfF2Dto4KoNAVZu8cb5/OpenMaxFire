@@ -55,6 +55,7 @@ from .firmware import (
     ProgramBlock,
     assess_firmware_compatibility,
     build_program_blocks,
+    loader_effective_word_address,
     loader_state_machine_supported,
     parse_intel_hex,
 )
@@ -74,6 +75,8 @@ from .faults import (
     indicator_lights,
 )
 from .loader import (
+    LoaderAttemptOutcome,
+    LoaderAttemptReceipt,
     LoaderBlockReceipt,
     LoaderPlan,
     LoaderPolicy,
@@ -86,11 +89,20 @@ from .loader import (
 )
 from .models import (
     AlarmState,
+    Format04StateCandidate,
     PanelButtons,
     PhysicalInputs,
     StoveSnapshot,
     TelemetryMeasurements,
+    decode_format04_state_candidate,
     decode_stove_snapshot,
+)
+from .preservation import (
+    Pic16f877aDumpInspection,
+    Pic16f877aDumpSetReport,
+    ProtectionState,
+    compare_pic16f877a_dumps,
+    inspect_pic16f877a_dump,
 )
 from .monitor import MonitorState, replay_capture
 from .profiles import (
@@ -183,6 +195,7 @@ __all__ = [
     "parse_transaction_plan",
     "replay_capture",
     "AlarmState",
+    "Format04StateCandidate",
     "FaultIndication",
     "FaultIndicatorPattern",
     "FORMAT04_FAULT_PATTERNS",
@@ -193,6 +206,7 @@ __all__ = [
     "PhysicalInputs",
     "StoveSnapshot",
     "TelemetryMeasurements",
+    "decode_format04_state_candidate",
     "decode_stove_snapshot",
     "ConfigurationChange",
     "ConfigurationField",
@@ -224,6 +238,7 @@ __all__ = [
     "ProgramBlock",
     "assess_firmware_compatibility",
     "build_program_blocks",
+    "loader_effective_word_address",
     "loader_state_machine_supported",
     "parse_intel_hex",
     "FIRMWARE_CORPUS",
@@ -231,6 +246,8 @@ __all__ = [
     "FirmwareCorpusReport",
     "FirmwareCorpusValidation",
     "validate_firmware_corpus",
+    "LoaderAttemptOutcome",
+    "LoaderAttemptReceipt",
     "LoaderBlockReceipt",
     "LoaderPlan",
     "LoaderPolicy",
@@ -240,6 +257,11 @@ __all__ = [
     "execute_loader_plan",
     "live_loader_supported",
     "loader_simulation_supported",
+    "Pic16f877aDumpInspection",
+    "Pic16f877aDumpSetReport",
+    "ProtectionState",
+    "compare_pic16f877a_dumps",
+    "inspect_pic16f877a_dump",
     "SimulatedController",
     "SimulatedLoaderFaults",
     "SimulatedLoaderTransport",
@@ -257,4 +279,4 @@ __all__ = [
     "execute_simulated_checkout",
 ]
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"

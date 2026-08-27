@@ -36,6 +36,13 @@ The J3 square pad is pin 1. With the board upright in the documented view, pin
 The two signal paths include nearby passive conditioning/protection components;
 they are not routed through a visible MAX232, USB PHY, or RS-485 transceiver.
 
+A preserved forum photograph shows a four-conductor historical cable and can
+be visually interpreted as putting a red wire in its third housing position.
+It does not show J3 pin numbering, cable electronics, continuity, or voltage.
+That unverified color/position clue is deliberately ignored. It does not
+override the successful three-wire connection: **do not connect J3-3 or adapter
+VCC**. See the [artifact-specific evidence limits](historical-j3-cable-photograph.md).
+
 ## Validated cable connection
 
 The working adapter inventory is preserved as

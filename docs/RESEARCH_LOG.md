@@ -1,5 +1,26 @@
 # Research log
 
+## 2026-08-27
+
+- Replayed the preserved 2.02 control-session traffic by command phase. T09
+  remained `07` before ON, after physically confirmed UP/DOWN responses during
+  startup, and after OFF, proving it cannot verify format-04 state. Added
+  explicit non-control T0C/T15 cold/off and startup/control-active candidates.
+- Completed the evidence-backed loader simulator gaps: distinct E8 and E5
+  receipts, four-word partial-row preservation, two internal row-write
+  attempts, `0x1E80` direct protection, reset-word relocation to
+  `0x1E84`-`0x1E87`, 30 accepted attempts plus BixCheck's terminal unread
+  transmission, one-shot ED completion, and fail-closed application reconnect.
+- Added a read-only PIC16F877A preservation API and CLI that compare normalized
+  program memory, EEPROM, User IDs, configuration, Device ID, CP/CPD state,
+  and SHA-256 across repeated reads or original/clone readbacks.
+- Added the PICkit 3 original-chip procedure, including exact socket pins,
+  three independent reads, immutable manifests, a code-protection hard stop,
+  and the rule that only a spare chip may be programmed.
+- Reaffirmed that the red conductor position in the historical forum cable
+  photograph is electrically unverified and does not justify connecting J3-3.
+  J3-3 and adapter VCC remain disconnected.
+
 ## 2026-08-23
 
 - Preserved an audited live normal-control session on firmware 2.02. Exact

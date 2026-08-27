@@ -32,7 +32,8 @@ files remain under `preservation/original/`; raw live evidence remains under
 | Area | Entry point |
 | --- | --- |
 | Reusable Python API | [API architecture and roadmap](api/README.md) |
-| Current API milestone | [v0.7 audit and loader laboratory](api/v0.7-audit-loader-lab.md) |
+| Current API milestone | [v0.8 loader fidelity and PIC preservation](api/v0.8-offline-preservation.md) |
+| Prior API milestone | [v0.7 audit and loader laboratory](api/v0.7-audit-loader-lab.md) |
 | Fault-state API | [Fault model](api/fault-model.md) |
 | Cross-platform CLI | [Service-tool guide](cli/cross-platform-service-tool.md) |
 | Low-level CLI layer | [Low-level service layer](cli/low-level-service-layer.md) |
@@ -60,6 +61,7 @@ layers. Controller semantics and safety rules belong in the API.
 | BixCheck workflows | [Runtime workflows](reverse-engineering/bixcheck-runtime-workflows.md) |
 | Firmware generations | [Firmware comparison](reverse-engineering/firmware-comparison.md) |
 | Firmware loader | [Downloader protocol](reverse-engineering/bixcheck-downloader-protocol.md) |
+| Original-chip preservation | [PICkit 3 read-only guide](guides/pickit3-firmware-preservation.md) |
 | PIC emulation | [Exhaustive emulator pass](reverse-engineering/emulator-deep-pass.md) |
 | Operating states | [Operating-state machine](reverse-engineering/operating-state-machine.md) |
 | Bare controller | [Bare-controller photographs](hardware/bare-controller-photographs.md) |

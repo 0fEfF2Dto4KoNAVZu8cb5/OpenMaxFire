@@ -67,6 +67,10 @@ class TypedSnapshotTests(unittest.TestCase):
         typed = state.typed_snapshot(now_monotonic_ns=1)
         self.assertIsNone(typed.operating_state)
         self.assertEqual(typed.telemetry.format04_state_unresolved_raw, 0x4B)
+        self.assertEqual(typed.format04_state_candidate.code, "unclassified")
+        self.assertFalse(
+            typed.format04_state_candidate.control_verification_eligible
+        )
         self.assertTrue(typed.alarms.firebox_door_warning)
         self.assertTrue(typed.alarms.ash_drawer_warning)
         self.assertFalse(typed.alarms.feeder_wheel_warning)
@@ -74,6 +78,41 @@ class TypedSnapshotTests(unittest.TestCase):
         self.assertEqual(typed.alarms.indicator_active_mask, 0x18)
         self.assertEqual(typed.alarms.indicator_lights, (4, 5))
         self.assertIsNone(typed.alarms.fault_code)
+
+    def test_format04_composite_candidates_preserve_control_gate(self):
+        for t0c, t15, expected in (
+            (0x20, 0x0F, "cold_off_candidate"),
+            (0x28, 0x0F, "cold_off_candidate"),
+            (0x30, 0x08, "startup_or_control_active_candidate"),
+            (0x38, 0x08, "startup_or_control_active_candidate"),
+        ):
+            with self.subTest(t0c=t0c, t15=t15):
+                state = MonitorState()
+                for address, value in {
+                    0x00: 0,
+                    0x08: 4,
+                    0x0B: 2,
+                    0x0C: 2,
+                    0x0D: 0,
+                    0x0E: 0,
+                }.items():
+                    state.observe(addressed(address, value), monotonic_ns=1)
+                state.observe(
+                    TelemetryResponse(0x09, (0x07,), b"T0907"), monotonic_ns=1
+                )
+                state.observe(
+                    TelemetryResponse(0x0C, (t0c,), b"T0c"), monotonic_ns=1
+                )
+                state.observe(
+                    TelemetryResponse(0x15, (t15,), b"T15"), monotonic_ns=1
+                )
+                typed = state.typed_snapshot(now_monotonic_ns=1)
+                self.assertIsNone(typed.operating_state)
+                self.assertEqual(typed.format04_state_candidate.code, expected)
+                self.assertFalse(
+                    typed.format04_state_candidate.control_verification_eligible
+                )
+                self.assertFalse(typed.format04_state_candidate.t09_discriminating)
 
 
 if __name__ == "__main__":

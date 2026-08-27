@@ -13,6 +13,12 @@ unvalidated on a physical stove for the preserved 2.06/2.70/2.71 images.
 > Its profile-specific flashing-light and fault behavior is documented in
 > [fault and flashing-indicator protocol](faults.md).
 
+The preserved 2.02 control capture also proves that format-04 `T09=07` is not
+the later operating-state field: it remained constant before ON, during
+physically observed UP/DOWN startup activity, and after OFF. OpenMaxFire exposes
+only provisional format-04 T0C/T15 composite candidates, never the later T09
+decoder or a control-verification state.
+
 ## Wire framing
 
 The 2.06, 2.70, and 2.71 firmware sends exactly one telemetry byte per physical

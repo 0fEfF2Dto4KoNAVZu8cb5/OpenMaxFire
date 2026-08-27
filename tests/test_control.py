@@ -20,6 +20,7 @@ def snapshot(level=4, *, fresh=True, phase="operating"):
         thermostat_open=False,
         alarms=AlarmState(),
         operating_state=state,
+        format04_state_candidate=None,
         igniter_state=None,
         current_heat_level=level,
         target_heat_level=level,

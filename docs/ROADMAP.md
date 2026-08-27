@@ -47,6 +47,9 @@ protocol or controller logic.
 - [x] Record hashes, sizes, provenance, and the relationship between original and derived files.
 - [x] Preserve the prior OpenMaxFire v0.1 snapshot.
 - [x] Publish all three recovered factory firmware/service-software releases to Archive.org after reviewing redistribution and privacy.
+- [x] Add a fail-closed PIC16F877A read-export/clone comparator covering
+  program memory, EEPROM, User IDs, configuration, Device ID, CP/CPD, and
+  section-level SHA-256 manifests.
 
 ## Phase 1 - electrical and read-only bench validation
 
@@ -94,6 +97,9 @@ protocol or controller logic.
   TFD-TFF provenance, and M/I payload semantics.
 - [x] Expose profile-aware alarm state, including temporal format-04 flashing
   indicators and later-format raw BixCheck alarm status.
+- [x] Prove format-04 T09 is non-discriminating in the preserved live control
+  session and expose T0C/T15 cold/off versus startup/control-active candidates
+  without making them control-verification eligible.
 - [ ] Complete stove state, heat level, temperatures, fan values, door timers,
   ash values, and remaining alarm semantics.
 - [x] Add decoded JSONL snapshot logging and offline replay against preserved
@@ -160,8 +166,19 @@ protocol or controller logic.
 - [x] Add an isolated simulator-only identify/program/complete state machine,
   bounded acknowledgement retries, progress receipts, exact audit spans,
   disconnect/corruption injection, and final simulated-memory comparison.
-- [ ] Resolve physical loader entry timing, erase semantics, readback limits,
-  interrupted-transfer recovery, reset, and post-flash calibration guidance.
+- [x] Add classified E8/E5 responses, four-word partial-row preservation, two
+  internal row attempts, protected-range skipping, reset-vector relocation,
+  BixCheck's exact 30-accepted/31st-unread retry edge, one-shot completion, and
+  simulated application handoff/reconnect.
+- [x] Document a PICkit 3 original-chip read procedure with a hard code-
+  protection stop and offline repeated-read/clone authentication commands.
+- [ ] Read firmware 2.02 program memory, EEPROM, configuration, and User IDs at
+  least three independently power-cycled times and authenticate the set.
+- [ ] Program only a spare chip, verify it, read it back, authenticate it
+  against the original, and prove controlled board recovery.
+- [ ] Resolve physical loader entry timing, row programming/readback behavior,
+  interrupted-transfer recovery, application reconnect, and post-flash
+  calibration guidance on sacrificial hardware.
 - [ ] Do not flash a production controller until recovery has been proven on spare hardware.
 
 ## Phase 7 - permanent controller

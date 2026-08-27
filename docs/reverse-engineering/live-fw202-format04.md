@@ -180,7 +180,7 @@ The following correlations are live-supported:
 | `T05` | Closely followed `T04` in these captures | Related/filtered value; exact role unresolved |
 | `T06` | Closed `00`; firebox open observed `89`, `85`, then `84` | Dynamic firebox-related value; timer/filter/scaling unresolved |
 | `T08` | Both closed `00`; firebox LED flash sampled `08`; ash LED flash sampled `10`; off flash phases sampled `00` | Instantaneous warning/LED bit field, not a stable raw switch value |
-| `T09` | Cold/off baseline `07` | Format-04 cold/off state candidate |
+| `T09` | `07` before ON, throughout the later UP/DOWN startup capture, and after OFF | Not state-discriminating in the preserved format-04 control session |
 | `T0C` | Thermostat closed `20`; open `28`; restored `20` | Bit `0x08` indicates thermostat contacts open |
 | `DW06` | `05` in controls; `06` with ash open and also with corn selected | Not uniquely an ash-drawer field; exact meaning unresolved |
 
@@ -267,6 +267,21 @@ format-04 state snapshot could not independently verify the transition. The
 low-level bytes are physically validated; the high-level API executor remains
 blocked pending reliable format-04 state and level decoding.
 
+Replaying the exact traffic around those commands corrected an earlier
+interpretation of `T09=07`: that byte did not change between cold/off and the
+period after physically observed UP/DOWN responses. It cannot be used as an off
+readback. Two other raw composites did correlate in this one session:
+
+| Condition | T0C with thermostat bit 3 ignored | T15 | Provisional observation |
+| --- | ---: | ---: | --- |
+| Cold baseline and after OFF | `20` | `0F` | Cold/off candidate |
+| After confirmed UP/DOWN responses during startup | `30` | `08` | Startup/control-active candidate |
+
+The API exposes these as candidates with
+`control_verification_eligible=false`. They do not identify a startup phase,
+heat level, target level, or command acceptance and therefore do not weaken the
+physical-control gate.
+
 ### Flashing light 8
 
 The fault capture began while the single rightmost/light-8 indicator was
@@ -310,8 +325,8 @@ Regression tests cover 32 interleaved frames and `0f\n` resynchronization.
 - No physical ON, actuator, igniter, fan, feed, ash-drive, or remote-write test
   was performed.
 - J3-3 remains unresolved and must stay disconnected.
-- `T06` scaling, `DW06`, the remaining format-04 slots, and behavior while the
-  stove is operating remain unresolved.
+- `T06` scaling, `DW06`, the remaining format-04 slots, exact operating state,
+  and heat/target-level decoding remain unresolved.
 - Firmware 2.02 itself is not among the preserved HEX images. A non-destructive
   in-circuit programming read remains future work and may be blocked by PIC
   code-protection configuration.

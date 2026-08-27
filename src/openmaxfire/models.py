@@ -113,6 +113,70 @@ class TelemetryMeasurements:
 
 
 @dataclass(frozen=True, slots=True)
+class Format04StateCandidate:
+    """Evidence-labeled composite observation, never a control verifier."""
+
+    code: str
+    label: str
+    t09_raw: int | None
+    t0c_raw: int | None
+    t15_raw: int | None
+    t09_discriminating: bool | None
+    control_verification_eligible: bool
+    evidence: str
+
+
+def decode_format04_state_candidate(
+    telemetry: Mapping[int, int],
+) -> Format04StateCandidate | None:
+    """Classify only the two composite patterns present in live evidence.
+
+    The 2026-08-23 capture proves that T09=07 is not state-discriminating: it
+    remained constant before ON, during physically observed UP/DOWN startup
+    activity, and after OFF.  T0C/T15 composites are therefore exposed as
+    provisional observations, not :class:`OperatingState` values.
+    """
+
+    t09 = telemetry.get(0x09)
+    t0c = telemetry.get(0x0C)
+    t15 = telemetry.get(0x15)
+    if t09 is None and t0c is None and t15 is None:
+        return None
+    t09_discriminating = False if t09 == 0x07 else None
+    # T0C.3 is the independently validated thermostat-open bit. Ignore it for
+    # this composite so opening the thermostat cannot change the candidate.
+    t0c_without_thermostat = t0c & ~0x08 if t0c is not None else None
+    if t0c_without_thermostat == 0x20 and t15 == 0x0F:
+        code = "cold_off_candidate"
+        label = "Cold/off candidate"
+        evidence = (
+            "T0C base 20 and T15=0F were observed in the cold/off baseline "
+            "and again after physical OFF on serial 5215"
+        )
+    elif t0c_without_thermostat == 0x30 and t15 == 0x08:
+        code = "startup_or_control_active_candidate"
+        label = "Startup/control-active candidate"
+        evidence = (
+            "T0C base 30 and T15=08 were observed after physically confirmed "
+            "UP/DOWN responses during startup on serial 5215"
+        )
+    else:
+        code = "unclassified"
+        label = "Unclassified format-04 state"
+        evidence = "No live-correlated composite pattern matches these raw values"
+    return Format04StateCandidate(
+        code=code,
+        label=label,
+        t09_raw=t09,
+        t0c_raw=t0c,
+        t15_raw=t15,
+        t09_discriminating=t09_discriminating,
+        control_verification_eligible=False,
+        evidence=evidence,
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class StoveSnapshot:
     profile_key: str | None
     firmware_version: str | None
@@ -125,6 +189,7 @@ class StoveSnapshot:
     thermostat_open: bool | None
     alarms: AlarmState
     operating_state: OperatingState | None
+    format04_state_candidate: Format04StateCandidate | None
     igniter_state: IgniterState | None
     current_heat_level: int | None
     target_heat_level: int | None
@@ -150,6 +215,11 @@ class StoveSnapshot:
             "alarms": asdict(self.alarms),
             "operating_state": (
                 asdict(self.operating_state) if self.operating_state else None
+            ),
+            "format04_state_candidate": (
+                asdict(self.format04_state_candidate)
+                if self.format04_state_candidate
+                else None
             ),
             "igniter_state": asdict(self.igniter_state) if self.igniter_state else None,
             "current_heat_level": self.current_heat_level,
@@ -215,6 +285,7 @@ def decode_stove_snapshot(
     later_layout = bool(profile and profile.telemetry_layout is TelemetryLayout.BIXCHECK_5)
 
     operating_state = None
+    format04_state_candidate = None
     igniter_state = None
     current_level = None
     target_level = None
@@ -311,6 +382,7 @@ def decode_stove_snapshot(
             values["feed_cycle_seconds"] = _seconds(feed_on + feed_off)
         evidence = profile.evidence
     elif data_format == 0x04:
+        format04_state_candidate = decode_format04_state_candidate(telemetry)
         if 0x03 in telemetry:
             values["fan_pot_raw"] = telemetry[0x03]
         if 0x04 in telemetry:
@@ -379,6 +451,7 @@ def decode_stove_snapshot(
             feeder_wheel_warning=feeder_warning,
         ),
         operating_state=operating_state,
+        format04_state_candidate=format04_state_candidate,
         igniter_state=igniter_state,
         current_heat_level=current_level,
         target_heat_level=target_level,

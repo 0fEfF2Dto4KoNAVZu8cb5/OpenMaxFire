@@ -182,6 +182,7 @@ class FirmwareImage:
     intel_hex: IntelHexImage
     program_words: Mapping[int, int]
     user_id_words: Mapping[int, int]
+    device_id_word: int | None
     configuration_word: int | None
     eeprom_words: Mapping[int, int]
 
@@ -203,6 +204,7 @@ class FirmwareImage:
         user_ids = {
             address: words[address] for address in range(0x2000, 0x2004) if address in words
         }
+        device_id_word = words.get(0x2006)
         configuration_word = words.get(0x2007)
         eeprom = {
             address - 0x2100: value & 0xFF
@@ -223,6 +225,7 @@ class FirmwareImage:
             intel_hex=parsed,
             program_words=MappingProxyType(program),
             user_id_words=MappingProxyType(user_ids),
+            device_id_word=device_id_word,
             configuration_word=configuration_word,
             eeprom_words=MappingProxyType(eeprom),
         )
@@ -246,6 +249,11 @@ class FirmwareImage:
             "configuration_word": (
                 f"0x{self.configuration_word:04X}"
                 if self.configuration_word is not None
+                else None
+            ),
+            "device_id_word": (
+                f"0x{self.device_id_word:04X}"
+                if self.device_id_word is not None
                 else None
             ),
             "user_id_words": {
@@ -398,9 +406,38 @@ def assess_firmware_compatibility(
 
 LOADER_IDENTIFY_REQUEST = b"\xEA"
 LOADER_IDENTIFY_RESPONSE = b"\xEB"
+LOADER_CHECKSUM_ACCEPTED_RESPONSE = b"\xE7"
+LOADER_CHECKSUM_REJECTED_RESPONSE = b"\xE8"
+LOADER_WRITE_VERIFIED_RESPONSE = b"\xE4"
+LOADER_WRITE_FAILED_RESPONSE = b"\xE5"
 LOADER_BLOCK_ACKNOWLEDGEMENTS = (b"\xE7", b"\xE4")
 LOADER_COMPLETE_REQUEST = b"\xED"
 LOADER_COMPLETE_RESPONSE = b"\xE4"
+
+LOADER_FLASH_ROW_WORDS = 4
+LOADER_PROTECTED_START = 0x1E80
+LOADER_RESET_SOURCE_START = 0x0000
+LOADER_RESET_SOURCE_END = 0x0003
+LOADER_RESET_RELOCATION_START = 0x1E84
+
+
+def loader_effective_word_address(word_address: int) -> int | None:
+    """Map one J3 Downloader source address to its effective Flash target.
+
+    The resident loader relocates the application's first four words into its
+    protected reset trampoline.  Other direct targets in the protected loader
+    range are skipped and acknowledged without being written.
+    """
+
+    if isinstance(word_address, bool) or not isinstance(word_address, int):
+        raise TypeError("word_address must be an integer")
+    if not 0 <= word_address <= 0xFFFF:
+        raise ValueError("word_address must be between 0x0000 and 0xFFFF")
+    if LOADER_RESET_SOURCE_START <= word_address <= LOADER_RESET_SOURCE_END:
+        return LOADER_RESET_RELOCATION_START + word_address
+    if word_address >= LOADER_PROTECTED_START:
+        return None
+    return word_address
 
 
 def loader_state_machine_supported() -> bool:

@@ -1,6 +1,6 @@
 # Python API architecture and completion roadmap
 
-Snapshot date: 2026-08-23
+Snapshot date: 2026-08-27
 
 This document tracks the reusable Python API required to reproduce BixCheck's
 machine-facing behavior. It deliberately excludes command-line syntax, GUI
@@ -52,12 +52,12 @@ escape hatch rather than the implementation of high-level parity.
 | Identification | Offline foundation complete | Read-only port/baud probing, exact profile selection, capability negotiation, explicit no-response and unsupported results | Live-validate automatic detection on additional controllers |
 | Session facade | Foundation complete | Owned connection, identity/profile/capabilities, typed polling/iteration, configuration images, and backup documents | Add async subscriptions only when a client requires them |
 | EEPROM backup | Read path complete | Lossless A00-AFF read, identity metadata, checksum diagnostics, and shared import/validation model | Additional live fixtures from other formats/controllers |
-| Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, temporal format-04 fault indicators, raw later-format alarm status, format-05/07 conversions, and replay | Resolve remaining flags, physical calibration, M/I payloads, and live-validate later formats |
+| Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, temporal format-04 fault indicators, non-control format-04 composite state candidates, raw later-format alarm status, format-05/07 conversions, and replay | Resolve format-04 phase/level verification, remaining flags, physical calibration, M/I payloads, and live-validate later formats |
 | Normal control | Low-level commands live-validated on 2.02; verified service execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, exact audit spans, interruption receipts, and preserved physical OFF/ON/UP/DOWN traffic | Resolve format-04 state/level verification and recovery timing before enabling the high-level physical executor |
 | Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, complete A00-AFF verification, audit spans, and interruption receipts | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
 | Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; audit spans; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
-| Firmware images | Offline validation complete | Strict Intel HEX/PIC14 parsing, delivery-layout classification, compatibility/migration reports, E3 block construction, and an authenticated four-image corpus catalog/validator | Add calibration-preservation policy for any future physical programming |
-| Firmware loader | Offline state machine complete; physical execution absent | Plan/result models, `EA/EB` identify, `E3` frames, ordered `E7/E4` acknowledgements, 30-retry policy, `ED/E4` completion, progress receipts, audit, corruption/interruption injection, and final simulated-memory comparison | Add decoded `E5`/`E8`, four-word row, protected-address, reset-vector relocation, and exact retry behavior; validate timing and recovery on sacrificial hardware before any serial executor |
+| Firmware images | Offline validation and preservation toolkit complete | Strict Intel HEX/PIC14 parsing, delivery-layout classification, compatibility/migration reports, E3 block construction, authenticated factory corpus, and read-export/clone section hashes with CP/CPD fail-closed checks | Read/authenticate original 2.02 three times; add calibration-preservation policy for any future physical programming |
+| Firmware loader | Evidence-backed offline state machine complete; physical execution absent | `EA/EB`; classified `E8` and `E7`→`E5/E4`; four-word partial rows and two PIC attempts; `0x1E80` protection; reset relocation; exact 30 accepted/31st unread loop; one-shot `ED/E4`; simulated handoff/reconnect; audit and interruption faults | Validate physical timing, row behavior, completion, and recovery on sacrificial hardware before any serial executor |
 | Error/result model | Foundation complete | Stable exceptions plus typed detection, control, Checkout, transaction, configuration, firmware, audit, and loader results; interrupted simulator workflows fail indeterminate/failed | Use the common taxonomy in future physically validated executors |
 | Simulation | Broad offline workflow complete | Register and isolated loader transports, writes-disabled default, telemetry/state transitions, checksum behavior, retries, corruption, disconnects, and cleanup faults | Add only evidence-backed timing/peripheral behavior |
 
@@ -231,12 +231,19 @@ See the [fault-state API contract](fault-model.md).
 2. Validate the simulator-proven configuration workflow first on recoverable
    hardware before allowing physical apply/restore.
 3. Live-validate each Checkout actuator/cleanup pair before physical execution.
-4. Add the decoded `E5`/`E8`, four-word row, `0x1E80` protection,
-   reset-vector relocation, and exact 30-attempt behavior to the simulator.
-   Then validate timing, reset, and interruption recovery on a sacrificial
-   controller before creating a live loader transport.
+4. Read the original 2.02 chip three times, authenticate program/EEPROM/config/
+   User IDs, prove a spare clone and external recovery, then validate physical
+   loader timing and interruption recovery on sacrificial hardware before
+   creating a live loader transport.
 5. Fill remaining telemetry/configuration semantics only as new evidence lands.
 
 Physical validation remains an evidence gate for declaring an API operation
 supported, but CLI design, GUI design, and Home Assistant entity design are not
 part of this roadmap.
+
+## Implemented v0.8 offline preservation milestone
+
+Version 0.8 completes the currently evidence-backed loader simulator details,
+corrects format-04 T09 interpretation from the preserved live control traffic,
+and adds fail-closed PIC16F877A dump/clone comparison. See
+[v0.8 offline loader fidelity and firmware preservation](v0.8-offline-preservation.md).

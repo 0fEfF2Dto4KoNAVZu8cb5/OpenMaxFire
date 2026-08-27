@@ -112,8 +112,13 @@ until:
 - full external-programmer recovery is proven on expendable hardware;
 - an actual BixCheck update is captured byte for byte;
 - the newly decoded `E5`, `E8`, protection, row-write, retry, and completion
-  behavior is represented in the loader simulator;
+  behavior is represented in the loader simulator (completed in v0.8);
 - current calibration is backed up;
 - image, controller, and data-format compatibility are checked automatically;
 - interruption and recovery tests pass on a bench controller that is not
   responsible for heating.
+
+The original-chip preparation and offline dump-authentication commands are in
+the [PICkit 3 read-only preservation guide](../guides/pickit3-firmware-preservation.md).
+That workflow stops rather than erases if code protection is enabled or
+unknown.

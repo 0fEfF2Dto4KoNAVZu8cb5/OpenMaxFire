@@ -32,6 +32,12 @@ firmware corpus, and implements the reconstructed binary loader as a strict
 simulator-only state machine with retries, progress, corruption/disconnect
 faults, and final memory comparison. It still contains no physical flashing
 path, bootloader-entry write, or erase command.
+Version 0.8 completes the currently evidence-backed offline loader model:
+classified `E8`/`E5`, four-word partial rows, protected-address handling,
+reset-vector relocation, the exact BixCheck retry edge, and simulated
+handoff/reconnect. It also corrects format-04 `T09` as non-discriminating and
+adds a fail-closed PIC16F877A repeated-read/clone authentication toolkit plus a
+PICkit 3 preservation procedure. Physical flashing remains absent.
 
 Live work on 2026-08-23 physically validated the normal OFF/ON/UP/DOWN command
 bytes on firmware 2.02 and captured flashing fault light 8. The API now retains
@@ -99,6 +105,14 @@ Confirmed by static, photographic, emulator, and live evidence:
 - Format-04 `T08` is a flashing-indicator bitmap: lights 4, 5, and 8 are
   live-correlated to `0x08`, `0x10`, and `0x80`. The monitor uses temporal
   retention so a snapshot taken during the dark phase does not lose the fault.
+- Format-04 `T09=07` stayed constant before ON, during physically observed
+  UP/DOWN startup activity, and after OFF. It is not a usable state readback;
+  provisional T0C/T15 candidates remain explicitly ineligible for control
+  verification.
+- The offline PIC16F877A preservation checker authenticates repeated programmer
+  exports and original/clone readbacks by program memory, EEPROM, User IDs,
+  configuration, Device ID, code-protection state, and SHA-256. It has no
+  programmer-control capability.
 
 Not yet confirmed on physical hardware:
 
@@ -108,7 +122,8 @@ Not yet confirmed on physical hardware:
   format-04 telemetry meanings.
 - Automatic format-04 state/level verification and high-level physical-control
   execution, despite the low-level normal-control bytes now being live-proven.
-- A recoverable in-circuit method for preserving firmware-2.02 program memory.
+- A completed, authenticated read of firmware-2.02 program memory; the removed-
+  chip PICkit 3 procedure and offline comparator are ready but unused.
 - Firmware-loader erase/program acknowledgements or interrupted-transfer recovery.
 
 No new board revision or state-changing live connection should be attempted
@@ -170,7 +185,7 @@ unless their evidence says otherwise. See the
 The Python API builds profile-aware service models above that
 low-level layer without adding presentation-specific behavior. See the
 [API architecture](docs/api/README.md) and
-[v0.7 audit/loader laboratory](docs/api/v0.7-audit-loader-lab.md).
+[v0.8 offline preservation milestone](docs/api/v0.8-offline-preservation.md).
 
 Run the read-only virtual endpoint without hardware:
 
@@ -206,6 +221,7 @@ Contribution and preservation rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Start with [the fault-light guide](docs/guides/fault-lights.md),
 [common problems and first checks](docs/guides/common-problems.md),
+[the PICkit 3 read-only preservation guide](docs/guides/pickit3-firmware-preservation.md),
 [the research status](docs/STATUS.md),
 [the Python API roadmap](docs/api/README.md),
 [the firmware-2.02/data-format-04 live report](docs/reverse-engineering/live-fw202-format04.md),

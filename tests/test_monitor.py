@@ -75,6 +75,10 @@ class MonitorStateTests(unittest.TestCase):
             decoded["format04_live_correlations"]["t09_meaning_unresolved_raw"],
             0x4B,
         )
+        self.assertEqual(decoded["format04_state_candidate"]["code"], "unclassified")
+        self.assertFalse(
+            decoded["format04_state_candidate"]["control_verification_eligible"]
+        )
 
         summary = format_monitor_summary(snapshot)
         self.assertIn("drawer=open", summary)

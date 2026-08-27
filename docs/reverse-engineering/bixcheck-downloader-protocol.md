@@ -207,19 +207,21 @@ programming.
 
 ## OpenMaxFire implementation consequences
 
-The current OpenMaxFire loader remains simulator-only. Before a physical
-transport is considered, it should:
+The OpenMaxFire v0.8 loader remains simulator-only. It now distinguishes `E5`
+from `E8`, models four-word partial-row preservation and two internal write
+attempts, applies reset-vector relocation and the protected boundary, reproduces
+30 accepted block attempts plus the terminal unread transmission, treats `ED`
+as one-shot completion, and fails closed on simulated application reconnect.
+Exact attempt responses and audit bytes remain available in the result.
 
-- distinguish `E5` write/verification failures from `E8` checksum failures;
-- model four-word row preservation and PIC-side readback;
-- enforce the `0x1E80` protected boundary and reset-vector relocation;
-- use BixCheck's effective accepted-attempt limit;
-- describe `E4` as PIC-side block verification, not whole-image readback;
-- preserve EEPROM unless an explicitly authorized, compatible image includes
-  EEPROM records;
-- reject full PICkit images from J3 loader execution;
-- retain exact-byte audit logs for every request and response;
-- require a verified external-programmer recovery path.
+The simulator also keeps these boundaries explicit:
+
+- `E4` is PIC-side block verification, not whole-image physical readback;
+- recovered Downloader images do not alter EEPROM;
+- full PICkit images are rejected from J3 planning;
+- simulator memory comparison and reconnect are not physical evidence;
+- no serial loader transport, `CW0FC4`, or erase/program entry point exists;
+- a verified external-programmer recovery path remains mandatory.
 
 ## Remaining validation work
 
