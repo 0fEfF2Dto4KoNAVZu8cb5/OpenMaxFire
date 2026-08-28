@@ -808,6 +808,12 @@ class PIC16F877A:
 
 PROBE_SPECS = (
     (
+        "2.02-pickit-bootloader",
+        "2.02/extracted/Bixby_0202_260827_PICkit.hex",
+        b"\xEA",
+        "binary bootloader identify probe",
+    ),
+    (
         "2.06-downloader",
         "2.06/extracted/Bixby_02060021_Downloader.hex",
         b"CR00",

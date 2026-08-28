@@ -1,5 +1,23 @@
 # Research log
 
+## 2026-08-28
+
+- Preserved the first complete PICkit export from serial 5215's original
+  firmware-2.02 PIC without altering its bytes. SHA-256 is
+  `272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab`;
+  additional independent exports remain pending.
+- Validated all Intel HEX checksums, all 8,192 program words, all 256 EEPROM
+  bytes, four User ID words, configuration `0x3F32`, and disabled CP/CPD.
+- Proved the recovered EEPROM is byte-identical to the independent 2026-08-22
+  live J3 backup from the controller, creating a direct provenance link.
+- Generated the complete deterministic 2.02 memory map, EEPROM extraction,
+  program binary, PIC14 disassembly, pairwise comparisons, and loader-emulator
+  trace. The entire protected loader range matches 2.06 PICkit word-for-word,
+  while 7,478 of 7,808 application-range words differ at the same addresses.
+- Added 2.02 to the authenticated firmware catalog and regression suite. No
+  programmer-control or physical flashing path was added. The complete
+  portable suite now contains 191 passing tests.
+
 ## 2026-08-27
 
 - Replayed the preserved 2.02 control-session traffic by command phase. T09

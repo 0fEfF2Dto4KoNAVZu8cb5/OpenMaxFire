@@ -77,6 +77,15 @@ class ImageSpec:
 
 IMAGE_SPECS = (
     ImageSpec(
+        "2.02",
+        "pickit",
+        "Bixby_0202_260827_PICkit.hex",
+        "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex",
+        "reverse-engineering/firmware/2.02/analysis",
+        "reverse-engineering/firmware/2.02/disassembly",
+        "owner-supplied PICkit read of the original firmware-2.02 controller",
+    ),
+    ImageSpec(
         "2.06",
         "downloader",
         "Bixby_02060021_Downloader.hex",
@@ -116,6 +125,13 @@ IMAGE_SPECS = (
 
 
 KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
+    "2.02": {
+        0x0000: "Reset vector; redirects through the resident serial loader at 0x1E88.",
+        0x0004: "Application interrupt vector; saves context before source dispatch.",
+        0x1E80: "Resident-loader protected reset-trampoline region begins.",
+        0x1E84: "Relocated application reset vector written by the serial loader.",
+        0x1E88: "Resident serial-loader entry; byte-identical to the preserved 2.06 PICkit loader.",
+    },
     "2.06": {
         0x0000: "Reset vector; Downloader enters the application, PICkit image redirects through its bootloader.",
         0x0004: "Interrupt vector; saves context before source dispatch.",
@@ -915,6 +931,39 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
             })
     write_text(output / "pairwise-summary.json", json.dumps(pairwise, indent=2) + "\n")
 
+    fw202 = parsed["2.02-pickit"][1].words
+    fw206_pickit = parsed["2.06-pickit"][1].words
+    region_comparison: dict[str, object] = {
+        "schema_version": 1,
+        "left": "2.02-pickit",
+        "right": "2.06-pickit",
+        "regions": {},
+        "evidence_boundary": (
+            "Same-address comparison; application routines may relocate between builds."
+        ),
+    }
+    for name, start, end in (
+        ("complete_program", 0x0000, 0x2000),
+        ("application_delivery_range", 0x0000, 0x1E80),
+        ("protected_loader_range", 0x1E80, 0x2000),
+        ("reset_vector", 0x0000, 0x0004),
+        ("resident_loader_body", 0x1E88, 0x2000),
+    ):
+        addresses = range(start, end)
+        same = sum(fw202.get(address) == fw206_pickit.get(address) for address in addresses)
+        region_comparison["regions"][name] = {
+            "start_word": f"0x{start:04X}",
+            "end_word_exclusive": f"0x{end:04X}",
+            "word_count": end - start,
+            "same_words": same,
+            "different_words": end - start - same,
+            "byte_identical": same == end - start,
+        }
+    write_text(
+        output / "2.02-vs-2.06-pickit.json",
+        json.dumps(region_comparison, indent=2) + "\n",
+    )
+
     with (output / "anchors.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(("anchor", "2.06", "2.70", "2.71", "confidence"))
@@ -1244,7 +1293,31 @@ def run_project(root: Path) -> None:
             payload,
         )
 
-    extraction_metadata: dict[str, object] = {}
+    original_202 = (
+        root
+        / "preservation/original/firmware/2.02/Bixby_0202_260827_PICkit.hex"
+    )
+    derived_202 = (
+        root
+        / "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex"
+    )
+    original_202_payload = original_202.read_bytes()
+    if derived_202.exists() and derived_202.read_bytes() != original_202_payload:
+        raise FirmwareError(
+            f"existing 2.02 analysis copy does not match original read: {derived_202}"
+        )
+    write_bytes(derived_202, original_202_payload)
+
+    extraction_metadata: dict[str, object] = {
+        "2.02": {
+            "source": "owner-supplied PICkit read of the original controller",
+            "original_path": str(original_202.relative_to(root)),
+            "analysis_copy": str(derived_202.relative_to(root)),
+            "sha256": sha256(original_202_payload),
+            "relationship": "byte-identical copy",
+            "independent_repeat_reads": "pending",
+        }
+    }
     for version, archive_name, embedded_name in (
         ("2.70", "BixCheck_080206.zip", "Bixby_0270_070206.hex"),
         ("2.71", "BixCheck_080315.zip", "Bixby_0271_080315.hex"),

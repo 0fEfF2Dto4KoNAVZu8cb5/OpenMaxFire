@@ -1,7 +1,8 @@
 # Preservation archive
 
-`original/` contains recovered Bixby vendor files, user-supplied photographs,
-and an online-found motherboard diagram without modifying their bytes. Renaming
+`original/` contains recovered Bixby vendor files, an owner-supplied original-
+controller firmware read, user-supplied photographs, and an online-found
+motherboard diagram without modifying their bytes. Renaming
 an artifact for clarity does not change its contents; the provenance manifest
 records earlier upload names, duplicate hashes, and evidence limits.
 
@@ -18,7 +19,7 @@ its own checksums and interpretation boundary.
 - `SHA256SUMS.txt` covers every file in `preservation/` and `reverse-engineering/`.
 - `MANIFEST.md` records provenance, relationships, versions, and important notes.
 - Original files should never be edited in place. Add a derived copy under `reverse-engineering/` instead.
-- Archive.org identifiers and URLs for the preserved factory releases are recorded in `MANIFEST.md`.
+- Archive.org identifiers and URLs for the preserved factory releases are recorded in `MANIFEST.md`; the newly recovered owner-controller read is preserved on GitHub while an external mirror remains pending.
 
 All retained originals catalogued with repository paths in `MANIFEST.md` are
 present in normal binary form. No split, encoded, or reconstructed copies are

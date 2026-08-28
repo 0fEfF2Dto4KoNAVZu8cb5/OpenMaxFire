@@ -18,6 +18,12 @@ Recovery dates are in UTC. Files were supplied or recovered through the OpenMaxF
 | `original/manuals/1394047.pdf` | 1729968 | `0e8918ed62ae34d0984957ba466f3cee0adb07c69539a5348f305ba0f2c40739` | BixCheck How-To Guide, 2023480 Rev. A; byte-identical to `2023480-A.pdf` in the 2.06 package |
 | `original/manuals/7346103.pdf` | 1595527 | `ed04d708590fa8bec0d0276463abd736409ddbdd8d8eee6c7a66fb0cd7fba33d` | User-supplied MaxFire Model 115 installation, operating, and maintenance instructions; document 2020866 Rev. A; 40-page PDF |
 
+## Original controller firmware read
+
+| Path | Bytes | SHA-256 | Provenance and status |
+| --- | ---: | --- | --- |
+| `original/firmware/2.02/Bixby_0202_260827_PICkit.hex` | 46536 | `272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab` | Owner-supplied 2026-08-28 from the original PIC16F877A removed from serial 5215's controller; complete program/EEPROM/User IDs/config export; internally valid and tied to the controller by an exact EEPROM match; first read preserved, additional independent exports pending |
+
 ## 2.06 package members
 
 These files remain inside the original ZIP; hashes were recorded after non-destructive extraction for verification.
@@ -82,6 +88,7 @@ state-changing request.
 
 | Path | SHA-256 | Relationship |
 | --- | --- | --- |
+| `../reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex` | `272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab` | Byte-identical analysis copy of the owner-supplied original-controller read |
 | `../reverse-engineering/firmware/2.71/extracted/Bixby_0271_080315.hex` | `dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b` | Extracted from the BixCheck 5.5.01 embedded resource |
 | `../reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex` | `c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca` | Deterministically extracted from the BixCheck 5.5.00 executable |
 | `../reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex` | `90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b` | Exact copy of the 2.06 vendor-package member |
@@ -93,6 +100,9 @@ state-changing request.
 ## External archive
 
 Archive.org status: **complete for all three recovered factory firmware/service-software releases** (2026-08-21).
+
+The owner-controller 2.02 read is preserved in this Git repository; its
+external-archive item remains pending.
 
 | Release | Archive.org item |
 | --- | --- |

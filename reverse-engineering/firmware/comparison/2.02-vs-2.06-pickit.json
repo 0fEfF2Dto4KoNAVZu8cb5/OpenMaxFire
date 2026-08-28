@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "left": "2.02-pickit",
+  "right": "2.06-pickit",
+  "regions": {
+    "complete_program": {
+      "start_word": "0x0000",
+      "end_word_exclusive": "0x2000",
+      "word_count": 8192,
+      "same_words": 714,
+      "different_words": 7478,
+      "byte_identical": false
+    },
+    "application_delivery_range": {
+      "start_word": "0x0000",
+      "end_word_exclusive": "0x1E80",
+      "word_count": 7808,
+      "same_words": 330,
+      "different_words": 7478,
+      "byte_identical": false
+    },
+    "protected_loader_range": {
+      "start_word": "0x1E80",
+      "end_word_exclusive": "0x2000",
+      "word_count": 384,
+      "same_words": 384,
+      "different_words": 0,
+      "byte_identical": true
+    },
+    "reset_vector": {
+      "start_word": "0x0000",
+      "end_word_exclusive": "0x0004",
+      "word_count": 4,
+      "same_words": 4,
+      "different_words": 0,
+      "byte_identical": true
+    },
+    "resident_loader_body": {
+      "start_word": "0x1E88",
+      "end_word_exclusive": "0x2000",
+      "word_count": 376,
+      "same_words": 376,
+      "different_words": 0,
+      "byte_identical": true
+    }
+  },
+  "evidence_boundary": "Same-address comparison; application routines may relocate between builds."
+}

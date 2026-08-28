@@ -18,10 +18,11 @@ This project interacts with a mains-powered solid-fuel appliance containing hot 
 - Back up all readable configuration and calibration data before any write or firmware operation.
 - Treat remote ON as safety-sensitive. It must require verified stove state, fresh telemetry, command acknowledgement, and appropriate physical conditions.
 - Firmware flashing can temporarily leave the stove non-functional if interrupted. Preserve a known-good image and recovery method first.
-- The original firmware-2.02 PIC is preservation media. Read it repeatedly
-  before any clone work, never Program or Erase it, and stop if CP/CPD code
-  protection is enabled or unknown. Clearing PIC16F877A protection requires a
-  destructive chip erase. Follow the [PICkit 3 read-only procedure](docs/guides/pickit3-firmware-preservation.md).
+- The original firmware-2.02 PIC is preservation media. One complete read is
+  preserved; collect the remaining independent reads before clone work. Never
+  Program or Erase the original, and stop if any later read reports CP/CPD as
+  enabled or unknown. Clearing PIC16F877A protection requires a destructive
+  chip erase. Follow the [PICkit 3 read-only procedure](docs/guides/pickit3-firmware-preservation.md).
 
 ## Fail-out-of-the-way requirement
 

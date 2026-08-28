@@ -45,6 +45,11 @@ class FirmwareApiTests(unittest.TestCase):
         self.assertEqual(image.firmware_version, "2.70")
         self.assertEqual(image.variant, FirmwareVariant.EMBEDDED)
 
+    def test_recovered_202_pickit_filename_is_identified(self):
+        image = fixture("Bixby_0202_260827_PICkit.hex")
+        self.assertEqual(image.firmware_version, "2.02")
+        self.assertEqual(image.variant, FirmwareVariant.PICKIT)
+
     def test_loader_blocks_use_reconstructed_framing(self):
         block = build_program_blocks(fixture())[0]
         self.assertEqual(block.word_address, 0)

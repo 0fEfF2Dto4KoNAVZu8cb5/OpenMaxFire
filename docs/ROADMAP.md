@@ -50,6 +50,11 @@ protocol or controller logic.
 - [x] Add a fail-closed PIC16F877A read-export/clone comparator covering
   program memory, EEPROM, User IDs, configuration, Device ID, CP/CPD, and
   section-level SHA-256 manifests.
+- [x] Preserve the first complete original-controller firmware 2.02 PICkit
+  export, validate its structure/protection state, tie it to serial 5215 by an
+  exact live-EEPROM match, and generate deterministic analysis artifacts.
+- [ ] Add the remaining independent 2.02 PICkit exports and authenticate the
+  complete repeat-read set.
 
 ## Phase 1 - electrical and read-only bench validation
 
@@ -172,8 +177,10 @@ protocol or controller logic.
   simulated application handoff/reconnect.
 - [x] Document a PICkit 3 original-chip read procedure with a hard code-
   protection stop and offline repeated-read/clone authentication commands.
-- [ ] Read firmware 2.02 program memory, EEPROM, configuration, and User IDs at
-  least three independently power-cycled times and authenticate the set.
+- [x] Read and preserve one complete firmware 2.02 program-memory, EEPROM,
+  configuration, and User-ID export.
+- [ ] Preserve at least two more independently saved 2.02 exports and
+  authenticate the repeat-read set.
 - [ ] Program only a spare chip, verify it, read it back, authenticate it
   against the original, and prove controlled board recovery.
 - [ ] Resolve physical loader entry timing, row programming/readback behavior,

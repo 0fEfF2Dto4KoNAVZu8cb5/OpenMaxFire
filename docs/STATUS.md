@@ -1,6 +1,6 @@
 # Research status
 
-Snapshot date: 2026-08-27
+Snapshot date: 2026-08-28
 
 OpenMaxFire separates evidence into five levels:
 
@@ -28,7 +28,9 @@ OpenMaxFire separates evidence into five levels:
 | Installed firmware | Serial 5215's controller reports firmware 2.02/data format 04 at 9,600 baud; this older pairing was absent from the preserved packages | Live-validated JSONL traffic |
 | BixCheck internals | EXEs retain 640/655 COFF function symbols, source-unit names, and fixed tables | Reproducible PE/COFF analysis |
 | PC serial | 5.0.21 uses 9,600; 5.5.x selects 9,600 or 19,200; all use 8N1; live 2.02 responds at 9,600 and not 19,200 | `async.cpp` methods plus live capture |
-| Firmware | Four images target PIC16F877A and validate as Intel HEX | Deterministic firmware pipeline |
+| Firmware | Five images across 2.02/2.06/2.70/2.71 target PIC16F877A and validate as Intel HEX | Deterministic firmware pipeline |
+| Recovered 2.02 image | First complete original-chip export: all 8,192 program words, all 256 EEPROM bytes, User IDs, and config `0x3F32`; CP/CPD disabled; additional independent exports pending | Exact owner-supplied HEX plus preservation inspector |
+| 2.02 provenance | Dump EEPROM is byte-identical to the independent 2026-08-22 J3 backup; protected loader `0x1E80`-`0x1FFF` is byte-identical to 2.06 PICkit | Deterministic section comparison |
 | Firmware identity | CR0B/CR0C constants encode 2.06, 2.70, and 2.71 | Cross-version disassembly |
 | Requests | Reads are exactly 4 bytes, uppercase, with no terminator; live `CR00` was `43 52 30 30` | `regio()` plus live traffic |
 | Responses | Addressed replies are six characters plus LF; firmware emits lowercase hex; live format-04 telemetry uses one-byte `Txxvv` and auxiliary `DWxxyy` lines | BixCheck/firmware paths plus live traffic |
@@ -54,7 +56,7 @@ OpenMaxFire separates evidence into five levels:
 | Python API | Version 0.8 adds explicit format-04 non-control state candidates, full evidence-backed loader simulation, and PIC16F877A read-export/clone authentication; high-level physical state-changing and loader services remain blocked | Portable offline tests, preserved serial 5215 replay fixtures, virtual endpoints, static analysis, and live read/control sessions |
 | EEPROM | Three independent A00-AFF reads agree; checksum EFCE matches; format 04, model `Bixby Model 115`, stored serial `2060`, date string `01102007` | Live-validated backup and two raw traffic logs |
 | Format-04 telemetry | ~3.58 s burst cycle; T03 fan trim, T04 feed trim, T06 firebox-related dynamic value, T08 flashing-light bitmap with lights 4/5/8 live-correlated to `08`/`10`/`80`, T0C bit 08 thermostat-open, and provisional T0C/T15 cold-vs-startup composites | Live A/B and A-B-A input captures, control replay, and feeder-wheel fault capture |
-| Firmware preservation | Offline tooling compares repeated PIC16F877A HEX reads and original/clone readbacks by normalized program, EEPROM, User IDs, configuration, Device ID, CP/CPD status, and SHA-256; it cannot operate a programmer | Offline API/tool tests and Microchip programming specification; original 2.02 has not yet been read |
+| Firmware preservation | One complete 2.02 original-chip read is preserved; offline tooling compares repeated reads and original/clone readbacks by normalized program, EEPROM, User IDs, configuration, Device ID, CP/CPD status, and SHA-256; it cannot operate a programmer | Owner-supplied read, live EEPROM cross-check, offline API/tool tests, and Microchip programming specification |
 | Fault reporting | Format-04 T08 is an instantaneous flashing-indicator bitmap; the API retains bits across an eight-second observed stream window. Later BixCheck instead exposes T07 display LED, T09 state, and raw T13 Alarm mode | Live 2.02 light-4/light-5/light-8 captures plus static BixCheck reconstruction |
 
 ## Important unresolved items
@@ -77,8 +79,10 @@ Read-only J3 access and the four normal-control button bytes are now established
 for serial 5215. The direct low-level button path remains explicitly authorized
 and human-observed; the high-level API executor still fails closed because
 format-04 state/target-level verification and recovery timing are unresolved.
-Firmware 2.02 program memory remains unpreserved, but a read-only PICkit 3
-procedure and dump/clone authentication tool are ready. J3-3 is unresolved and
+Firmware 2.02 program memory, EEPROM, User IDs, and configuration are preserved
+from one complete read. Additional independent exports are still needed for
+repeat-read authentication, and no spare clone or board recovery has been
+proven. J3-3 is unresolved and
 must stay disconnected regardless of the historical forum cable's red-wire
 position. No firmware recovery path has been proven on sacrificial hardware. Configuration,
 Checkout actuators, and loader execution remain simulator-only. A matching

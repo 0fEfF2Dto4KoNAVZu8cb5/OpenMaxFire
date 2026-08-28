@@ -178,6 +178,24 @@ class FirmwareEmulationTests(unittest.TestCase):
         self.assertEqual(summary["tx_hex"], "EB")
         self.assertEqual(summary["steps_executed"], 43)
 
+    def test_recovered_202_pickit_loader_executes_identify_path(self):
+        summary, _trace, _events = probe_image(
+            REPO_ROOT
+            / "reverse-engineering"
+            / "firmware"
+            / "2.02"
+            / "extracted"
+            / "Bixby_0202_260827_PICkit.hex",
+            "test-2.02-loader",
+            b"\xEA",
+            "unit-test probe",
+            boot_steps=0,
+            probe_steps=1_000,
+        )
+        self.assertIsNone(summary["error"])
+        self.assertEqual(summary["tx_hex"], "EB")
+        self.assertEqual(summary["steps_executed"], 43)
+
     def test_gpio_input_levels_are_separate_from_output_latch(self):
         cpu = self.firmware_cpu()
         cpu.ram[SFR_TRISD] = 0x01

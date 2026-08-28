@@ -1,8 +1,19 @@
-# Firmware 2.06 / 2.70 / 2.71 comparison
+# Firmware 2.02 / 2.06 / 2.70 / 2.71 comparison
 
-This report compares the three preserved generations at PIC16F877A word level. Raw tables live in `reverse-engineering/firmware/comparison/`.
+This report compares the four preserved generations at PIC16F877A word level.
+The mature semantic tables cover 2.06/2.70/2.71; the newly recovered 2.02
+application is currently at structural-comparison stage. Raw tables live in
+`reverse-engineering/firmware/comparison/`.
 
 ## Major findings
+
+The recovered 2.02 PICkit image is complete. Its 256-byte EEPROM exactly
+matches the independently preserved live backup from serial 5215. Its reset
+vector and all 384 protected-loader words are identical to 2.06 PICkit; the
+loader returns `EB` for `EA` in the experimental emulator. The 2.02 application
+is not a renamed 2.06 build: 7,478 of 7,808 words in the application delivery
+range differ at the same addresses. A handler-level 2.02 semantic map is the
+next static-analysis phase.
 
 1. The `CRXX` / `CWXXYY` ASCII command skeleton exists in all three generations. The nibble decoder, byte parser, CR dispatcher, and ASCII response formatter can be followed across relocated code.
 2. Firmware identity is exposed through reads: CR0B returns the major byte `0x02`; CR0C returns `0x06`, `0x70`, or `0x71` by generation.
@@ -86,6 +97,8 @@ Compiled routines move between releases, so a word at the same numerical address
 
 ## Useful next work
 
+- Map the recovered 2.02 CR/CW/telemetry handlers and use the real code to
+  resolve format-04 state, level, fault, and configuration semantics.
 - Validate the decoded loader behavior on expendable hardware: `E5` write or
   readback failure, `E8` payload-checksum failure, four-word row preservation,
   the `0x1E80` protection boundary, retry limits, interruption, and recovery.

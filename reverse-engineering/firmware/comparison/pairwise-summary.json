@@ -1,5 +1,45 @@
 [
   {
+    "left": "2.02-pickit",
+    "right": "2.06-downloader",
+    "common_program_addresses": 7599,
+    "same_words_at_same_address": 228,
+    "different_words_at_same_address": 7371,
+    "left_only_program_words": 593,
+    "right_only_program_words": 0,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.02-pickit",
+    "right": "2.06-pickit",
+    "common_program_addresses": 8192,
+    "same_words_at_same_address": 714,
+    "different_words_at_same_address": 7478,
+    "left_only_program_words": 0,
+    "right_only_program_words": 0,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.02-pickit",
+    "right": "2.70-embedded",
+    "common_program_addresses": 7681,
+    "same_words_at_same_address": 232,
+    "different_words_at_same_address": 7449,
+    "left_only_program_words": 511,
+    "right_only_program_words": 0,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
+    "left": "2.02-pickit",
+    "right": "2.71-embedded",
+    "common_program_addresses": 7755,
+    "same_words_at_same_address": 202,
+    "different_words_at_same_address": 7553,
+    "left_only_program_words": 437,
+    "right_only_program_words": 0,
+    "note": "Same-address counts are descriptive only; compiled routines can relocate between builds."
+  },
+  {
     "left": "2.06-downloader",
     "right": "2.06-pickit",
     "common_program_addresses": 7599,

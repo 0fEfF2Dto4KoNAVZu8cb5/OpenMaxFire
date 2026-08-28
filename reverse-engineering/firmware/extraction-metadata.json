@@ -1,4 +1,12 @@
 {
+  "2.02": {
+    "source": "owner-supplied PICkit read of the original controller",
+    "original_path": "preservation/original/firmware/2.02/Bixby_0202_260827_PICkit.hex",
+    "analysis_copy": "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex",
+    "sha256": "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab",
+    "relationship": "byte-identical copy",
+    "independent_repeat_reads": "pending"
+  },
   "2.70": {
     "package": "BixCheck_080206.zip",
     "executable_member": "BixCheck_080206.exe",

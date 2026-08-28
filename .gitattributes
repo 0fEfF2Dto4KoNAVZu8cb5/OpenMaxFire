@@ -1,2 +1,8 @@
-# Keep Intel HEX artifacts byte-identical across operating systems.
-*.hex text eol=lf
+# Keep Intel HEX artifacts byte-identical instead of rewriting vendor-specific
+# LF or CRLF records during checkout and staging.
+*.hex -text
+
+# Generated research tables/listings deliberately retain CSV CRLF records and
+# fixed-width assembly padding emitted by the deterministic analysis tools.
+reverse-engineering/firmware/**/*.csv -whitespace
+reverse-engineering/firmware/**/*.asm -whitespace

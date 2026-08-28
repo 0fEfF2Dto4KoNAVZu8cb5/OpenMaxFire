@@ -6,7 +6,7 @@ OpenMaxFire is a preservation and reverse-engineering project for the discontinu
 
 The repository contains the recovered vendor packages, the BixCheck service
 manual and MaxFire Model 115 owner manual, all
-preserved 2.06/2.70/2.71 firmware images, portable and annotated disassemblies,
+preserved 2.02/2.06/2.70/2.71 firmware images, portable and annotated disassemblies,
 a deep three-EXE comparison, decoded application tables, an experimental PIC
 emulator, a virtual serial lab, photographs, provenance records, and the first
 cross-platform read-only service-tool foundation. A live cold/off session now
@@ -27,7 +27,7 @@ Version 0.6 adds an owned controller session, typed snapshot iteration, an
 automated read-only Checkout runner, and simulator-only configuration,
 normal-control, and actuator-cleanup workflows. Real state-changing execution
 continues to fail closed. Version 0.7 adds API-native exact-byte audit trails
-and digestable workflow receipts, authenticates the complete four-image
+and digestable workflow receipts, authenticates the then-complete four-image
 firmware corpus, and implements the reconstructed binary loader as a strict
 simulator-only state machine with retries, progress, corruption/disconnect
 faults, and final memory comparison. It still contains no physical flashing
@@ -38,6 +38,13 @@ reset-vector relocation, the exact BixCheck retry edge, and simulated
 handoff/reconnect. It also corrects format-04 `T09` as non-discriminating and
 adds a fail-closed PIC16F877A repeated-read/clone authentication toolkit plus a
 PICkit 3 preservation procedure. Physical flashing remains absent.
+
+On 2026-08-28 the first complete PICkit export from serial 5215's original
+firmware-2.02 PIC was preserved. It contains all program memory, EEPROM, User
+IDs, and configuration; its EEPROM exactly matches the earlier live J3 backup,
+and its resident loader exactly matches the factory 2.06 PICkit loader. The
+owner reports checking the file hash. Additional independent exports remain
+pending before the read set is called repeat-authenticated.
 
 Live work on 2026-08-23 physically validated the normal OFF/ON/UP/DOWN command
 bytes on firmware 2.02 and captured flashing fault light 8. The API now retains
@@ -53,7 +60,11 @@ decoded well enough to prove command outcomes automatically.
 
 Confirmed by static, photographic, emulator, and live evidence:
 
-- All four preserved firmware images target a PIC16F877A and pass Intel HEX checksum validation.
+- All five preserved firmware images target a PIC16F877A and pass Intel HEX checksum validation.
+- The recovered 2.02 original-controller image is complete: all 8,192 program
+  words, 256 EEPROM bytes, four User ID words, and configuration word `0x3F32`.
+  CP/CPD are disabled and its SHA-256 is
+  `272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab`.
 - The controller recognizes ASCII register commands `CRXX` and `CWXXYY`.
 - Requests are fixed at four/six bytes and have no terminator.
 - Addressed responses are six ASCII characters. Firmware telemetry lines are
@@ -122,8 +133,8 @@ Not yet confirmed on physical hardware:
   format-04 telemetry meanings.
 - Automatic format-04 state/level verification and high-level physical-control
   execution, despite the low-level normal-control bytes now being live-proven.
-- A completed, authenticated read of firmware-2.02 program memory; the removed-
-  chip PICkit 3 procedure and offline comparator are ready but unused.
+- Independent repeat-read authentication of the preserved complete 2.02
+  image, followed by spare-chip readback and controlled board recovery.
 - Firmware-loader erase/program acknowledgements or interrupted-transfer recovery.
 
 No new board revision or state-changing live connection should be attempted
@@ -140,6 +151,9 @@ reviewed.
    cross-platform Python API, then expose it through separate CLI and GUI clients.
 4. Build a fail-out-of-the-way ESP32/ESPHome interface for normal telemetry, faults, start/stop, heat level, command verification, and Home Assistant exposure.
 5. Keep the factory controller, front panel, thermostat inputs, combustion logic, and safety behavior authoritative.
+6. Preserve enough firmware and hardware knowledge to keep failed controllers
+   repairable and make a compatible replacement motherboard possible if the
+   original hardware can no longer be sourced.
 
 ## Quick offline use
 

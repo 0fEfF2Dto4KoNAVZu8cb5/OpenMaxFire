@@ -98,16 +98,18 @@ recover a loader or physical reset vector damaged by external programming.
 That requires a PICkit or equivalent programmer and a verified complete
 image.
 
-The exact loader installed in the original 2.02 PIC remains unknown until
-that chip is dumped. Later J3 Downloader images do not replace it.
+The first complete original-chip read now proves that firmware 2.02 carries
+the same protected loader as the preserved 2.06 PICkit image. Its electrical
+timing and interrupted-transfer recovery remain unvalidated. Later J3
+Downloader images still do not replace a complete external-programmer image.
 
 ## OpenMaxFire policy
 
 No physical firmware write will be implemented or attempted on serial 5215
 until:
 
-- the original 2.02 program memory, EEPROM, configuration, and ID words are
-  dumped repeatedly and authenticated;
+- the preserved first 2.02 program/EEPROM/configuration/User-ID read is matched
+  against the remaining independent exports;
 - a 2.02 clone is proven on a spare PIC;
 - full external-programmer recovery is proven on expendable hardware;
 - an actual BixCheck update is captured byte for byte;

@@ -56,7 +56,7 @@ escape hatch rather than the implementation of high-level parity.
 | Normal control | Low-level commands live-validated on 2.02; verified service execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, exact audit spans, interruption receipts, and preserved physical OFF/ON/UP/DOWN traffic | Resolve format-04 state/level verification and recovery timing before enabling the high-level physical executor |
 | Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, complete A00-AFF verification, audit spans, and interruption receipts | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
 | Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; audit spans; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
-| Firmware images | Offline validation and preservation toolkit complete | Strict Intel HEX/PIC14 parsing, delivery-layout classification, compatibility/migration reports, E3 block construction, authenticated factory corpus, and read-export/clone section hashes with CP/CPD fail-closed checks | Read/authenticate original 2.02 three times; add calibration-preservation policy for any future physical programming |
+| Firmware images | Complete first 2.02 read preserved; offline validation toolkit complete | Strict Intel HEX/PIC14 parsing, five-image hash-pinned corpus, delivery-layout classification, compatibility/migration reports, E3 block construction, and read-export/clone section hashes with CP/CPD fail-closed checks | Add/authenticate remaining independent 2.02 exports; add calibration-preservation policy for any future physical programming |
 | Firmware loader | Evidence-backed offline state machine complete; physical execution absent | `EA/EB`; classified `E8` and `E7`→`E5/E4`; four-word partial rows and two PIC attempts; `0x1E80` protection; reset relocation; exact 30 accepted/31st unread loop; one-shot `ED/E4`; simulated handoff/reconnect; audit and interruption faults | Validate physical timing, row behavior, completion, and recovery on sacrificial hardware before any serial executor |
 | Error/result model | Foundation complete | Stable exceptions plus typed detection, control, Checkout, transaction, configuration, firmware, audit, and loader results; interrupted simulator workflows fail indeterminate/failed | Use the common taxonomy in future physically validated executors |
 | Simulation | Broad offline workflow complete | Register and isolated loader transports, writes-disabled default, telemetry/state transitions, checksum behavior, retries, corruption, disconnects, and cleanup faults | Add only evidence-backed timing/peripheral behavior |
@@ -197,7 +197,7 @@ Version 0.7 fills the largest remaining offline/API gaps:
 4. The loader simulator validates block length/checksum/address, reconstructs
    programmed PIC14 words, and injects identify/block/completion failures,
    disconnects, and silent corruption.
-5. `FIRMWARE_CORPUS` authenticates the four preserved images by path, size,
+5. `FIRMWARE_CORPUS` authenticates the preserved images by path, size,
    SHA-256, version, variant, program-word count, and configuration word.
 6. Control and configuration workflows now return structured interrupted
    results with their exact audit evidence rather than allowing an ambiguous
@@ -231,8 +231,8 @@ See the [fault-state API contract](fault-model.md).
 2. Validate the simulator-proven configuration workflow first on recoverable
    hardware before allowing physical apply/restore.
 3. Live-validate each Checkout actuator/cleanup pair before physical execution.
-4. Read the original 2.02 chip three times, authenticate program/EEPROM/config/
-   User IDs, prove a spare clone and external recovery, then validate physical
+4. Authenticate the preserved first 2.02 read against the remaining independent
+   exports, prove a spare clone and external recovery, then validate physical
    loader timing and interruption recovery on sacrificial hardware before
    creating a live loader transport.
 5. Fill remaining telemetry/configuration semantics only as new evidence lands.

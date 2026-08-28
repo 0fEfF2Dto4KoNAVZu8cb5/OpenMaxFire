@@ -34,6 +34,16 @@ class FirmwareCorpusEntry:
 
 FIRMWARE_CORPUS: tuple[FirmwareCorpusEntry, ...] = (
     FirmwareCorpusEntry(
+        "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex",
+        "Bixby_0202_260827_PICkit.hex",
+        "2.02",
+        FirmwareVariant.PICKIT,
+        "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab",
+        46536,
+        8192,
+        0x3F32,
+    ),
+    FirmwareCorpusEntry(
         "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex",
         "Bixby_02060021_Downloader.hex",
         "2.06",

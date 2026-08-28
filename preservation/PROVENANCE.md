@@ -44,9 +44,31 @@ Its owner-manual statements are vendor-documented evidence for the appliance,
 but Rev. A behavior is not automatically generalized to later format-07
 firmware/configuration features.
 
+## Original-controller firmware 2.02 line
+
+`Bixby_0202_260827_PICkit.hex`
+
+- was supplied by the stove owner on 2026-08-28 as a PICkit export from the
+  original PIC16F877A removed from serial 5215's `9067-0604` controller;
+- is preserved byte-for-byte under `original/firmware/2.02/` with SHA-256
+  `272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab`;
+- contains all 8,192 program words, all 256 EEPROM bytes, four User ID words,
+  and configuration word `0x3F32`, with CP and CPD disabled;
+- contains EEPROM bytes identical to the independently preserved 2026-08-22
+  J3 backup from the controller while it identified as 2.02/data format 04;
+- contains a protected loader range identical to the factory 2.06 PICkit image;
+  and
+- is one complete read, not yet an independently repeated read set. Additional
+  owner exports and programmer logs remain pending.
+
 ## Deterministic analysis line
 
-`tools/firmware_pipeline.py` reads the three preserved ZIP packages, inventories every member, extracts four firmware delivery images, validates all Intel HEX checksums, parses sparse PIC memory, disassembles the PIC14 instruction words, and produces comparison tables. Generated outputs are reproducible and contain no device-communication path.
+`tools/firmware_pipeline.py` reads the three preserved ZIP packages and the
+immutable original-controller 2.02 read, inventories every package member,
+produces five firmware analysis copies, validates every Intel HEX checksum,
+parses sparse PIC memory, disassembles the PIC14 instruction words, and produces
+comparison tables. Generated outputs are reproducible and contain no device-
+communication path.
 
 Derived work must always point back to one of these preserved sources and record the exact source SHA-256.
 
