@@ -134,6 +134,31 @@ class SerialTransport:
             dsrdtr=False,
         )
 
+    @property
+    def timeout(self) -> float:
+        """Current pyserial read timeout in seconds."""
+
+        value = self._serial.timeout
+        assert value is not None
+        return float(value)
+
+    def set_timeout(self, timeout: float) -> None:
+        """Temporarily change read/write timeout without reopening the port.
+
+        The experimental resident-loader probe uses this to poll the short
+        reset-time loader window quickly, then restores the normal operation
+        timeout before any E3 Flash transaction.
+        """
+
+        if (
+            not isinstance(timeout, (int, float))
+            or not math.isfinite(timeout)
+            or timeout <= 0
+        ):
+            raise ValueError("timeout must be greater than zero")
+        self._serial.timeout = float(timeout)
+        self._serial.write_timeout = float(timeout)
+
     def write(self, data: bytes) -> None:
         self._serial.write(data)
         self._serial.flush()
