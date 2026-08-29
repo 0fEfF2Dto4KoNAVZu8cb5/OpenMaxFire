@@ -2,7 +2,7 @@ name: Cross-platform tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, experimental-j3-flasher]
   pull_request:
 
 permissions:
