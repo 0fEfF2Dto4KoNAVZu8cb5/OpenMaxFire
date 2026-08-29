@@ -18,6 +18,17 @@ FW206_PICKIT = ROOT / "reverse-engineering/firmware/2.06/extracted/Bixby_0206002
 FW270 = ROOT / "reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex"
 
 
+class TimeoutAwareLoaderTransport(SimulatedLoaderTransport):
+    def __init__(self):
+        super().__init__()
+        self.timeout = 0.25
+        self.timeout_history: list[float] = []
+
+    def set_timeout(self, timeout: float) -> None:
+        self.timeout = float(timeout)
+        self.timeout_history.append(self.timeout)
+
+
 class ExperimentalFlasherTests(unittest.TestCase):
     def test_protected_test_block_targets_skip_range(self):
         block = protected_test_block()
@@ -35,6 +46,21 @@ class ExperimentalFlasherTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(transport.flash_words, initial)
         self.assertTrue(transport.application_running)
+
+    def test_identify_temporarily_uses_fast_timeout_then_restores_operation_timeout(self):
+        transport = TimeoutAwareLoaderTransport()
+        flasher = ExperimentalJ3Flasher(
+            transport,
+            policy=PhysicalFlasherPolicy(
+                identify_attempts=1,
+                identify_interval=0.015,
+                identify_read_timeout=0.010,
+            ),
+        )
+        attempt = flasher.identify()
+        self.assertEqual(attempt, 1)
+        self.assertEqual(transport.timeout_history, [0.010, 0.25])
+        self.assertEqual(transport.timeout, 0.25)
 
     def test_full_270_image_succeeds_in_loader_simulator(self):
         image = FirmwareImage.load(FW270)
