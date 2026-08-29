@@ -9,8 +9,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
+from openmaxfire.client import MaxFireClient
 from openmaxfire.experimental_flasher import (
     ExperimentalFlasherError,
     ExperimentalJ3Flasher,
@@ -63,6 +65,18 @@ def parser() -> argparse.ArgumentParser:
         )
         if name == "flash":
             cmd.add_argument("image", type=Path)
+            cmd.add_argument(
+                "--post-baud",
+                type=int,
+                choices=(9600, 19200),
+                help="after ED/E4, reopen the port at this baud and run read-only identify",
+            )
+            cmd.add_argument(
+                "--post-delay",
+                type=float,
+                default=1.0,
+                help="seconds to wait before optional post-flash identify (default: 1.0)",
+            )
 
     return p
 
@@ -82,6 +96,21 @@ def _policy(args: argparse.Namespace) -> PhysicalFlasherPolicy:
     )
 
 
+def _post_flash_identity(args: argparse.Namespace) -> dict[str, object] | None:
+    if args.post_baud is None:
+        return None
+    if args.post_delay < 0:
+        raise ValueError("post-delay must be nonnegative")
+    if args.post_delay:
+        time.sleep(args.post_delay)
+    transport = SerialTransport(SerialSettings(args.port, args.post_baud, args.timeout))
+    try:
+        identity = MaxFireClient(transport).identify(request_delay=0.10)
+        return identity.to_dict()
+    finally:
+        transport.close()
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     if args.command == "dry-run":
@@ -93,6 +122,7 @@ def main(argv: list[str] | None = None) -> int:
     recorder = FlasherEventRecorder(args.event_log)
     transport = SerialTransport(SerialSettings(args.port, args.baud, args.timeout))
     flasher = ExperimentalJ3Flasher(transport, policy=_policy(args), recorder=recorder)
+    closed = False
     try:
         if args.command == "probe":
             attempts = flasher.identify()
@@ -102,11 +132,20 @@ def main(argv: list[str] | None = None) -> int:
         else:
             image = FirmwareImage.load(args.image)
             result = flasher.flash(image)
+            transport.close()
+            closed = True
+            identity = _post_flash_identity(args)
+            if identity is not None:
+                result["post_flash_identity"] = identity
+                result["post_flash_identity_matches_target"] = (
+                    identity.get("firmware_version") == image.firmware_version
+                )
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
     finally:
         try:
-            transport.close()
+            if not closed:
+                transport.close()
         finally:
             recorder.close()
 
@@ -114,6 +153,6 @@ def main(argv: list[str] | None = None) -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (ExperimentalFlasherError, FirmwareImageError, PermissionError, OSError, ValueError) as exc:
+    except (ExperimentalFlasherError, FirmwareImageError, PermissionError, OSError, TimeoutError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         raise SystemExit(2)
