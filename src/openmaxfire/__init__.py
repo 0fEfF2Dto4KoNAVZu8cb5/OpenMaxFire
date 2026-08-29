@@ -1,6 +1,6 @@
 """OpenMaxFire - open tooling for Bixby MaxFire 110/115."""
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 from .audit import AuditEvent, AuditSpan, AuditTrail
 
@@ -77,6 +77,7 @@ from .flashing import (
     RECOVERY_MANIFEST_FILENAME,
     RECOVERY_MARKER_FILENAME,
     UNSUPPORTED_FIRMWARE_MESSAGE,
+    ApplicationReadinessEvidence,
     ApplicationUnchangedVerification,
     ApprovedFirmware,
     FlashJournal,
@@ -100,6 +101,7 @@ from .flashing import (
     preserve_recovery_bundle,
     qualify_flash_preparation,
     recover_live_loader_completion,
+    wait_for_application_ready,
     verify_application_unchanged,
     verify_post_flash,
     validate_live_transition,

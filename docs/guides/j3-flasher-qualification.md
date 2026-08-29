@@ -1,6 +1,9 @@
 # J3 flasher qualification plan
 
-Status: required physical release gate; **not yet executed**.
+Status: required physical release gate; **not yet passed**. Initial zero-write
+sessions proved loader identify/completion on one controller but also exposed a
+host handoff defect and inconsistent loader entry. They are diagnostic evidence,
+not qualifying repetitions.
 
 The guarded host is not a consumer updater until every mandatory item in this
 plan passes on expendable, externally recoverable hardware. Unit tests,
@@ -94,10 +97,18 @@ Each run must prove:
 - application identity read three times and EEPROM read twice before loader
   entry;
 - `EA/EB`, then `ED/E4`, with no `E3` byte at any point;
+- no host TX after final `E4` until a complete unsolicited `T` or `DW` frame is
+  captured, with the readiness artifact agreeing with the analyzer trace;
 - unchanged application identity read three times after handoff;
 - two identical post-rehearsal EEPROM reads equal to the preflight bytes;
 - no unexpected reset, DTR/RTS-induced entry, or host sleep; and
 - complete, parseable rehearsal artifacts and a correct terminal state.
+
+Also suppress periodic application telemetry in the fixture and prove that the
+readiness timeout sends no `CR00`, `CW`, loader probe, or other byte after
+`ED/E4`. Delay the first valid telemetry across the supported startup range and
+prove that identity begins only afterward. Verify firmware 2.02 does not enter
+or remain in USART overrun (`OERR`) during handoff.
 
 Also prove that every missing safety confirmation, wrong operator phrase,
 unknown image, renamed image, modified image, PICkit image, same-version image,

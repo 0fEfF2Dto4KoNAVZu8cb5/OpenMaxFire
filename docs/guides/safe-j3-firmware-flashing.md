@@ -1,11 +1,13 @@
 # Guarded J3 firmware flashing
 
 Status: release-candidate host implementation, exhaustively fault-injected
-offline, but **not yet validated on physical sacrificial hardware**. Do not use
-a production controller until the qualification matrix has passed and complete
-PICkit recovery has been programmed, read back, authenticated, and exercised on
-a spare PIC/controller. The command refuses to proceed without an explicit
-confirmation of that recovery test.
+offline. Physical zero-write sessions have now observed `EA/EB` and `ED/E4`,
+but loader-entry electrical/reset behavior, Flash programming, and recovery are
+**not qualified on sacrificial hardware**. Do not use a production controller
+until the qualification matrix has passed and complete PICkit recovery has been
+programmed, read back, authenticated, and exercised on a spare PIC/controller.
+The command refuses to proceed without an explicit confirmation of that
+recovery test.
 
 This is the dedicated replacement for BixCheck Downloader. Loader traffic is
 not exposed through generic raw mode, and this workflow never sends the
@@ -53,8 +55,10 @@ Before a write, OpenMaxFire requires all of the following:
 - a self-contained recovery bundle containing the exact HEX, preparation, and
   EEPROM backup with a hash manifest;
 - a non-writing physical rehearsal: `EA/EB`, then `ED/E4`, with **zero `E3`
-  frames**, followed by three unchanged application identities and two
-  unchanged EEPROM reads.
+  frames**;
+- after `ED/E4`, a transmit-silent wait for unsolicited `T` or periodic `DW`
+  application telemetry before the first `CR00`;
+- three unchanged application identities and two unchanged EEPROM reads.
 
 During and after a write, it requires:
 
@@ -83,9 +87,19 @@ then changes to a 500 ms block-response timeout.
 
 The recovered PIC machine code has also been emulated with `EA ED` queued at
 reset. It consumes both bytes, returns exactly `EB E4`, and enters the original
-application path without an `E3` transfer. This is the evidence behind the
-mandatory non-writing rehearsal; it is still not a substitute for the pending
-physical qualification.
+application path without an `E3` transfer. Physical zero-write sessions 003,
+004, and 006 reproduced those identify and completion acknowledgements on
+serial 5215. Those sessions did not qualify Flash programming or the electrical
+loader-entry path.
+
+Those same sessions exposed an application-handoff defect in host version 0.9:
+the first `CR00` was sent about 0.76-0.78 seconds after final `E4`, while
+firmware 2.02 could have its USART receiver enabled before its receive interrupt
+was ready. Four request bytes can overrun the PIC16F877A's two-byte receive
+FIFO; Microchip documents that `OERR` then blocks further receive activity until
+`CREN` is reset. Version 0.9.1 therefore treats unsolicited periodic telemetry,
+not elapsed time, as application readiness. It sends no application bytes until
+a valid `T` or `DW` frame is received.
 
 Microchip specifies edge-aligned four-word Flash erase/write blocks, loading
 untouched neighbors when only part of a row changes, and a typical 4 ms halt on
@@ -187,7 +201,11 @@ maxfirectl \
 
 The tool requires the exact phrase `POWER OFF FOR REHEARSAL` after AC is
 physically disconnected. A successful rehearsal result explicitly reports
-`program_blocks_sent=0` and `flash_write_commands_sent=0`.
+`program_blocks_sent=0` and `flash_write_commands_sent=0`. After `ED/E4`, it
+waits up to 30 seconds for unsolicited `T` or `DW` telemetry while transmitting
+nothing. If telemetry never arrives, it fails without sending `CR00`. The
+timeout can be changed with `--application-ready-timeout`, but increasing it
+does not repair an electrical reset or backfeed problem.
 
 ## Live update
 
@@ -332,14 +350,16 @@ Every live session attempts to preserve:
 - `rescue/<exact-vendor-filename>.hex` and
   `rescue/recovery-manifest.json`;
 - `rehearsal-traffic.jsonl`, `rehearsal-loader-result.json`,
-  `rehearsal-app-traffic.jsonl`, `rehearsal-verification.json`, and
-  `rehearsal-eeprom.json` for a normal session;
+  `rehearsal-app-traffic.jsonl`, `rehearsal-application-readiness.json`,
+  `rehearsal-verification.json`, and `rehearsal-eeprom.json` for a normal
+  session;
 - `journal.jsonl`, flushed and `fsync`'d after each state event while the
   diagnostic sink remains healthy;
 - `loader-traffic.jsonl`, flushed and `fsync`'d for every non-empty TX/RX
   event while the diagnostic sink remains healthy;
 - `loader-result.json`;
-- post-flash traffic, `eeprom-after.json`, and `result.json`.
+- `postflash-readiness-<attempt>.json`, post-flash traffic,
+  `eeprom-after.json`, and `result.json`.
 
 The high-level states distinguish `failed_before_programming` from
 `recovery_required`, `programming_verified_calibration_required`, and

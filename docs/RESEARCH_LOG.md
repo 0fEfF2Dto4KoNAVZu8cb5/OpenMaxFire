@@ -2,6 +2,33 @@
 
 ## 2026-08-29 - guarded J3 flasher and loader timing
 
+- Analyzed seven owner-supplied physical rehearsal session directories from
+  serial 5215. Sessions 003, 004, and 006 positively recorded `EA/EB` followed
+  by `ED/E4`, with zero `E3` frames and zero program blocks. Sessions 002 and
+  005 exhausted the bounded identify probes without `EB`; session 007 ended
+  in an operating-system I/O error when USB was removed. All complete EEPROM
+  backups in the archive are byte-identical and retain checksum `EFCE`.
+- In the three successful loader handoffs, the old host sent its first `CR00`
+  approximately 764 ms, 780 ms, and 764 ms after the final `E4`. Each attempt
+  then received zero application frames, and normal serial access remained
+  unavailable until a controller reset. Because no `E3` was sent, this is a
+  post-handoff application-UART failure, not application-image corruption.
+- Static firmware-2.02 analysis shows the receiver enabled before receive
+  interrupts begin servicing it. The PIC16F877A receive FIFO is two bytes;
+  Microchip specifies that a third unread character sets `OERR` and prevents
+  further reception until `CREN` is cleared and set. The early four-byte
+  `CR00` is therefore the best-supported explanation for the persistent
+  failure, although a logic-analyzer/UART trace is still required to prove the
+  mechanism electrically.
+- Version 0.9.1 replaces the fixed-delay-first-`CR00` behavior with a passive
+  readiness gate. After `ED/E4`, the retained serial handle transmits nothing
+  until a valid unsolicited `T` or periodic `DW` frame proves the application
+  is running and servicing serial input. A bounded timeout fails explicitly
+  while guaranteeing that no `CR00` or other application request was sent.
+  Readiness evidence is saved with the rehearsal and each post-flash attempt.
+  This fixes the host-side handoff defect but does not resolve or qualify the
+  separate controller-power/reset and possible USB backfeed question.
+
 - Re-analyzed the preserved 5.0.21 and 5.5.01 Downloader paths and confirmed
   that `Bixby110Downloader()` hard-codes baud selector `1`, or 9,600. The
   resident 2.02/2.06 loader independently sets `SPBRG=0x40` at the photographed
@@ -50,11 +77,12 @@
   The host also preserves a complete backup when a checksum/format gate fails,
   retains a late buffered `EB`, and writes a durable result for post-flash
   verification failure.
-- The complete source suite passes 234 tests. A clean version-0.9 wheel was
-  built and installed, and its 2.06→2.70 plan executed successfully. Source-
+- The complete source suite passes 237 tests. A clean version-0.9.1 wheel was
+  built and installed. The earlier 2.06→2.70 plan executed successfully. Source-
   tree checks authenticated the complete 2.02→2.06, 2.06→2.70, and 2.70→2.71
-  sequence as 476/481/486 blocks at fixed 9,600-baud loader transport. No
-  physical loader traffic was sent during this implementation pass.
+  sequence as 476/481/486 blocks at fixed 9,600-baud loader transport. The
+  initial implementation/test run sent no physical loader traffic; the later
+  owner-supplied zero-write sessions are summarized above.
 
 ## 2026-08-28
 

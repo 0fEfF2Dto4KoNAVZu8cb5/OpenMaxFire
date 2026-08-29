@@ -3,10 +3,12 @@
 Status: statically reconstructed from BixCheck 5.0.21, 5.5.00, and 5.5.01,
 the complete 2.06 PICkit firmware, and the recovered Downloader images. The
 `EA`/`EB` identify exchange is corroborated in the experimental PIC16F877A
-emulator. Physical erase, programming, interruption, and recovery behavior
-has not yet been validated on expendable hardware. Version 0.9 implements a
-guarded physical host path behind spare-recovery and human safety interlocks;
-that implementation is not evidence that the physical path is validated.
+emulator and physical zero-write sessions have observed `EA/EB` plus `ED/E4`.
+Physical erase, programming, interruption, electrical reset behavior, and
+recovery have not yet been qualified on expendable hardware. Version 0.9.1
+implements a guarded physical host path behind spare-recovery and human safety
+interlocks; that implementation is not evidence that the destructive path is
+validated.
 
 ## Two separate programming methods
 
@@ -222,6 +224,14 @@ is treated as a fatal download failure. After replying, the PIC waits briefly
 for one final serial receive, disables the loader UART state, and branches to
 the relocated application reset code.
 
+Physical zero-write sessions on 2026-08-29 reproduced `EA/EB` and `ED/E4` on
+firmware 2.02, with no `E3`. They also showed that sending `CR00` about
+0.76-0.78 seconds after `E4` could leave the application UART unresponsive
+until reset. Static analysis shows the application enables its receiver before
+receive interrupts service it; a four-byte request can therefore overrun the
+PIC16F877A two-byte receive FIFO. This is the leading explanation, not yet a
+logic-analyzer-proven electrical observation.
+
 An interrupted transfer can leave application rows partially updated and the
 stove application non-functional. The vendor documentation says the transfer
 may be attempted again because the protected update software is not damaged.
@@ -271,6 +281,11 @@ handle across phases and does not reproduce BixCheck's terminal unread
 transmission. Recovery requires an unresolved durable marker and is delegated
 forward one session at a time so an old successful/recovered bundle cannot be
 reused as a same-version rewrite path.
+
+Version 0.9.1 adds a passive application-readiness boundary. After final
+`ED/E4`, the host keeps TX silent until it receives a valid unsolicited `T` or
+periodic `DW` frame. Only that evidence permits the first application request;
+a timeout fails without transmitting `CR00`.
 
 The implementation keeps these boundaries explicit:
 

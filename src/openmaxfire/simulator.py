@@ -482,6 +482,7 @@ class SimulatedFlashSessionTransport:
         programming_faults: SimulatedLoaderFaults | None = None,
         post_eeprom: bytes | bytearray | memoryview | None = None,
         skip_rehearsal: bool = False,
+        emit_application_telemetry: bool = True,
         port: str = "SIM0",
         baudrate: int = 9600,
         timeout: float = 0.50,
@@ -508,6 +509,7 @@ class SimulatedFlashSessionTransport:
         self.incoming = bytearray()
         self.writes: list[bytes] = []
         self.loader_entries = 1 if skip_rehearsal else 0
+        self.emit_application_telemetry = emit_application_telemetry
         self.loader: SimulatedLoaderTransport | None = None
         self.mode = "application_before"
         self.closed = False
@@ -555,6 +557,11 @@ class SimulatedFlashSessionTransport:
                     if self.loader_entries == 1
                     else "application_after"
                 )
+                # Real controllers emit periodic application telemetry without
+                # a host request.  The live flasher waits for this passive
+                # readiness evidence before it is allowed to send CR00.
+                if self.emit_application_telemetry:
+                    self.incoming.extend(b"T0800\n")
             return
         controller = self.after if self.mode == "application_after" else self.before
         self.incoming.extend(controller.handle(payload))

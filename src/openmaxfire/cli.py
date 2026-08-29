@@ -34,6 +34,7 @@ from .flashing import (
     preserve_recovery_bundle,
     qualify_flash_preparation,
     recover_live_loader_completion,
+    wait_for_application_ready,
     verify_application_unchanged,
     verify_post_flash,
     validate_live_transition,
@@ -450,6 +451,15 @@ def _attempt_post_flash(
         diagnostic_errors=diagnostic_errors,
     )
     try:
+        time.sleep(args.handoff_delay)
+        readiness = wait_for_application_ready(
+            client,
+            timeout=args.application_ready_timeout,
+        )
+        save_json_document(
+            readiness.to_dict(),
+            session_dir / f"postflash-readiness-{attempt}.json",
+        )
         return verify_post_flash(
             client,
             preparation,
@@ -785,7 +795,6 @@ def _run_flash(args: argparse.Namespace) -> int:
                 )
                 return 5
 
-            time.sleep(args.handoff_delay)
             rehearsal_client = _open_recorded_client(
                 args,
                 transport=serial_transport,
@@ -794,6 +803,19 @@ def _run_flash(args: argparse.Namespace) -> int:
                 phase="rehearsal-application-return",
             )
             try:
+                time.sleep(args.handoff_delay)
+                readiness = wait_for_application_ready(
+                    rehearsal_client,
+                    timeout=args.application_ready_timeout,
+                )
+                save_json_document(
+                    readiness.to_dict(),
+                    session_dir / "rehearsal-application-readiness.json",
+                )
+                journal.record(
+                    "rehearsal_application_ready",
+                    **readiness.to_dict(),
+                )
                 unchanged, _, rehearsal_backup = verify_application_unchanged(
                     rehearsal_client,
                     preparation,
@@ -1052,7 +1074,6 @@ def _run_flash(args: argparse.Namespace) -> int:
                     "verification state update failed; recovery marker remains authoritative",
                     exc,
                 )
-            time.sleep(args.handoff_delay)
             post = None
             post_eeprom = None
             post_backup = None
@@ -1112,7 +1133,6 @@ def _run_flash(args: argparse.Namespace) -> int:
                                 exc,
                             )
                 if completion_recovered:
-                    time.sleep(args.handoff_delay)
                     try:
                         post, post_eeprom, post_backup = _attempt_post_flash(
                             args,
@@ -1567,7 +1587,19 @@ def build_parser() -> argparse.ArgumentParser:
         "--handoff-delay",
         type=_nonnegative_float,
         default=0.75,
-        help="settle time before target-application identity verification (default: 0.75)",
+        help=(
+            "minimum transmit-silent settle time before passively waiting for "
+            "application telemetry (default: 0.75)"
+        ),
+    )
+    flash.add_argument(
+        "--application-ready-timeout",
+        type=_positive_float,
+        default=30.0,
+        help=(
+            "maximum passive wait for unsolicited T/DW telemetry before any "
+            "application request is allowed (default: 30)"
+        ),
     )
     flash.add_argument("--confirm-stove-cold-and-off", action="store_true")
     flash.add_argument("--confirm-igniters-unplugged", action="store_true")

@@ -30,6 +30,7 @@ from openmaxfire.flashing import (
     preserve_recovery_bundle,
     qualify_flash_preparation,
     recover_live_loader_completion,
+    wait_for_application_ready,
     verify_post_flash,
     validate_live_transition,
 )
@@ -174,6 +175,58 @@ class LiveFlashingTests(unittest.TestCase):
         self.assertEqual(transport.writes, [b"\xEA", b"\xED"])
         self.assertEqual(transport.blocks_accepted, 0)
         self.assertTrue(transport.application_running)
+
+    def test_application_readiness_waits_for_passive_periodic_telemetry(self):
+        class PassiveTransport:
+            def __init__(self):
+                self.incoming = bytearray(
+                    b"\xE4stale-loader-byte\nCR0000\nT0800\n"
+                )
+                self.writes = []
+
+            def write(self, data):
+                self.writes.append(bytes(data))
+
+            def read(self, size=1):
+                if not self.incoming:
+                    return b""
+                chunk = bytes(self.incoming[:size])
+                del self.incoming[:size]
+                return chunk
+
+            def close(self):
+                return None
+
+        transport = PassiveTransport()
+        client = MaxFireClient(transport)
+        evidence = wait_for_application_ready(client, timeout=0.1)
+        self.assertEqual(evidence.frame_kind, "T")
+        self.assertEqual(evidence.raw, b"T0800")
+        self.assertEqual(evidence.ignored_frames, 2)
+        self.assertEqual(evidence.to_dict()["host_transmissions"], 0)
+        self.assertEqual(transport.writes, [])
+
+    def test_application_readiness_timeout_never_transmits(self):
+        class SilentTransport:
+            def __init__(self):
+                self.writes = []
+
+            def write(self, data):
+                self.writes.append(bytes(data))
+
+            def read(self, size=1):
+                return b""
+
+            def close(self):
+                return None
+
+        transport = SilentTransport()
+        client = MaxFireClient(transport)
+        with self.assertRaisesRegex(
+            TimeoutError, "no CR00 or other application request was transmitted"
+        ):
+            wait_for_application_ready(client, timeout=0.001)
+        self.assertEqual(transport.writes, [])
 
     def test_exact_plan_passes_mandatory_offline_whole_image_qualification(self):
         result = qualify_flash_preparation(self.preparation)
@@ -861,9 +914,33 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertTrue((session / "eeprom-after.json").is_file())
             self.assertTrue((session / "loader-traffic.jsonl").is_file())
             self.assertTrue((session / "rehearsal-verification.json").is_file())
+            self.assertTrue(
+                (session / "rehearsal-application-readiness.json").is_file()
+            )
+            self.assertTrue((session / "postflash-readiness-1.json").is_file())
             self.assertTrue((session / "offline-qualification.json").is_file())
             self.assertTrue((session / "rescue" / FW206.name).is_file())
             self.assertFalse((session / "RECOVERY_REQUIRED.txt").exists())
+
+            rehearsal_events = [
+                json.loads(line)
+                for line in (session / "rehearsal-app-traffic.jsonl")
+                .read_text()
+                .splitlines()
+                if '"event": "traffic"' in line
+            ]
+            first_tx = next(
+                index
+                for index, event in enumerate(rehearsal_events)
+                if event["direction"] == "tx"
+            )
+            passive_bytes = b"".join(
+                bytes.fromhex(event["data_hex"])
+                for event in rehearsal_events[:first_tx]
+                if event["direction"] == "rx"
+            )
+            self.assertIn(b"T0800\n", passive_bytes)
+            self.assertEqual(rehearsal_events[first_tx]["data_hex"], "43 52 30 30")
 
     def test_live_cli_checks_physical_gates_before_opening_serial(self):
         from openmaxfire.cli import main
@@ -882,6 +959,61 @@ class FlashCliPlanTests(unittest.TestCase):
                     )
             self.assertEqual(result, 4)
             self.assertFalse(session.exists())
+
+    def test_rehearsal_sends_nothing_after_handoff_until_passive_readiness(self):
+        from openmaxfire.cli import main
+
+        transport = SimulatedFlashSessionTransport(
+            "fw202-format04",
+            "fw206-format05",
+            emit_application_telemetry=False,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            session = Path(directory) / "flash-session"
+            error = io.StringIO()
+            with mock.patch("openmaxfire.cli.SerialTransport", return_value=transport):
+                with mock.patch(
+                    "builtins.input", return_value="POWER OFF FOR REHEARSAL"
+                ):
+                    with mock.patch("openmaxfire.cli.time.sleep"):
+                        with mock.patch(
+                            "openmaxfire.cli.SleepInhibitor", FakeSleepInhibitor
+                        ):
+                            with contextlib.redirect_stderr(error):
+                                result = main(
+                                    [
+                                        "--port", "SIM0",
+                                        "--baud", "9600",
+                                        "--request-delay", "0",
+                                        "flash", str(FW206),
+                                        "--rehearsal-only",
+                                        "--session-dir", str(session),
+                                        "--application-ready-timeout", "0.001",
+                                        "--confirm-stove-cold-and-off",
+                                        "--confirm-igniters-unplugged",
+                                        "--confirm-correct-5v-ttl-wiring",
+                                        "--confirm-j3-pin3-disconnected",
+                                        "--confirm-adapter-vcc-disconnected",
+                                        "--confirm-pickit-recovery-tested-on-spare",
+                                        "--confirm-computer-power-stable",
+                                        "--confirm-stove-power-stable",
+                                        "--confirm-calibration-plan",
+                                    ]
+                                )
+            self.assertEqual(result, 4)
+            self.assertIn("no valid periodic telemetry", error.getvalue())
+            self.assertEqual(transport.writes[-1], b"\xED")
+            self.assertFalse(
+                any(write.startswith(b"\xE3") for write in transport.writes)
+            )
+            self.assertFalse(
+                any(
+                    write == b"CR00"
+                    for write in transport.writes[
+                        transport.writes.index(b"\xED") + 1 :
+                    ]
+                )
+            )
 
     def test_recovery_gate_failure_still_reports_unresolved_recovery(self):
         from openmaxfire.cli import main

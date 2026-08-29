@@ -52,6 +52,15 @@ session at a time. It never sends `CW0FC4`. Physical
 programming and recovery still require the published sacrificial-hardware
 qualification matrix before production use.
 
+Version 0.9.1 corrects the application-handoff check discovered during the
+first physical zero-write rehearsals. After the loader acknowledges `ED` with
+`E4`, the host remains transmit-silent until it receives unsolicited `T` or
+`DW` application telemetry; only then may it send `CR00`. This prevents an
+early four-byte request from overrunning firmware 2.02's two-byte USART receive
+FIFO during startup. The change addresses the persistent post-handoff `CR00`
+failure; it does not qualify the direct USB-TTL electrical interface or live
+Flash programming.
+
 On 2026-08-28 the first complete PICkit export from serial 5215's original
 firmware-2.02 PIC was preserved. It contains all program memory, EEPROM, User
 IDs, and configuration; its EEPROM exactly matches the earlier live J3 backup,
@@ -151,8 +160,8 @@ Not yet confirmed on physical hardware:
 - Independent repeat-read authentication of the preserved complete 2.02
   image, followed by spare-chip readback and controlled board recovery.
 - Physical firmware-loader erase/program timing, acknowledgement behavior,
-  and interrupted-transfer recovery on expendable hardware. The guarded host
-  implementation is emulator/fault-injection validated only.
+  and interrupted-transfer recovery on expendable hardware. Only the guarded
+  host's zero-write `EA/EB` and `ED/E4` path has been observed physically.
 
 No new board revision or state-changing live connection should be attempted
 until [SAFETY.md](SAFETY.md), the

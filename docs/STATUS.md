@@ -43,7 +43,7 @@ OpenMaxFire separates evidence into five levels:
 | BixCheck workflows | Generic write lifecycle, logging schema/names, configuration reports, QuickCal/debug/flue/fuel UI construction recovered | Retained symbols, call graph, focused assembly |
 | Configuration | Record layout, A-unit ranges, lean-burn transforms, and checksum decoded | All BixCheck EXEs |
 | Checkout | 45 reachable tests; identical dormant 46th plate-motor record | Tables plus UI/dispatcher flow |
-| Downloader | Fixed 9,600 baud; approximately 78 ms reset window; `CW0FC4` reset; `EA`/`EB` identify; `E3` blocks; `ED` completion | All EXEs, resident loader disassembly, oscillator, and emulator identify probe |
+| Downloader | Fixed 9,600 baud; approximately 78 ms reset window; `CW0FC4` reset; `EA`/`EB` identify; `E3` blocks; `ED` completion; physical zero-write sessions 003/004/006 returned `EB` and final `E4` with no `E3` | All EXEs, resident loader disassembly, oscillator, emulator identify probe, and preserved 2026-08-29 session evidence |
 | Emulator | 45 CR reads, 48 safe C writes, 91 periodic telemetry slots, and 768 A-unit EEPROM reads execute expected bounded paths through real 2.06/2.70/2.71 code; PICkit emits `EB` for `EA` | Experimental PIC14 harness |
 | Physical inputs | Door=CR02.5 (1=open); drawer=CR02.6 (1=open); thermostat=CR06.2 (1=open); fuel=CR02.2 (1=corn); OFF/UP/DOWN=CR01 01/04/08; fan=CR09; feed=CR0A | Static/emulator mapping plus live one-at-a-time cold/off validation |
 | J10 exhaust sensor | RA4/T0CKI falling-edge count is sampled into RAM 0x34 and returned as CR05 | Identical 2.06/2.70/2.71 producer signatures plus BixCheck exhaust predicates and board diagram |
@@ -53,7 +53,7 @@ OpenMaxFire separates evidence into five levels:
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Identical 2.06/2.70/2.71 scanner, configuration-bank flow, BixCheck predicates, diagram labels |
-| Python API | Version 0.9 adds an allowlisted, manually power-cycled experimental J3 flasher with pre/post identity and EEPROM verification; physical loader behavior remains unvalidated and production use is gated on proven spare recovery | Portable offline tests, full-image loader emulation, fault injection, preserved serial 5215 replay fixtures, static analysis, and live normal-protocol sessions |
+| Python API | Version 0.9.1 adds a passive post-handoff readiness gate: after `ED/E4`, no application request is transmitted until unsolicited `T` or `DW` proves the application UART is servicing traffic | Portable tests, full-image loader emulation, fault injection, preserved serial 5215 replay fixtures, static analysis, and 2026-08-29 zero-write sessions |
 | EEPROM | Three independent A00-AFF reads agree; checksum EFCE matches; format 04, model `Bixby Model 115`, stored serial `2060`, date string `01102007` | Live-validated backup and two raw traffic logs |
 | Format-04 telemetry | ~3.58 s burst cycle; T03 fan trim, T04 feed trim, T06 firebox-related dynamic value, T08 flashing-light bitmap with lights 4/5/8 live-correlated to `08`/`10`/`80`, T0C bit 08 thermostat-open, and provisional T0C/T15 cold-vs-startup composites | Live A/B and A-B-A input captures, control replay, and feeder-wheel fault capture |
 | Firmware preservation | One complete 2.02 original-chip read is preserved; offline tooling compares repeated reads and original/clone readbacks by normalized program, EEPROM, User IDs, configuration, Device ID, CP/CPD status, and SHA-256; it cannot operate a programmer | Owner-supplied read, live EEPROM cross-check, offline API/tool tests, and Microchip programming specification |
@@ -71,7 +71,7 @@ OpenMaxFire separates evidence into five levels:
 | Table-only telemetry | BixCheck 5.5.01 names TFD-TFF, but no producer is recovered in periodic 2.71 firmware; T20 is a separate event path | Passive capture or newly identified conditional producer |
 | EEPROM semantics | Live format-04 backup/checksum/identity are preserved; stored serial/date differ from the appliance nameplate and many calibration meanings rely on labels | Compare another format-04 unit or recovered 2.02 BixCheck/firmware |
 | Checkout thresholds | Buttons, pots, doors, thermostat, exhaust CR05, feeder CR07, and igniter result bits are mapped; several engineering units/state meanings remain unresolved | Trace remaining manual/no-op cases and conversions |
-| Downloader | Host path now authenticates wire frames, performs a zero-write rehearsal, rapidly probes the ~78 ms window, bounds/classifies phase-matched retries, journals durably, delegates exact recovery one session at a time, verifies target identity/EEPROM, and conservatively recovers missing ED acknowledgement; physical electrical/program timing and recovery remain unproven | Sacrificial, externally recoverable bench controller only |
+| Downloader | The host authenticates wire frames, performs a zero-write rehearsal, rapidly probes the ~78 ms window, bounds/classifies phase-matched retries, journals durably, delegates exact recovery, and passively waits for application telemetry before CR00. Physical `EA/EB` and `ED/E4` are now observed, but loader-entry electrical/reset behavior, Flash programming, and recovery remain unqualified | Instrumented, sacrificial, externally recoverable bench controller only |
 
 ## Current boundary
 
@@ -86,7 +86,8 @@ proven. J3-3 is unresolved and
 must stay disconnected regardless of the historical forum cable's red-wire
 position. No firmware recovery path has been proven on sacrificial hardware.
 Configuration and Checkout actuators remain simulator-only; the loader executor
-is present but its live gate requires proven spare recovery and its physical
-behavior is still unvalidated. A matching
+is present but its live gate requires proven spare recovery. Only its
+non-writing loader identify/completion path has been observed physically;
+electrical reset behavior and programming remain unvalidated. A matching
 register readback verifies a byte only, not physical actuator behavior or
 overall controller safety.

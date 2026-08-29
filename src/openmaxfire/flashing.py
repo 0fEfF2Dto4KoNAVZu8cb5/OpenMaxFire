@@ -57,6 +57,7 @@ from .loader import (
     LoaderPolicy,
 )
 from .profiles import ControllerProfile, PROFILES_BY_KEY, select_profile
+from .protocol import AddressedResponse, ProtocolError, TelemetryResponse
 from .transport import Transport
 
 
@@ -1235,6 +1236,91 @@ class ApplicationUnchangedVerification:
             "eeprom_unchanged": True,
             "successful": True,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationReadinessEvidence:
+    """Passive proof that the application UART has finished starting.
+
+    The controller emits periodic ``T`` and ``DW`` frames without a host
+    request.  Waiting for one of those frames keeps the host TX line silent
+    while the application initializes its two-byte PIC USART receive FIFO.
+    """
+
+    frame_kind: str
+    raw: bytes
+    ignored_frames: int
+    serial_timeouts: int
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "openmaxfire.application-readiness.v1",
+            "ready": True,
+            "evidence": "passive_periodic_telemetry",
+            "frame_kind": self.frame_kind,
+            "raw_hex": self.raw.hex(" ").upper(),
+            "raw_ascii": self.raw.decode("ascii"),
+            "ignored_frames": self.ignored_frames,
+            "serial_timeouts": self.serial_timeouts,
+            "host_transmissions": 0,
+        }
+
+
+def wait_for_application_ready(
+    client: MaxFireClient,
+    *,
+    timeout: float = 30.0,
+) -> ApplicationReadinessEvidence:
+    """Wait for unsolicited application telemetry without transmitting.
+
+    A fixed delay followed by an immediate ``CR00`` can reach firmware 2.02
+    after its USART receiver is enabled but before its receive interrupt is
+    servicing bytes.  Four request bytes can overrun the PIC's two-byte FIFO
+    and leave reception disabled until reset.  Only an unsolicited ``T`` or
+    periodic ``DW`` frame is accepted as readiness evidence here.
+    """
+
+    if (
+        not isinstance(timeout, (int, float))
+        or not math.isfinite(timeout)
+        or timeout <= 0
+    ):
+        raise ValueError("application readiness timeout must be greater than zero")
+
+    deadline = time.monotonic() + float(timeout)
+    ignored_frames = 0
+    serial_timeouts = 0
+    while time.monotonic() < deadline:
+        try:
+            frame = client.receive_response()
+        except TimeoutError:
+            serial_timeouts += 1
+            continue
+        except ProtocolError:
+            # A baud transition or retained loader byte can leave one bounded
+            # malformed fragment ahead of the first application line.
+            ignored_frames += 1
+            continue
+
+        if isinstance(frame, TelemetryResponse):
+            return ApplicationReadinessEvidence(
+                "T", frame.raw, ignored_frames, serial_timeouts
+            )
+        if (
+            isinstance(frame, AddressedResponse)
+            and frame.unit == "D"
+            and frame.opcode == "W"
+        ):
+            return ApplicationReadinessEvidence(
+                "DW", frame.raw, ignored_frames, serial_timeouts
+            )
+        ignored_frames += 1
+
+    raise TimeoutError(
+        "application emitted no valid periodic telemetry within "
+        f"{float(timeout):g} seconds; no CR00 or other application request was "
+        "transmitted"
+    )
 
 
 def verify_application_unchanged(
