@@ -67,6 +67,21 @@ PICkit loader's reset-time `EA`→`EB` identify pair. See the
 
 The earlier gpdasm-based 2.71 bundle is retained as independent prior work. The portable decoder was checked against it and produced zero mnemonic/word mismatches over all 7,755 mapped 2.71 program words.
 
+## Derived complete PICkit predictions
+
+`derived-pickit/` contains five complete, deterministic PIC16F877A images made
+by applying the reconstructed resident-loader writes over either the factory
+2.06 PICkit image or serial 5215's preserved 2.02 full-chip read. They predict
+the immediate post-J3, pre-calibration state and are explicitly not labeled as
+vendor images. The generator preserves sparse unwritten words, physical reset,
+resident loader, User IDs, configuration, and EEPROM exactly as the real loader
+does. See the [derived-image README](derived-pickit/README.md) and manifest.
+
+Applying the 2.06 Downloader over the factory 2.06 PICkit base reproduces the
+factory PICkit mapped memory exactly. Physical post-update PICkit comparison on
+an expendable controller remains required before the derived images can be
+treated as verified programmer/recovery artifacts.
+
 ## Regeneration
 
 From the repository root:
@@ -74,6 +89,7 @@ From the repository root:
 ```bash
 python3 tools/firmware_pipeline.py project --repo-root .
 python3 tools/pic14_emulator.py project --repo-root .
+PYTHONPATH=src python3 tools/compose_pickit_image.py project --repo-root .
 ```
 
 The pipeline uses only Python's standard library, verifies every Intel HEX checksum, rejects conflicting/partial words, and emits deterministic outputs. It does not contain any device-write or serial communication path.

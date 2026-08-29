@@ -82,6 +82,23 @@ class WriteAndTelemetryExperimentTests(unittest.TestCase):
         self.assertEqual(summary["uart_tx_events"], 2)
         self.assertFalse(any(item.kind == "eeprom_write" for item in events))
 
+    def test_all_derived_pickit_images_boot_and_answer_cr00(self):
+        root = ROOT / "reverse-engineering/firmware/derived-pickit"
+        images = sorted(root.glob("*/*.hex"))
+        self.assertEqual(len(images), 5)
+        for image in images:
+            with self.subTest(image=image.name):
+                summary, _, _ = probe_image(
+                    image,
+                    image.stem,
+                    b"CR00",
+                    "derived PICkit application boot probe",
+                    boot_steps=250_000,
+                    probe_steps=500_000,
+                )
+                self.assertIsNone(summary["error"])
+                self.assertEqual(summary["tx_ascii"], "CR0000\\x0A")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -103,6 +103,27 @@ the same protected loader as the preserved 2.06 PICkit image. Its electrical
 timing and interrupted-transfer recovery remain unvalidated. Later J3
 Downloader images still do not replace a complete external-programmer image.
 
+## Derived complete PICkit predictions
+
+OpenMaxFire can now construct a complete predicted programmer image from a
+complete PICkit base plus one or more authenticated Downloader images. The
+composer applies the loader's actual effective targets: source reset words are
+relocated to `0x1E84`-`0x1E87`, sparse missing words are retained, and physical
+reset, resident loader, User IDs, configuration, and EEPROM remain from the
+base. Downloader metadata records are not substituted into those protected
+sections.
+
+This model passes a factory golden check: applying the 2.06 Downloader to the
+factory 2.06 PICkit base reproduces every mapped memory byte of the factory
+PICkit image. Derived 2.70/2.71 factory-lineage images and the predicted
+serial-5215 2.06/2.70/2.71 sequence are preserved under
+`reverse-engineering/firmware/derived-pickit/` with hashes and manifests.
+
+They represent the immediate post-download state. They cannot predict later
+Individualize, Format, or calibration writes, and they are not vendor-supplied
+images. A whole-chip physical read from an expendable PIC immediately after J3
+programming must match before they are promoted to verified recovery images.
+
 ## OpenMaxFire policy
 
 Version 0.9 implements a separate guarded host, but it remains

@@ -2,6 +2,28 @@
 
 ## 2026-08-29 - guarded J3 flasher and loader timing
 
+- Added a deterministic complete-PICkit composer for the preserved Downloader
+  images. It overlays only effective resident-loader targets on a complete
+  base, redirects source `0x0000`-`0x0003` to `0x1E84`-`0x1E87`, preserves
+  sparse omitted words, and retains physical reset, loader, User IDs,
+  configuration, and all EEPROM bytes from the base.
+- Validated the composition rule against the vendor's independent 2.06 pair:
+  applying `Bixby_02060021_Downloader.hex` over
+  `Bixby_02060021_PICkit.hex` reproduces every mapped byte of the factory
+  PICkit image. This is a strong static golden check independent of the later
+  2.70/2.71 outputs.
+- Generated five complete, hash-manifested predictions: factory-2.06-based
+  2.70/2.71 and serial-5215-based 2.06/2.70/2.71. They are labeled derived and
+  `precal` because EEPROM remains inherited from the base; later Format and
+  calibration changes cannot be predicted. Physical post-J3/pre-calibration
+  readback comparison on a spare remains pending.
+- Reparsed every derived HEX as a complete 8,192-word/256-byte PIC16F877A image
+  and booted all five through the inherited resident loader in the real PIC14
+  emulator. Each target application completed a `CR00` exchange as `CR0000`.
+- Published this offline composer/API and the five generated images as version
+  0.10.0. The images remain explicitly derived and unqualified for production
+  recovery until a physical post-J3/pre-calibration whole-chip read matches.
+
 - Analyzed seven owner-supplied physical rehearsal session directories from
   serial 5215. Sessions 003, 004, and 006 positively recorded `EA/EB` followed
   by `ED/E4`, with zero `E3` frames and zero program blocks. Sessions 002 and

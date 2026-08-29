@@ -13,6 +13,7 @@ controller behavior belongs in the `openmaxfire` package and its separate CLI.
 | `experimental_read_only_monitor.py` | Historical research monitor retained for comparison; current behavior is in the package/CLI | Serial reads only when explicitly run |
 | `live_validation_session.py` | Guided, timestamped controller validation with exact traffic, repeated identities, EEPROM integrity, physical-input correlation, and separately gated remote-control evidence | Read-only by default; optional remote buttons require explicit gates |
 | `pickit_preservation.py` | Compare repeated PIC16F877A read exports or original/clone readbacks by program, EEPROM, User IDs, configuration, code protection, and SHA-256 | None; parses HEX files only |
+| `compose_pickit_image.py` | Apply resident-loader address/remap rules over a complete PICkit base and generate deterministic post-J3/pre-calibration full-chip predictions | None; reads and writes HEX files only |
 | `verify_archive.sh` | Verify preserved and derived archive hashes and inventory | None |
 
 Run deterministic project regeneration from the repository root:
@@ -21,6 +22,7 @@ Run deterministic project regeneration from the repository root:
 python tools/analyze_bixcheck.py --repo-root .
 python tools/firmware_pipeline.py project --repo-root .
 python tools/pic14_emulator.py project --repo-root .
+PYTHONPATH=src python tools/compose_pickit_image.py project --repo-root .
 bash tools/verify_archive.sh
 ```
 

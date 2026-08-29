@@ -1,6 +1,6 @@
 """OpenMaxFire - open tooling for Bixby MaxFire 110/115."""
 
-__version__ = "0.9.1"
+__version__ = "0.10.0"
 
 from .audit import AuditEvent, AuditSpan, AuditTrail
 
@@ -144,6 +144,13 @@ from .preservation import (
     ProtectionState,
     compare_pic16f877a_dumps,
     inspect_pic16f877a_dump,
+)
+from .pickit import (
+    DERIVED_PICKIT_SCHEMA,
+    DerivedPickitImage,
+    PickitOverlayStep,
+    compose_pickit_image,
+    serialize_intel_hex,
 )
 from .monitor import MonitorState, replay_capture
 from .profiles import (
@@ -340,6 +347,11 @@ __all__ = [
     "ProtectionState",
     "compare_pic16f877a_dumps",
     "inspect_pic16f877a_dump",
+    "DERIVED_PICKIT_SCHEMA",
+    "DerivedPickitImage",
+    "PickitOverlayStep",
+    "compose_pickit_image",
+    "serialize_intel_hex",
     "SimulatedController",
     "SimulatedFlashSessionTransport",
     "SimulatedLoaderFaults",

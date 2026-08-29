@@ -61,6 +61,15 @@ FIFO during startup. The change addresses the persistent post-handoff `CR00`
 failure; it does not qualify the direct USB-TTL electrical interface or live
 Flash programming.
 
+Version 0.10 adds an offline complete-PICkit image composer and five derived,
+hash-manifested post-J3/pre-calibration predictions for the factory-2.06 and
+serial-5215 lineages. It reproduces the loader's reset-word relocation and
+sparse-write behavior while preserving the base loader, EEPROM, configuration,
+and User IDs. The known factory 2.06 Downloader/PICkit pair is an exact mapped-
+memory golden check, and every derived image boots and answers `CR00` in the
+PIC14 emulator. Physical whole-chip comparison on expendable hardware remains
+required before these are treated as verified recovery images.
+
 On 2026-08-28 the first complete PICkit export from serial 5215's original
 firmware-2.02 PIC was preserved. It contains all program memory, EEPROM, User
 IDs, and configuration; its EEPROM exactly matches the earlier live J3 backup,

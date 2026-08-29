@@ -1,0 +1,419 @@
+{
+  "authenticated_inputs": {
+    "2.02-pickit": {
+      "path": "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex",
+      "sha256": "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab"
+    },
+    "2.06-downloader": {
+      "path": "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex",
+      "sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b"
+    },
+    "2.06-pickit": {
+      "path": "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_PICkit.hex",
+      "sha256": "2adb6dca20a0318662aa73d96b700d5f83a76b36779596fa0e9db8a26db357d4"
+    },
+    "2.70-downloader": {
+      "path": "reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex",
+      "sha256": "c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca"
+    },
+    "2.71-downloader": {
+      "path": "reverse-engineering/firmware/2.71/extracted/Bixby_0271_080315.hex",
+      "sha256": "dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b"
+    }
+  },
+  "factory_2_06_golden_pair": {
+    "configuration": true,
+    "description": "Applying the 2.06 Downloader over the factory 2.06 PICkit base reproduces every mapped memory section.",
+    "eeprom": true,
+    "mapped_memory": true,
+    "program": true,
+    "user_ids": true
+  },
+  "generation": "deterministic_offline_resident_loader_overlay",
+  "image_schema": "openmaxfire.derived-pickit.v1",
+  "images": [
+    {
+      "base": {
+        "filename": "Bixby_02060021_PICkit.hex",
+        "firmware_version": "2.06",
+        "sha256": "2adb6dca20a0318662aa73d96b700d5f83a76b36779596fa0e9db8a26db357d4"
+      },
+      "calibration_required": true,
+      "classification": "derived_expected_post_j3_pre_calibration_pickit",
+      "limitations": [
+        "Derived by deterministic loader simulation; not a vendor-supplied PICkit image.",
+        "Represents immediate post-download state before Individualize, Format, or calibration changes EEPROM.",
+        "Must be validated on a spare PIC/controller and compared with a physical post-J3 PICkit read before production use."
+      ],
+      "lineage": "vendor_2.06_pickit_base",
+      "loader_sequence": [
+        {
+          "applied_words": 7681,
+          "changed_words": 7379,
+          "filename": "Bixby_0270_070206.hex",
+          "firmware_version": "2.70",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca",
+          "source_program_words": 7681,
+          "unchanged_words": 302
+        }
+      ],
+      "output": {
+        "configuration_word": "0x3F32",
+        "eeprom_bytes": 256,
+        "filename": "Bixby_0270_070206_Derived_PICkit_factory206_precal.hex",
+        "firmware_version": "2.70",
+        "path": "reverse-engineering/firmware/derived-pickit/factory-2.06-lineage/Bixby_0270_070206_Derived_PICkit_factory206_precal.hex",
+        "program_words": 8192,
+        "sha256": "3ea028e4bc075d76bba82778a3000b4fd17ee63ae2456ce447027480376d54bf",
+        "size": 46536,
+        "user_id_words": {
+          "0x2000": "0x000F",
+          "0x2001": "0x000F",
+          "0x2002": "0x000F",
+          "0x2003": "0x000F"
+        }
+      },
+      "schema": "openmaxfire.derived-pickit.v1",
+      "source_paths": {
+        "base": "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_PICkit.hex",
+        "loader_sequence": [
+          "reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex"
+        ]
+      },
+      "vendor_supplied": false,
+      "verification": {
+        "complete_program_space": true,
+        "configuration_preserved": true,
+        "eeprom_preserved": true,
+        "eeprom_sha256": "59badc48f707f000d7547ad923294a9332efa2ece0f04e63fbf2192a20336e6c",
+        "physical_reset_vector_preserved": true,
+        "program_words_changed_from_base": 7379,
+        "resident_loader_excluding_trampoline_preserved": true,
+        "resident_loader_sha256_excluding_trampoline": "ac534ea8f38fbb63423a1cbaa2f4d3a1c39bc61f4be2495515c203dafe9be515",
+        "user_ids_preserved": true
+      }
+    },
+    {
+      "base": {
+        "filename": "Bixby_02060021_PICkit.hex",
+        "firmware_version": "2.06",
+        "sha256": "2adb6dca20a0318662aa73d96b700d5f83a76b36779596fa0e9db8a26db357d4"
+      },
+      "calibration_required": true,
+      "classification": "derived_expected_post_j3_pre_calibration_pickit",
+      "limitations": [
+        "Derived by deterministic loader simulation; not a vendor-supplied PICkit image.",
+        "Represents immediate post-download state before Individualize, Format, or calibration changes EEPROM.",
+        "Must be validated on a spare PIC/controller and compared with a physical post-J3 PICkit read before production use."
+      ],
+      "lineage": "vendor_2.06_pickit_base",
+      "loader_sequence": [
+        {
+          "applied_words": 7681,
+          "changed_words": 7379,
+          "filename": "Bixby_0270_070206.hex",
+          "firmware_version": "2.70",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca",
+          "source_program_words": 7681,
+          "unchanged_words": 302
+        },
+        {
+          "applied_words": 7755,
+          "changed_words": 5129,
+          "filename": "Bixby_0271_080315.hex",
+          "firmware_version": "2.71",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b",
+          "source_program_words": 7755,
+          "unchanged_words": 2626
+        }
+      ],
+      "output": {
+        "configuration_word": "0x3F32",
+        "eeprom_bytes": 256,
+        "filename": "Bixby_0271_080315_Derived_PICkit_factory206_precal.hex",
+        "firmware_version": "2.71",
+        "path": "reverse-engineering/firmware/derived-pickit/factory-2.06-lineage/Bixby_0271_080315_Derived_PICkit_factory206_precal.hex",
+        "program_words": 8192,
+        "sha256": "bfae5b976f264f8a7e1e5dc138b30d1f5d74612a23a38d41ea523b5e08dcae62",
+        "size": 46536,
+        "user_id_words": {
+          "0x2000": "0x000F",
+          "0x2001": "0x000F",
+          "0x2002": "0x000F",
+          "0x2003": "0x000F"
+        }
+      },
+      "schema": "openmaxfire.derived-pickit.v1",
+      "source_paths": {
+        "base": "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_PICkit.hex",
+        "loader_sequence": [
+          "reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex",
+          "reverse-engineering/firmware/2.71/extracted/Bixby_0271_080315.hex"
+        ]
+      },
+      "vendor_supplied": false,
+      "verification": {
+        "complete_program_space": true,
+        "configuration_preserved": true,
+        "eeprom_preserved": true,
+        "eeprom_sha256": "59badc48f707f000d7547ad923294a9332efa2ece0f04e63fbf2192a20336e6c",
+        "physical_reset_vector_preserved": true,
+        "program_words_changed_from_base": 7522,
+        "resident_loader_excluding_trampoline_preserved": true,
+        "resident_loader_sha256_excluding_trampoline": "ac534ea8f38fbb63423a1cbaa2f4d3a1c39bc61f4be2495515c203dafe9be515",
+        "user_ids_preserved": true
+      }
+    },
+    {
+      "base": {
+        "filename": "Bixby_0202_260827_PICkit.hex",
+        "firmware_version": "2.02",
+        "sha256": "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab"
+      },
+      "calibration_required": true,
+      "classification": "derived_expected_post_j3_pre_calibration_pickit",
+      "limitations": [
+        "Derived by deterministic loader simulation; not a vendor-supplied PICkit image.",
+        "Represents immediate post-download state before Individualize, Format, or calibration changes EEPROM.",
+        "Must be validated on a spare PIC/controller and compared with a physical post-J3 PICkit read before production use."
+      ],
+      "lineage": "serial_5215_original_2.02_base",
+      "loader_sequence": [
+        {
+          "applied_words": 7599,
+          "changed_words": 7367,
+          "filename": "Bixby_02060021_Downloader.hex",
+          "firmware_version": "2.06",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+          "source_program_words": 7599,
+          "unchanged_words": 232
+        }
+      ],
+      "output": {
+        "configuration_word": "0x3F32",
+        "eeprom_bytes": 256,
+        "filename": "Bixby_02060021_Derived_PICkit_serial5215_precal.hex",
+        "firmware_version": "2.06",
+        "path": "reverse-engineering/firmware/derived-pickit/serial-5215-lineage/Bixby_02060021_Derived_PICkit_serial5215_precal.hex",
+        "program_words": 8192,
+        "sha256": "ba4f19565e7c84b60e372be130ed756e5ed7423894bf42bf7c2f5e02467b7885",
+        "size": 46536,
+        "user_id_words": {
+          "0x2000": "0x3FFF",
+          "0x2001": "0x3FFF",
+          "0x2002": "0x3FFF",
+          "0x2003": "0x3FFF"
+        }
+      },
+      "schema": "openmaxfire.derived-pickit.v1",
+      "source_paths": {
+        "base": "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex",
+        "loader_sequence": [
+          "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex"
+        ]
+      },
+      "vendor_supplied": false,
+      "verification": {
+        "complete_program_space": true,
+        "configuration_preserved": true,
+        "eeprom_preserved": true,
+        "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+        "physical_reset_vector_preserved": true,
+        "program_words_changed_from_base": 7367,
+        "resident_loader_excluding_trampoline_preserved": true,
+        "resident_loader_sha256_excluding_trampoline": "ac534ea8f38fbb63423a1cbaa2f4d3a1c39bc61f4be2495515c203dafe9be515",
+        "user_ids_preserved": true
+      }
+    },
+    {
+      "base": {
+        "filename": "Bixby_0202_260827_PICkit.hex",
+        "firmware_version": "2.02",
+        "sha256": "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab"
+      },
+      "calibration_required": true,
+      "classification": "derived_expected_post_j3_pre_calibration_pickit",
+      "limitations": [
+        "Derived by deterministic loader simulation; not a vendor-supplied PICkit image.",
+        "Represents immediate post-download state before Individualize, Format, or calibration changes EEPROM.",
+        "Must be validated on a spare PIC/controller and compared with a physical post-J3 PICkit read before production use."
+      ],
+      "lineage": "serial_5215_original_2.02_base",
+      "loader_sequence": [
+        {
+          "applied_words": 7599,
+          "changed_words": 7367,
+          "filename": "Bixby_02060021_Downloader.hex",
+          "firmware_version": "2.06",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+          "source_program_words": 7599,
+          "unchanged_words": 232
+        },
+        {
+          "applied_words": 7681,
+          "changed_words": 7377,
+          "filename": "Bixby_0270_070206.hex",
+          "firmware_version": "2.70",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca",
+          "source_program_words": 7681,
+          "unchanged_words": 304
+        }
+      ],
+      "output": {
+        "configuration_word": "0x3F32",
+        "eeprom_bytes": 256,
+        "filename": "Bixby_0270_070206_Derived_PICkit_serial5215_precal.hex",
+        "firmware_version": "2.70",
+        "path": "reverse-engineering/firmware/derived-pickit/serial-5215-lineage/Bixby_0270_070206_Derived_PICkit_serial5215_precal.hex",
+        "program_words": 8192,
+        "sha256": "174aecf337b9df66ef5ad53ca80d23d834eaa8a0d6ebdf3fbfc5a57e9b8a5d75",
+        "size": 46536,
+        "user_id_words": {
+          "0x2000": "0x3FFF",
+          "0x2001": "0x3FFF",
+          "0x2002": "0x3FFF",
+          "0x2003": "0x3FFF"
+        }
+      },
+      "schema": "openmaxfire.derived-pickit.v1",
+      "source_paths": {
+        "base": "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex",
+        "loader_sequence": [
+          "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex",
+          "reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex"
+        ]
+      },
+      "vendor_supplied": false,
+      "verification": {
+        "complete_program_space": true,
+        "configuration_preserved": true,
+        "eeprom_preserved": true,
+        "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+        "physical_reset_vector_preserved": true,
+        "program_words_changed_from_base": 7447,
+        "resident_loader_excluding_trampoline_preserved": true,
+        "resident_loader_sha256_excluding_trampoline": "ac534ea8f38fbb63423a1cbaa2f4d3a1c39bc61f4be2495515c203dafe9be515",
+        "user_ids_preserved": true
+      }
+    },
+    {
+      "base": {
+        "filename": "Bixby_0202_260827_PICkit.hex",
+        "firmware_version": "2.02",
+        "sha256": "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab"
+      },
+      "calibration_required": true,
+      "classification": "derived_expected_post_j3_pre_calibration_pickit",
+      "limitations": [
+        "Derived by deterministic loader simulation; not a vendor-supplied PICkit image.",
+        "Represents immediate post-download state before Individualize, Format, or calibration changes EEPROM.",
+        "Must be validated on a spare PIC/controller and compared with a physical post-J3 PICkit read before production use."
+      ],
+      "lineage": "serial_5215_original_2.02_base",
+      "loader_sequence": [
+        {
+          "applied_words": 7599,
+          "changed_words": 7367,
+          "filename": "Bixby_02060021_Downloader.hex",
+          "firmware_version": "2.06",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+          "source_program_words": 7599,
+          "unchanged_words": 232
+        },
+        {
+          "applied_words": 7681,
+          "changed_words": 7377,
+          "filename": "Bixby_0270_070206.hex",
+          "firmware_version": "2.70",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "c6decc8173cadd13f59743df416d783c6de22e55cc9636f5f79dd22dec3e7bca",
+          "source_program_words": 7681,
+          "unchanged_words": 304
+        },
+        {
+          "applied_words": 7755,
+          "changed_words": 5129,
+          "filename": "Bixby_0271_080315.hex",
+          "firmware_version": "2.71",
+          "ignored_configuration_word": true,
+          "ignored_user_id_words": 4,
+          "protected_skipped_words": 0,
+          "relocated_words": 4,
+          "sha256": "dc4dcf7aeb83c95525053018e010194c55498796b0b65c0ff26a11eb695e556b",
+          "source_program_words": 7755,
+          "unchanged_words": 2626
+        }
+      ],
+      "output": {
+        "configuration_word": "0x3F32",
+        "eeprom_bytes": 256,
+        "filename": "Bixby_0271_080315_Derived_PICkit_serial5215_precal.hex",
+        "firmware_version": "2.71",
+        "path": "reverse-engineering/firmware/derived-pickit/serial-5215-lineage/Bixby_0271_080315_Derived_PICkit_serial5215_precal.hex",
+        "program_words": 8192,
+        "sha256": "5fb6ba549dd152f24c277de3b1796a39e69740df1d6d59bdeea9a0e29582f468",
+        "size": 46536,
+        "user_id_words": {
+          "0x2000": "0x3FFF",
+          "0x2001": "0x3FFF",
+          "0x2002": "0x3FFF",
+          "0x2003": "0x3FFF"
+        }
+      },
+      "schema": "openmaxfire.derived-pickit.v1",
+      "source_paths": {
+        "base": "reverse-engineering/firmware/2.02/extracted/Bixby_0202_260827_PICkit.hex",
+        "loader_sequence": [
+          "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex",
+          "reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex",
+          "reverse-engineering/firmware/2.71/extracted/Bixby_0271_080315.hex"
+        ]
+      },
+      "vendor_supplied": false,
+      "verification": {
+        "complete_program_space": true,
+        "configuration_preserved": true,
+        "eeprom_preserved": true,
+        "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+        "physical_reset_vector_preserved": true,
+        "program_words_changed_from_base": 7552,
+        "resident_loader_excluding_trampoline_preserved": true,
+        "resident_loader_sha256_excluding_trampoline": "ac534ea8f38fbb63423a1cbaa2f4d3a1c39bc61f4be2495515c203dafe9be515",
+        "user_ids_preserved": true
+      }
+    }
+  ],
+  "physical_post_j3_readback_comparison": "pending",
+  "schema": "openmaxfire.derived-pickit-project.v1"
+}

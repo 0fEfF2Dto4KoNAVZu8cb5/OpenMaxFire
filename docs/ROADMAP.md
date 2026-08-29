@@ -55,6 +55,10 @@ protocol or controller logic.
   exact live-EEPROM match, and generate deterministic analysis artifacts.
 - [ ] Add the remaining independent 2.02 PICkit exports and authenticate the
   complete repeat-read set.
+- [x] Generate complete derived PICkit predictions for factory-2.06 and
+  serial-5215 lineages by applying the reconstructed loader overlay/remap rules.
+- [ ] Compare each derived image against a complete physical PICkit read taken
+  immediately after the matching J3 update and before calibration.
 
 ## Phase 1 - electrical and read-only bench validation
 
