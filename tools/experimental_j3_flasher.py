@@ -49,8 +49,21 @@ def parser() -> argparse.ArgumentParser:
         cmd.add_argument("--baud", required=True, type=int, choices=(9600, 19200))
         cmd.add_argument("--timeout", type=float, default=0.25)
         cmd.add_argument("--event-log", required=True, type=Path)
-        cmd.add_argument("--identify-attempts", type=int, default=150)
-        cmd.add_argument("--identify-delay", type=float, default=0.02)
+        cmd.add_argument("--identify-attempts", type=int, default=1500)
+        cmd.add_argument(
+            "--identify-interval",
+            "--identify-delay",
+            dest="identify_interval",
+            type=float,
+            default=0.015,
+            help="target interval between EA probes in seconds (default: 0.015)",
+        )
+        cmd.add_argument(
+            "--identify-read-timeout",
+            type=float,
+            default=0.010,
+            help="temporary read timeout while probing for EB (default: 0.010)",
+        )
         cmd.add_argument("--timeout-retries", type=int, default=2)
         cmd.add_argument("--checksum-retries", type=int, default=2)
         cmd.add_argument("--unexpected-retries", type=int, default=0)
@@ -81,7 +94,8 @@ def parser() -> argparse.ArgumentParser:
 def _policy(args: argparse.Namespace) -> PhysicalFlasherPolicy:
     return PhysicalFlasherPolicy(
         identify_attempts=args.identify_attempts,
-        identify_delay=args.identify_delay,
+        identify_interval=args.identify_interval,
+        identify_read_timeout=args.identify_read_timeout,
         timeout_retries=args.timeout_retries,
         checksum_retries=args.checksum_retries,
         unexpected_retries=args.unexpected_retries,
