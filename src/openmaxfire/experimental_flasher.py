@@ -11,7 +11,6 @@ import json
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 from .firmware import (
     FirmwareImage,
@@ -38,8 +37,9 @@ class ExperimentalFlasherError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class PhysicalFlasherPolicy:
-    identify_attempts: int = 150
-    identify_delay: float = 0.02
+    identify_attempts: int = 1500
+    identify_interval: float = 0.015
+    identify_read_timeout: float = 0.010
     timeout_retries: int = 2
     checksum_retries: int = 2
     unexpected_retries: int = 0
@@ -47,8 +47,10 @@ class PhysicalFlasherPolicy:
     def __post_init__(self) -> None:
         if self.identify_attempts < 1:
             raise ValueError("identify_attempts must be positive")
-        if self.identify_delay < 0:
-            raise ValueError("identify_delay must be nonnegative")
+        if self.identify_interval < 0:
+            raise ValueError("identify_interval must be nonnegative")
+        if self.identify_read_timeout <= 0:
+            raise ValueError("identify_read_timeout must be greater than zero")
         for value in (self.timeout_retries, self.checksum_retries, self.unexpected_retries):
             if value < 0:
                 raise ValueError("retry counts must be nonnegative")
@@ -129,15 +131,46 @@ class ExperimentalJ3Flasher:
         )
         return data
 
+    def _temporary_identify_timeout(self) -> tuple[object | None, float | None]:
+        """Apply the short loader-probe timeout when the transport supports it."""
+
+        setter = getattr(self.transport, "set_timeout", None)
+        original = getattr(self.transport, "timeout", None)
+        if not callable(setter) or not isinstance(original, (int, float)):
+            self.recorder.record(
+                "identify_timeout_unavailable",
+                requested_timeout=self.policy.identify_read_timeout,
+            )
+            return None, None
+        setter(self.policy.identify_read_timeout)
+        self.recorder.record(
+            "identify_timeout_set",
+            previous_timeout=float(original),
+            probe_timeout=self.policy.identify_read_timeout,
+        )
+        return setter, float(original)
+
     def identify(self) -> int:
-        for attempt in range(1, self.policy.identify_attempts + 1):
-            self._tx(LOADER_IDENTIFY_REQUEST, phase="identify", attempt=attempt)
-            response = self._rx(phase="identify", attempt=attempt)
-            if response == LOADER_IDENTIFY_RESPONSE:
-                self.recorder.record("loader_identified", attempt=attempt)
-                return attempt
-            if self.policy.identify_delay:
-                time.sleep(self.policy.identify_delay)
+        setter, original_timeout = self._temporary_identify_timeout()
+        try:
+            for attempt in range(1, self.policy.identify_attempts + 1):
+                started = time.monotonic()
+                self._tx(LOADER_IDENTIFY_REQUEST, phase="identify", attempt=attempt)
+                response = self._rx(phase="identify", attempt=attempt)
+                if response == LOADER_IDENTIFY_RESPONSE:
+                    self.recorder.record("loader_identified", attempt=attempt)
+                    return attempt
+                elapsed = time.monotonic() - started
+                remaining = self.policy.identify_interval - elapsed
+                if remaining > 0:
+                    time.sleep(remaining)
+        finally:
+            if setter is not None and original_timeout is not None:
+                setter(original_timeout)
+                self.recorder.record(
+                    "identify_timeout_restored",
+                    restored_timeout=original_timeout,
+                )
         raise ExperimentalFlasherError("loader did not answer EA with EB")
 
     def _program_block(self, block: ProgramBlock, *, block_index: int) -> int:
