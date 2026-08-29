@@ -9,7 +9,7 @@ image.
 
 ## What it implements
 
-- `EA` -> `EB` loader identification.
+- Fast `EA` -> `EB` reset-window loader identification.
 - Exact `E3` frames: word address, byte count, additive payload checksum, data.
 - `E7` checksum-accepted handling.
 - `E8` checksum-rejected handling with a small explicit retry limit.
@@ -27,6 +27,25 @@ image.
 Unlike BixCheck, this tool does not broadly retry an `E5` failure. A PIC-side
 write/readback verification failure stops the transfer immediately so the
 failed row and exact wire exchange can be preserved for diagnosis.
+
+## Loader-window timing
+
+A first physical capture showed that using the normal 250 ms serial timeout for
+loader identification produced `EA` probes roughly every 271 ms, which is too
+slow for a short reset-time bootloader window.
+
+The flasher now temporarily changes the serial timeout to **10 ms** during
+loader identification and targets an `EA` transmission every **15 ms**. As soon
+as `EB` is received, or if identification fails, the original normal serial
+timeout is restored before any `E3` programming transaction can occur.
+
+Defaults:
+
+- `--identify-read-timeout 0.010`
+- `--identify-interval 0.015`
+- `--identify-attempts 1500`
+
+`--identify-delay` remains accepted as an alias for `--identify-interval`.
 
 ## Commands
 
@@ -72,7 +91,7 @@ an application Flash word.
 python tools/experimental_j3_flasher.py protected-test \
   --port /dev/ttyUSB0 \
   --baud 9600 \
-  --event-log captures/protected-test-001.jsonl \
+  --event-log captures/protected-test-002.jsonl \
   --i-understand-this-can-brick
 ```
 
