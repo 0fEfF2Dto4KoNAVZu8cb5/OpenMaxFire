@@ -24,9 +24,6 @@ from openmaxfire.firmware import FirmwareImage, FirmwareImageError
 from openmaxfire.transport import SerialSettings, SerialTransport
 
 
-AUTH_PHRASE = "I-UNDERSTAND-J3-FLASHING-CAN-BRICK-THE-CONTROLLER"
-
-
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description=(
@@ -51,17 +48,17 @@ def parser() -> argparse.ArgumentParser:
         cmd.add_argument("--port", required=True)
         cmd.add_argument("--baud", required=True, type=int, choices=(9600, 19200))
         cmd.add_argument("--timeout", type=float, default=0.25)
-        cmd.add_argument("--event-log", type=Path)
+        cmd.add_argument("--event-log", required=True, type=Path)
         cmd.add_argument("--identify-attempts", type=int, default=150)
         cmd.add_argument("--identify-delay", type=float, default=0.02)
         cmd.add_argument("--timeout-retries", type=int, default=2)
         cmd.add_argument("--checksum-retries", type=int, default=2)
         cmd.add_argument("--unexpected-retries", type=int, default=0)
         cmd.add_argument(
-            "--authorize",
-            metavar="PHRASE",
+            "--i-understand-this-can-brick",
+            action="store_true",
             required=True,
-            help=f"must exactly equal: {AUTH_PHRASE}",
+            help="required acknowledgement for all physical loader operations",
         )
         if name == "flash":
             cmd.add_argument("image", type=Path)
@@ -79,11 +76,6 @@ def parser() -> argparse.ArgumentParser:
             )
 
     return p
-
-
-def _authorized(args: argparse.Namespace) -> None:
-    if args.authorize != AUTH_PHRASE:
-        raise PermissionError("destructive loader operation authorization phrase did not match")
 
 
 def _policy(args: argparse.Namespace) -> PhysicalFlasherPolicy:
@@ -118,7 +110,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(dry_run_image(image), indent=2, sort_keys=True))
         return 0
 
-    _authorized(args)
     recorder = FlasherEventRecorder(args.event_log)
     transport = SerialTransport(SerialSettings(args.port, args.baud, args.timeout))
     flasher = ExperimentalJ3Flasher(transport, policy=_policy(args), recorder=recorder)
