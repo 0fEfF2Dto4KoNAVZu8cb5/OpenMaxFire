@@ -5,12 +5,41 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import signal
 import sys
 import time
 from pathlib import Path
+from typing import Mapping
 
+from .audit import AuditTrail
 from .backup import build_eeprom_backup, save_json_document
 from .client import MaxFireClient, StoveIdentity
+from .errors import OpenMaxFireError, VerificationError
+from .firmware import FirmwareImage
+from .flashing import (
+    LOADER_BAUDRATE,
+    FlashJournal,
+    FlashSessionState,
+    FlashSessionStatus,
+    FlashSafetyInterlocks,
+    LiveAttemptEvent,
+    LiveLoaderPolicy,
+    approve_live_firmware,
+    delegate_recovery_source,
+    execute_loader_rehearsal,
+    execute_live_loader_plan,
+    load_recovery_bundle,
+    prepare_live_flash,
+    prepare_recovery_flash,
+    preserve_recovery_bundle,
+    qualify_flash_preparation,
+    recover_live_loader_completion,
+    verify_application_unchanged,
+    verify_post_flash,
+    validate_live_transition,
+)
+from .loader import LoaderAttemptOutcome, build_loader_plan
+from .runtime_safety import DeferredTerminationSignals, SleepInhibitor
 from .monitor import (
     JsonlMonitorRecorder,
     MonitorState,
@@ -36,6 +65,7 @@ from .transactions import (
     execute_transaction,
     load_transaction_plan,
 )
+from .profiles import PROFILES_BY_KEY
 
 
 LIVE_COMMANDS = frozenset(
@@ -292,6 +322,1018 @@ def _run_monitor(client: MaxFireClient, args: argparse.Namespace) -> int:
     return 0
 
 
+def _flash_interlocks(args: argparse.Namespace) -> FlashSafetyInterlocks:
+    return FlashSafetyInterlocks(
+        stove_cold_and_off=args.confirm_stove_cold_and_off,
+        igniters_physically_unplugged=args.confirm_igniters_unplugged,
+        correct_5v_ttl_wiring=args.confirm_correct_5v_ttl_wiring,
+        j3_pin3_disconnected=args.confirm_j3_pin3_disconnected,
+        adapter_vcc_disconnected=args.confirm_adapter_vcc_disconnected,
+        pickit_recovery_tested_on_spare=args.confirm_pickit_recovery_tested_on_spare,
+        computer_power_stable=args.confirm_computer_power_stable,
+        stove_power_stable=args.confirm_stove_power_stable,
+        calibration_plan_ready=args.confirm_calibration_plan,
+        downgrade_stale_flash_accepted=False,
+        recovery_target_matches_backup=args.confirm_recovery_target_matches_backup,
+    )
+
+
+class _NullTrafficRecorder:
+    """Post-write fallback when diagnostics fail but verification must continue."""
+
+    def record(self, direction: str, data: bytes) -> None:
+        return None
+
+    def close(self) -> None:
+        return None
+
+
+def _remember_host_diagnostic(
+    errors: list[str], label: str, exc: BaseException
+) -> None:
+    message = f"{label}: {type(exc).__name__}: {exc}"
+    if message not in errors and len(errors) < 20:
+        errors.append(message)
+        _safe_console(message, error=True)
+
+
+def _open_recorded_client(
+    args: argparse.Namespace,
+    *,
+    transport,
+    baudrate: int,
+    traffic_path: Path,
+    phase: str,
+    diagnostic_errors: list[str] | None = None,
+) -> MaxFireClient:
+    transport.set_baudrate(baudrate)
+    transport.set_timeout(args.timeout)
+    try:
+        recorder = JsonlTrafficRecorder(
+            traffic_path,
+            metadata={
+                "command": "flash",
+                "phase": phase,
+                "port": args.port,
+                "baudrate": baudrate,
+                "timeout": args.timeout,
+                "serial_format": "8N1",
+                "flow_control": "none",
+                "single_exclusive_handle": True,
+            },
+            durable=True,
+        )
+    except (OSError, RuntimeError, ValueError) as exc:
+        if diagnostic_errors is None:
+            raise
+        _remember_host_diagnostic(
+            diagnostic_errors, f"{phase} traffic recorder unavailable", exc
+        )
+        recorder = _NullTrafficRecorder()
+    try:
+        return MaxFireClient(
+            RecordingTransport(
+                transport,
+                recorder,
+                close_transport=False,
+                diagnostic_errors=diagnostic_errors,
+            )
+        )
+    except BaseException:
+        recorder.close()
+        raise
+
+
+def _run_flash_plan(args: argparse.Namespace, image: FirmwareImage) -> int:
+    if args.current_profile is None:
+        print("flash --plan-only requires --current-profile", file=sys.stderr)
+        return 2
+    approved = approve_live_firmware(image)
+    profile = PROFILES_BY_KEY[args.current_profile]
+    plan = build_loader_plan(image, profile, live_executable=True)
+    migration = approved.target_profile.data_format != profile.data_format
+    calibration = approved.firmware_version != profile.firmware_version
+    downgrade = tuple(map(int, approved.firmware_version.split("."))) < tuple(
+        map(int, profile.firmware_version.split("."))
+    )
+    validate_live_transition(profile.firmware_version, approved.firmware_version)
+    document = {
+        "schema": "openmaxfire.live-flash-plan.v1",
+        "approved_firmware": approved.to_dict(),
+        "current_profile": profile.to_dict(),
+        "data_format_migration_required": migration,
+        "calibration_required": calibration,
+        "downgrade": downgrade,
+        "manual_power_cycle_required": True,
+        "software_reset_used": False,
+        "loader_plan": plan.to_dict(),
+    }
+    print(json.dumps(document, indent=None if args.json else 2, sort_keys=True))
+    return 0
+
+
+def _attempt_post_flash(
+    args: argparse.Namespace,
+    preparation,
+    *,
+    transport,
+    session_dir: Path,
+    attempt: int,
+    diagnostic_errors: list[str],
+):
+    client = _open_recorded_client(
+        args,
+        transport=transport,
+        baudrate=preparation.approved.application_baudrate,
+        traffic_path=session_dir / f"postflash-traffic-{attempt}.jsonl",
+        phase=f"postflash-{attempt}",
+        diagnostic_errors=diagnostic_errors,
+    )
+    try:
+        return verify_post_flash(
+            client,
+            preparation,
+            request_delay=args.request_delay,
+        )
+    finally:
+        client.close()
+
+
+def _save_flash_result(session_dir: Path, document: dict[str, object]) -> None:
+    path = session_dir / "result.json"
+    save_json_document(document, path, overwrite=path.exists())
+
+
+def _safe_console(message: str, *, error: bool = False) -> None:
+    try:
+        print(message, file=sys.stderr if error else sys.stdout, flush=True)
+    except OSError:
+        # Console/log-pipe failure must not interrupt a controller once the
+        # application image may be partial.
+        pass
+
+
+def _power_off_phrase(prompt: str, expected: str) -> bool:
+    try:
+        return input(prompt).strip() == expected
+    except EOFError:
+        return False
+
+
+def _run_flash(args: argparse.Namespace) -> int:
+    journal: FlashJournal | None = None
+    session_state: FlashSessionState | None = None
+    serial_transport = None
+    session_dir: Path | None = args.session_dir
+    programming_armed = False
+    final_written = False
+    preexisting_recovery = args.recover_from_session is not None
+    host_diagnostic_errors: list[str] = []
+    try:
+        if args.plan_only:
+            if args.image is None:
+                print("flash --plan-only requires an image", file=sys.stderr)
+                return 2
+            if args.session_dir is not None:
+                print("--session-dir is not used with --plan-only", file=sys.stderr)
+                return 2
+            if args.traffic_log is not None:
+                print("--traffic-log is not used with --plan-only", file=sys.stderr)
+                return 2
+            if args.recover_from_session is not None:
+                print("--recover-from-session is only valid for live flashing", file=sys.stderr)
+                return 2
+            if args.rehearsal_only:
+                print("--rehearsal-only cannot be combined with --plan-only", file=sys.stderr)
+                return 2
+            image = FirmwareImage.load(args.image)
+            approve_live_firmware(image)
+            return _run_flash_plan(args, image)
+
+        if not args.port or args.baud is None:
+            print("--port and --baud are required for live flashing", file=sys.stderr)
+            return 2
+        if args.current_profile is not None:
+            print("--current-profile is only valid with --plan-only", file=sys.stderr)
+            return 2
+        if args.session_dir is None:
+            print("live flashing requires a new --session-dir", file=sys.stderr)
+            return 2
+        if args.rehearsal_only and args.recover_from_session is not None:
+            print(
+                "--rehearsal-only is unavailable with --recover-from-session",
+                file=sys.stderr,
+            )
+            return 2
+        if args.traffic_log is not None:
+            print(
+                "flash records its own session traffic; do not pass --traffic-log",
+                file=sys.stderr,
+            )
+            return 2
+        if args.recover_from_session is None and args.image is None:
+            print("live flashing requires an image", file=sys.stderr)
+            return 2
+
+        recovery_source = args.recover_from_session
+        source_preparation: Mapping[str, object] | None = None
+        source_backup: Mapping[str, object] | None = None
+        recovery_manifest: Mapping[str, object] | None = None
+        if recovery_source is None:
+            assert args.image is not None
+            image_source_path = args.image
+            image = FirmwareImage.load(image_source_path)
+            approve_live_firmware(image)
+        else:
+            image, source_preparation, source_backup, recovery_manifest = (
+                load_recovery_bundle(
+                    recovery_source,
+                    supplied_image=args.image,
+                )
+            )
+            image_source_path = (
+                recovery_source
+                / "rescue"
+                / str(recovery_manifest["firmware_filename"])
+            )
+
+        policy = LiveLoaderPolicy(
+            identify_attempts=args.loader_identify_attempts,
+            retry_delay=args.retry_delay,
+        )
+
+        session_dir = args.session_dir
+        interlocks = _flash_interlocks(args)
+        # Opening a serial device can transition DTR/RTS. Require every base
+        # physical prerequisite before even the read-only preflight opens it.
+        interlocks.validate(
+            # Every supported live transition changes firmware version. Require
+            # the calibration plan before opening a serial device at all.
+            calibration_required=True,
+            downgrade=False,
+            recovery_mode=preexisting_recovery,
+        )
+        session_dir.mkdir(parents=True, exist_ok=False)
+        session_state = FlashSessionState(
+            session_dir,
+            metadata={
+                "port": args.port,
+                "current_baudrate": args.baud,
+                "target_baudrate": approve_live_firmware(image).application_baudrate,
+                "image_sha256": image.sha256,
+                "recovery_source": str(recovery_source) if recovery_source else None,
+            },
+        )
+
+        if recovery_source is None:
+            serial_transport = SerialTransport(
+                SerialSettings(args.port, args.baud, args.timeout, exclusive=True)
+            )
+            preflight_client = _open_recorded_client(
+                args,
+                transport=serial_transport,
+                baudrate=args.baud,
+                traffic_path=session_dir / "preflight-traffic.jsonl",
+                phase="preflight",
+            )
+            try:
+                preparation = prepare_live_flash(
+                    preflight_client,
+                    image,
+                    port=args.port,
+                    current_baudrate=args.baud,
+                    interlocks=interlocks,
+                    request_delay=args.request_delay,
+                    backup_path=session_dir / "eeprom-before.json",
+                )
+            finally:
+                preflight_client.close()
+        else:
+            assert source_preparation is not None and source_backup is not None
+            source_plan = source_preparation.get("loader_plan")
+            if (
+                not isinstance(source_plan, dict)
+                or source_plan.get("image_sha256") != image.sha256
+            ):
+                raise VerificationError(
+                    "recovery session was prepared for a different firmware image"
+                )
+            preparation = prepare_recovery_flash(
+                image,
+                source_backup,
+                port=args.port,
+                current_baudrate=args.baud,
+                interlocks=interlocks,
+            )
+            rebuilt = preparation.to_dict()
+            if (
+                source_plan.get("profile_key") != preparation.current_profile.key
+                or source_preparation.get("eeprom_before_sha256")
+                != rebuilt["eeprom_before_sha256"]
+            ):
+                raise VerificationError(
+                    "recovery session preparation and EEPROM backup do not match"
+                )
+
+        if preparation.recovery_mode:
+            save_json_document(preparation.eeprom_backup, session_dir / "eeprom-before.json")
+        preparation_document = preparation.to_dict()
+        save_json_document(preparation_document, session_dir / "preparation.json")
+        offline_qualification = qualify_flash_preparation(preparation)
+        save_json_document(
+            offline_qualification.to_dict(),
+            session_dir / "offline-qualification.json",
+        )
+        recovery_bundle = preserve_recovery_bundle(
+            image_source_path,
+            image,
+            preparation_document,
+            session_dir=session_dir,
+        )
+        journal = FlashJournal(
+            session_dir / "journal.jsonl",
+            metadata={
+                "port": args.port,
+                "current_baudrate": args.baud,
+                "loader_baudrate": LOADER_BAUDRATE,
+                "target_baudrate": preparation.approved.application_baudrate,
+                "image_sha256": image.sha256,
+                "current_profile": preparation.current_profile.key,
+                "target_profile": preparation.approved.target_profile_key,
+                "interlocks": interlocks.to_dict(),
+                "recovery_mode": preparation.recovery_mode,
+                "recovery_source": str(recovery_source) if recovery_source else None,
+                "recovery_manifest": recovery_bundle,
+                "single_exclusive_serial_handle": True,
+            },
+        )
+        session_state.transition(
+            FlashSessionStatus.PREPARED,
+            message=(
+                "recovery artifacts and exact replay plan authenticated"
+                if preparation.recovery_mode
+                else "stable identity, repeated EEPROM backup, and offline image simulation passed"
+            ),
+            recovery_required=preparation.recovery_mode,
+            current_profile=preparation.current_profile.key,
+            target_profile=preparation.approved.target_profile_key,
+        )
+        if recovery_source is not None:
+            delegation = delegate_recovery_source(
+                recovery_source,
+                session_dir,
+                image_sha256=image.sha256,
+            )
+            journal.record(
+                "recovery_source_delegated", delegation=dict(delegation)
+            )
+
+        if preparation.recovery_mode:
+            _safe_console("Recovery session and saved EEPROM backup authenticated.")
+        else:
+            _safe_console(
+                "Preflight passed: identity was stable, EEPROM A00-AFF matched twice, "
+                "and the exact image passed whole-plan simulation."
+            )
+
+        if not preparation.recovery_mode:
+            assert serial_transport is not None
+            session_state.transition(
+                FlashSessionStatus.REHEARSAL_ARMED,
+                message="waiting for the non-writing loader rehearsal power cycle",
+                recovery_required=False,
+            )
+            _safe_console(
+                "NON-WRITING REHEARSAL: disconnect stove AC now. Keep both igniters "
+                "physically unplugged."
+            )
+            if not _power_off_phrase(
+                "After AC is physically disconnected, type POWER OFF FOR REHEARSAL: ",
+                "POWER OFF FOR REHEARSAL",
+            ):
+                journal.record(
+                    "operator_abort",
+                    reason="rehearsal power-off phrase did not match",
+                )
+                session_state.transition(
+                    FlashSessionStatus.ABORTED_SAFE,
+                    message="operator aborted before non-writing loader traffic",
+                    recovery_required=False,
+                )
+                final = {
+                    "schema": "openmaxfire.flash-result.v2",
+                    "successful": False,
+                    "programming_performed": False,
+                    "recovery_required": False,
+                    "message": "aborted before loader rehearsal; no E3 frame was sent",
+                }
+                _save_flash_result(session_dir, final)
+                final_written = True
+                _safe_console(final["message"], error=True)  # type: ignore[arg-type]
+                return 3
+
+            serial_transport.set_baudrate(LOADER_BAUDRATE)
+            rehearsal_audit = AuditTrail(
+                session_dir / "rehearsal-traffic.jsonl",
+                metadata={
+                    "command": "flash",
+                    "phase": "non-writing-loader-rehearsal",
+                    "port": args.port,
+                    "baudrate": LOADER_BAUDRATE,
+                    "image_sha256": image.sha256,
+                    "program_blocks_allowed": False,
+                },
+                durable=True,
+            )
+            try:
+                _safe_console(
+                    f"Rehearsal probe armed at {LOADER_BAUDRATE} baud. Restore stove "
+                    "AC now; no program block will be sent."
+                )
+                rehearsal = execute_loader_rehearsal(
+                    serial_transport,
+                    preparation,
+                    interlocks=interlocks,
+                    policy=policy,
+                    audit=rehearsal_audit,
+                    journal=journal,
+                )
+            finally:
+                rehearsal_audit.close()
+            save_json_document(
+                rehearsal.to_dict(), session_dir / "rehearsal-loader-result.json"
+            )
+            if not rehearsal.successful:
+                session_state.transition(
+                    FlashSessionStatus.REHEARSAL_FAILED,
+                    message=rehearsal.message,
+                    recovery_required=False,
+                )
+                final = {
+                    "schema": "openmaxfire.flash-result.v2",
+                    "successful": False,
+                    "programming_performed": False,
+                    "recovery_required": False,
+                    "rehearsal": rehearsal.to_dict(),
+                    "message": rehearsal.message,
+                }
+                _save_flash_result(session_dir, final)
+                final_written = True
+                _safe_console(
+                    "Rehearsal failed; flashing is blocked and no E3 frame was sent.",
+                    error=True,
+                )
+                return 5
+
+            time.sleep(args.handoff_delay)
+            rehearsal_client = _open_recorded_client(
+                args,
+                transport=serial_transport,
+                baudrate=args.baud,
+                traffic_path=session_dir / "rehearsal-app-traffic.jsonl",
+                phase="rehearsal-application-return",
+            )
+            try:
+                unchanged, _, rehearsal_backup = verify_application_unchanged(
+                    rehearsal_client,
+                    preparation,
+                    port=args.port,
+                    baudrate=args.baud,
+                    request_delay=args.request_delay,
+                )
+            finally:
+                rehearsal_client.close()
+            save_json_document(
+                unchanged.to_dict(), session_dir / "rehearsal-verification.json"
+            )
+            save_json_document(
+                rehearsal_backup, session_dir / "rehearsal-eeprom.json"
+            )
+            session_state.transition(
+                FlashSessionStatus.REHEARSAL_COMPLETE,
+                message=(
+                    "EA/EB and ED/E4 completed with zero E3 frames; original identity "
+                    "and EEPROM were unchanged"
+                ),
+                recovery_required=False,
+            )
+            _safe_console(
+                "Rehearsal passed: loader entry/handoff worked, zero program blocks "
+                "were sent, and the original application plus EEPROM were unchanged."
+            )
+            if args.rehearsal_only:
+                final = {
+                    "schema": "openmaxfire.flash-result.v2",
+                    "successful": True,
+                    "programming_performed": False,
+                    "recovery_required": False,
+                    "rehearsal": rehearsal.to_dict(),
+                    "application_unchanged": unchanged.to_dict(),
+                    "message": "non-writing loader rehearsal verified; firmware was not changed",
+                }
+                _save_flash_result(session_dir, final)
+                final_written = True
+                _safe_console(f"Complete rehearsal session: {session_dir}")
+                return 0
+
+        with SleepInhibitor() as sleep_inhibitor:
+            journal.record(
+                "sleep_inhibitor_acquired",
+                backend=sleep_inhibitor.backend,
+            )
+            _safe_console(
+                "FLASH POWER CYCLE: disconnect stove AC now. The exact recovery image "
+                "is already preserved in this session."
+            )
+            if not _power_off_phrase(
+                "After AC is physically disconnected, type POWER OFF FOR FLASH: ",
+                "POWER OFF FOR FLASH",
+            ):
+                journal.record(
+                    "operator_abort", reason="flash power-off phrase did not match"
+                )
+                session_state.transition(
+                    FlashSessionStatus.ABORTED_SAFE,
+                    message="operator aborted before any E3 program frame",
+                    recovery_required=preparation.recovery_mode,
+                )
+                final = {
+                    "schema": "openmaxfire.flash-result.v2",
+                    "successful": False,
+                    "programming_performed": False,
+                    "recovery_required": preparation.recovery_mode,
+                    "message": "aborted before this session sent any E3 frame",
+                }
+                _save_flash_result(session_dir, final)
+                final_written = True
+                return 6 if preparation.recovery_mode else 3
+
+            # The operator may spend an arbitrary time at the power-off prompt.
+            # Re-check the acquired assertion immediately before any possible E3.
+            sleep_inhibitor.ensure_active()
+
+            if serial_transport is None:
+                serial_transport = SerialTransport(
+                    SerialSettings(
+                        args.port,
+                        LOADER_BAUDRATE,
+                        args.timeout,
+                        exclusive=True,
+                    )
+                )
+            else:
+                serial_transport.set_baudrate(LOADER_BAUDRATE)
+                serial_transport.set_timeout(args.timeout)
+
+            audit = AuditTrail(
+                session_dir / "loader-traffic.jsonl",
+                metadata={
+                    "command": "flash",
+                    "phase": "loader",
+                    "port": args.port,
+                    "baudrate": LOADER_BAUDRATE,
+                    "image_sha256": image.sha256,
+                    "sleep_inhibitor": sleep_inhibitor.backend,
+                    "single_exclusive_handle": True,
+                },
+                durable=True,
+            )
+            session_state.transition(
+                FlashSessionStatus.PROGRAMMING,
+                message=(
+                    "programming is armed; exact-image replay from block zero is required "
+                    "until post-flash verification completes"
+                ),
+                recovery_required=True,
+                blocks_total=len(preparation.loader_plan.blocks),
+                blocks_completed=0,
+            )
+            programming_armed = True
+            _safe_console(
+                f"Loader probe armed at {LOADER_BAUDRATE} baud. Restore stove AC now; "
+                "do not disturb AC, USB, J3, or the computer. Cancellation is deferred."
+            )
+
+            def progress(current, total, receipt):
+                if current == 1 or current == total or current % 25 == 0:
+                    try:
+                        sleep_inhibitor.ensure_active()
+                    except OpenMaxFireError as exc:
+                        # Once a block may be written, finishing the exact image
+                        # is safer than intentionally aborting. Record the lost
+                        # assertion and continue under the stable-power gate.
+                        _remember_host_diagnostic(
+                            host_diagnostic_errors,
+                            "host sleep inhibitor lost during programming",
+                            exc,
+                        )
+                if (
+                    current == 1
+                    or current == total
+                    or current % 25 == 0
+                    or not receipt.acknowledged
+                ):
+                    _safe_console(
+                        f"Program blocks: {current}/{total} "
+                        f"address=0x{receipt.word_address:04X} attempts={receipt.attempts}"
+                    )
+
+            def attempt_notice(event: LiveAttemptEvent) -> None:
+                if event.receipt.outcome is LoaderAttemptOutcome.ACKNOWLEDGED:
+                    return
+                action = "RETRY" if event.will_retry else "ABORT"
+                _safe_console(
+                    f"Loader {event.receipt.outcome.value}: block "
+                    f"{event.block_number}/{event.blocks_total} "
+                    f"address=0x{event.word_address:04X} attempt={event.receipt.attempt} "
+                    f"action={action} — {event.decision}",
+                    error=True,
+                )
+
+            def cancellation_notice(signum: int) -> None:
+                name = signal.Signals(signum).name
+                _safe_console(
+                    f"{name} was received and deferred until the critical loader "
+                    "exchange reached a recoverable boundary.",
+                    error=True,
+                )
+                try:
+                    journal.record("cancellation_deferred", signal=name)
+                except Exception:
+                    pass
+
+            deferred = DeferredTerminationSignals(cancellation_notice)
+            try:
+                with deferred:
+                    loader_result = execute_live_loader_plan(
+                        serial_transport,
+                        preparation,
+                        interlocks=interlocks,
+                        policy=policy,
+                        audit=audit,
+                        journal=journal,
+                        progress=progress,
+                        attempt_callback=attempt_notice,
+                    )
+            finally:
+                try:
+                    audit.close()
+                except OSError as exc:
+                    _safe_console(f"Could not close loader audit cleanly: {exc}", error=True)
+
+            try:
+                save_json_document(
+                    loader_result.to_dict(), session_dir / "loader-result.json"
+                )
+            except (OSError, RuntimeError, ValueError) as exc:
+                _remember_host_diagnostic(
+                    host_diagnostic_errors,
+                    "loader result could not be persisted; verification will continue",
+                    exc,
+                )
+            if not loader_result.pic_side_blocks_verified:
+                journal.record("flash_failed", message=loader_result.message)
+                recovery_required = loader_result.recovery_required
+                session_state.transition(
+                    (
+                        FlashSessionStatus.RECOVERY_REQUIRED
+                        if recovery_required
+                        else FlashSessionStatus.FAILED_SAFE
+                    ),
+                    message=loader_result.message,
+                    recovery_required=recovery_required,
+                    blocks_total=loader_result.blocks_total,
+                    blocks_completed=loader_result.blocks_completed,
+                    failure_outcome=(
+                        loader_result.failure_outcome.value
+                        if loader_result.failure_outcome is not None
+                        else None
+                    ),
+                )
+                final = {
+                    "schema": "openmaxfire.flash-result.v2",
+                    "successful": False,
+                    "ready_for_operation": False,
+                    "programming_performed": bool(loader_result.block_receipts),
+                    "recovery_required": recovery_required,
+                    "loader": loader_result.to_dict(),
+                    "cancellation_deferred": deferred.requested,
+                    "deferred_signals": list(deferred.signal_names),
+                    "message": loader_result.message,
+                }
+                _save_flash_result(session_dir, final)
+                final_written = True
+                programming_armed = recovery_required
+                _safe_console(
+                    (
+                        f"RECOVERY REQUIRED: {loader_result.message}"
+                        if recovery_required
+                        else f"Flashing did not begin: {loader_result.message}"
+                    ),
+                    error=True,
+                )
+                _safe_console(f"Session preserved at {session_dir}", error=True)
+                return 6 if recovery_required else 5
+
+            try:
+                session_state.transition(
+                    FlashSessionStatus.VERIFYING,
+                    message=(
+                        "all program blocks have PIC-side E4; target identity and EEPROM "
+                        "verification are still required"
+                    ),
+                    recovery_required=True,
+                    blocks_total=loader_result.blocks_total,
+                    blocks_completed=loader_result.blocks_completed,
+                )
+            except (OSError, RuntimeError, ValueError) as exc:
+                _remember_host_diagnostic(
+                    host_diagnostic_errors,
+                    "verification state update failed; recovery marker remains authoritative",
+                    exc,
+                )
+            time.sleep(args.handoff_delay)
+            post = None
+            post_eeprom = None
+            post_backup = None
+            post_error: BaseException | None = None
+            try:
+                post, post_eeprom, post_backup = _attempt_post_flash(
+                    args,
+                    preparation,
+                    transport=serial_transport,
+                    session_dir=session_dir,
+                    attempt=1,
+                    diagnostic_errors=host_diagnostic_errors,
+                )
+            except VerificationError as exc:
+                post_error = exc
+            except (OSError, ProtocolError, TimeoutError, ValueError) as exc:
+                post_error = exc
+
+            completion_recovered = False
+            if post is None and not loader_result.completion_acknowledged:
+                serial_transport.set_baudrate(LOADER_BAUDRATE)
+                serial_transport.set_timeout(args.timeout)
+                recovery_audit = None
+                try:
+                    recovery_audit = AuditTrail(
+                        session_dir / "completion-recovery-traffic.jsonl",
+                        metadata={
+                            "command": "flash",
+                            "phase": "completion-recovery",
+                            "port": args.port,
+                            "baudrate": LOADER_BAUDRATE,
+                            "image_sha256": image.sha256,
+                        },
+                        durable=True,
+                    )
+                except (OSError, RuntimeError, ValueError) as exc:
+                    _remember_host_diagnostic(
+                        host_diagnostic_errors,
+                        "completion-recovery traffic recorder unavailable",
+                        exc,
+                    )
+                try:
+                    completion_recovered = recover_live_loader_completion(
+                        serial_transport,
+                        loader_result,
+                        audit=recovery_audit,
+                        journal=journal,
+                    )
+                finally:
+                    if recovery_audit is not None:
+                        try:
+                            recovery_audit.close()
+                        except OSError as exc:
+                            _remember_host_diagnostic(
+                                host_diagnostic_errors,
+                                "completion-recovery traffic recorder close failed",
+                                exc,
+                            )
+                if completion_recovered:
+                    time.sleep(args.handoff_delay)
+                    try:
+                        post, post_eeprom, post_backup = _attempt_post_flash(
+                            args,
+                            preparation,
+                            transport=serial_transport,
+                            session_dir=session_dir,
+                            attempt=2,
+                            diagnostic_errors=host_diagnostic_errors,
+                        )
+                        post_error = None
+                    except (OSError, ProtocolError, TimeoutError, ValueError) as exc:
+                        post_error = exc
+
+            if post is None:
+                message = (
+                    "target application could not be verified after all blocks were accepted"
+                    + (f": {post_error}" if post_error is not None else "")
+                )
+                journal.record("postflash_failed", message=message)
+                session_state.transition(
+                    FlashSessionStatus.RECOVERY_REQUIRED,
+                    message=message,
+                    recovery_required=True,
+                    blocks_total=loader_result.blocks_total,
+                    blocks_completed=loader_result.blocks_completed,
+                )
+                final = {
+                    "schema": "openmaxfire.flash-result.v2",
+                    "successful": False,
+                    "ready_for_operation": False,
+                    "programming_performed": True,
+                    "recovery_required": True,
+                    "loader": loader_result.to_dict(),
+                    "host_diagnostic_errors": list(host_diagnostic_errors),
+                    "diagnostics_complete": not (
+                        loader_result.diagnostic_errors or host_diagnostic_errors
+                    ),
+                    "completion_recovered": completion_recovered,
+                    "cancellation_deferred": deferred.requested,
+                    "deferred_signals": list(deferred.signal_names),
+                    "message": message,
+                }
+                _save_flash_result(session_dir, final)
+                final_written = True
+                _safe_console(f"RECOVERY REQUIRED: {message}", error=True)
+                _safe_console(f"Session preserved at {session_dir}", error=True)
+                return 6
+
+            assert post_eeprom is not None and post_backup is not None
+            save_json_document(post_backup, session_dir / "eeprom-after.json")
+            hardware_inspection_required = loader_result.write_failure_events > 0
+            ready_for_operation = (
+                post.ready_for_operation and not hardware_inspection_required
+            )
+            if preparation.data_format_migration_required:
+                message = (
+                    "firmware and unchanged EEPROM verified; calibration/Format is required "
+                    "before reconnecting igniters or operating the stove"
+                )
+            elif post.calibration_required:
+                message = (
+                    "firmware and unchanged EEPROM verified; vendor Monitor calibration "
+                    "is required before reconnecting igniters or operating the stove"
+                )
+            else:
+                message = "firmware identity and unchanged EEPROM verified"
+            if hardware_inspection_required:
+                message += (
+                    "; a recovered E5 requires socket/VDD/controller inspection before operation"
+                )
+            final = {
+                "schema": "openmaxfire.flash-result.v2",
+                "successful": post.programming_verified,
+                "ready_for_operation": ready_for_operation,
+                "programming_performed": True,
+                "recovery_required": False,
+                "hardware_inspection_required": hardware_inspection_required,
+                "loader": loader_result.to_dict(),
+                "host_diagnostic_errors": list(host_diagnostic_errors),
+                "diagnostics_complete": not (
+                    loader_result.diagnostic_errors or host_diagnostic_errors
+                ),
+                "completion_evidence": (
+                    "loader_e4"
+                    if loader_result.completion_acknowledged
+                    else "target_application_identity"
+                ),
+                "completion_recovered": completion_recovered,
+                "post_flash": post.to_dict(),
+                "cancellation_deferred": deferred.requested,
+                "deferred_signals": list(deferred.signal_names),
+                "message": message,
+            }
+            _save_flash_result(session_dir, final)
+            session_state.transition(
+                (
+                    FlashSessionStatus.CALIBRATION_REQUIRED
+                    if post.calibration_required or hardware_inspection_required
+                    else FlashSessionStatus.COMPLETE
+                ),
+                message=message,
+                recovery_required=False,
+                programming_verified=post.programming_verified,
+                ready_for_operation=ready_for_operation,
+                hardware_inspection_required=hardware_inspection_required,
+            )
+            final_written = True
+            programming_armed = False
+            journal.record(
+                "flash_complete",
+                programming_verified=post.programming_verified,
+                ready_for_operation=ready_for_operation,
+                calibration_required=post.calibration_required,
+                hardware_inspection_required=hardware_inspection_required,
+                cancellation_deferred=deferred.requested,
+            )
+            _safe_console("Firmware identity and unchanged EEPROM verified.")
+            if post.calibration_required or hardware_inspection_required:
+                if preparation.data_format_migration_required:
+                    _safe_console(
+                        "DO NOT reconnect the igniters or operate the stove yet. In "
+                        "BixCheck Monitor, select the model, Individualize, Calculate "
+                        "Fuel A/B, then Format as required by the vendor procedure."
+                    )
+                elif post.calibration_required:
+                    _safe_console(
+                        "DO NOT reconnect the igniters or operate the stove yet. Complete "
+                        "the target version's vendor Monitor calibration procedure first."
+                    )
+                if hardware_inspection_required:
+                    _safe_console(
+                        "A transient E5 recovered, but operation remains blocked pending "
+                        "qualified socket/contact and controller-VDD inspection."
+                    )
+            if deferred.requested:
+                _safe_console(
+                    "A cancellation request was deferred; the verified update was allowed "
+                    "to reach its safe boundary."
+                )
+            _safe_console(f"Complete session: {session_dir}")
+            return 0
+    except FileExistsError as exc:
+        print(f"Refusing to replace existing path: {exc.filename}", file=sys.stderr)
+        return 6 if preexisting_recovery else 4
+    except KeyboardInterrupt:
+        message = "operator interrupted before the protected critical section"
+        recovery_required = programming_armed or preexisting_recovery
+        if session_state is not None:
+            try:
+                session_state.transition(
+                    (
+                        FlashSessionStatus.RECOVERY_REQUIRED
+                        if recovery_required
+                        else FlashSessionStatus.ABORTED_SAFE
+                    ),
+                    message=message,
+                    recovery_required=recovery_required,
+                )
+            except Exception:
+                pass
+        if session_dir is not None and session_dir.exists() and not final_written:
+            try:
+                _save_flash_result(
+                    session_dir,
+                    {
+                        "schema": "openmaxfire.flash-result.v2",
+                        "successful": False,
+                        "ready_for_operation": False,
+                        "recovery_required": recovery_required,
+                        "message": message,
+                    },
+                )
+            except Exception:
+                pass
+        _safe_console(message, error=True)
+        return 6 if recovery_required else 130
+    except (OSError, OpenMaxFireError, ProtocolError, TimeoutError, ValueError) as exc:
+        message = f"OpenMaxFire flash error: {exc}"
+        recovery_required = programming_armed or preexisting_recovery
+        if session_state is not None:
+            try:
+                session_state.transition(
+                    (
+                        FlashSessionStatus.RECOVERY_REQUIRED
+                        if recovery_required
+                        else FlashSessionStatus.FAILED_SAFE
+                    ),
+                    message=message,
+                    recovery_required=recovery_required,
+                )
+            except Exception:
+                pass
+        if session_dir is not None and session_dir.exists() and not final_written:
+            try:
+                _save_flash_result(
+                    session_dir,
+                    {
+                        "schema": "openmaxfire.flash-result.v2",
+                        "successful": False,
+                        "ready_for_operation": False,
+                        "recovery_required": recovery_required,
+                        "message": message,
+                    },
+                )
+            except Exception:
+                pass
+        _safe_console(message, error=True)
+        return 6 if recovery_required else 4
+    finally:
+        if journal is not None:
+            try:
+                journal.close()
+            except OSError:
+                pass
+        if serial_transport is not None:
+            try:
+                serial_transport.close()
+            except OSError:
+                pass
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="maxfirectl",
@@ -464,6 +1506,88 @@ def build_parser() -> argparse.ArgumentParser:
     _add_live_ack(button, writes=True)
     _add_state_change_ack(button)
 
+    flash = sub.add_parser(
+        "flash",
+        help="plan or execute the guarded authenticated J3 firmware loader",
+    )
+    flash.add_argument(
+        "image",
+        nargs="?",
+        type=Path,
+        help=(
+            "exact preserved factory Downloader HEX image; omit only when "
+            "--recover-from-session supplies its authenticated rescue copy"
+        ),
+    )
+    flash.add_argument(
+        "--plan-only",
+        action="store_true",
+        help="authenticate and print the complete plan without opening a serial port",
+    )
+    flash.add_argument(
+        "--current-profile",
+        choices=tuple(PROFILES_BY_KEY),
+        help="current controller profile, required only for --plan-only",
+    )
+    flash.add_argument(
+        "--session-dir",
+        type=Path,
+        help="new directory for backups, journal, byte traffic, and results",
+    )
+    flash.add_argument(
+        "--recover-from-session",
+        type=Path,
+        help=(
+            "authenticate and replay the exact image/backup bundle from an "
+            "interrupted session when the application no longer identifies"
+        ),
+    )
+    flash.add_argument(
+        "--rehearsal-only",
+        action="store_true",
+        help=(
+            "run EA/EB and ED/E4 plus unchanged-app verification with zero E3 "
+            "program frames, then stop"
+        ),
+    )
+    flash.add_argument("--json", action="store_true", help="compact JSON for --plan-only")
+    flash.add_argument(
+        "--loader-identify-attempts",
+        type=_positive_int,
+        default=1500,
+        help="rapid bounded EA/EB probes after the manual power cycle (default: 1500)",
+    )
+    flash.add_argument(
+        "--retry-delay",
+        type=_nonnegative_float,
+        default=0.020,
+        help="delay before a bounded loader retry in seconds (default: 0.020)",
+    )
+    flash.add_argument(
+        "--handoff-delay",
+        type=_nonnegative_float,
+        default=0.75,
+        help="settle time before target-application identity verification (default: 0.75)",
+    )
+    flash.add_argument("--confirm-stove-cold-and-off", action="store_true")
+    flash.add_argument("--confirm-igniters-unplugged", action="store_true")
+    flash.add_argument("--confirm-correct-5v-ttl-wiring", action="store_true")
+    flash.add_argument("--confirm-j3-pin3-disconnected", action="store_true")
+    flash.add_argument("--confirm-adapter-vcc-disconnected", action="store_true")
+    flash.add_argument("--confirm-pickit-recovery-tested-on-spare", action="store_true")
+    flash.add_argument("--confirm-computer-power-stable", action="store_true")
+    flash.add_argument("--confirm-stove-power-stable", action="store_true")
+    flash.add_argument(
+        "--confirm-calibration-plan",
+        action="store_true",
+        help="required whenever the target firmware version differs",
+    )
+    flash.add_argument(
+        "--confirm-recovery-target-matches-backup",
+        action="store_true",
+        help="required with --recover-from-session because loader mode has no app identity",
+    )
+
     return p
 
 
@@ -503,7 +1627,10 @@ def _validate_live_args(
         )
         return 3
     if args.command == "capture" and args.traffic_log is not None:
-        print("capture uses --output as its traffic log; do not also pass --traffic-log", file=sys.stderr)
+        print(
+            "capture uses --output as its traffic log; do not also pass --traffic-log",
+            file=sys.stderr,
+        )
         return 2
     if (
         args.command == "monitor"
@@ -542,6 +1669,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"OpenMaxFire error: {exc}", file=sys.stderr)
             return 4
 
+    if args.command == "flash":
+        try:
+            return _run_flash(args)
+        except KeyboardInterrupt:
+            print(
+                "Interrupted. Preserve power if programming had begun; inspect the "
+                "session journal.",
+                file=sys.stderr,
+            )
+            return 130
+
     transaction_plan = None
     if args.command == "transaction":
         try:
@@ -579,7 +1717,7 @@ def main(argv: list[str] | None = None) -> int:
         if _is_loader_traffic(raw_payload):
             print(
                 "OpenMaxFire error: known firmware-loader traffic is isolated from raw "
-                "mode until loader acknowledgement and recovery behavior are implemented",
+                "mode; use the authenticated, safety-gated flash command",
                 file=sys.stderr,
             )
             return 4

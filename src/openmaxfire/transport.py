@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import platform
 import sys
 import time
@@ -89,6 +90,7 @@ class SerialSettings:
     port: str
     baudrate: int
     timeout: float = 0.25
+    exclusive: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.port, str) or not self.port.strip():
@@ -101,6 +103,8 @@ class SerialSettings:
             or self.timeout <= 0
         ):
             raise ValueError("timeout must be greater than zero")
+        if not isinstance(self.exclusive, bool):
+            raise TypeError("exclusive must be a boolean")
 
 
 class SerialTransport:
@@ -132,14 +136,65 @@ class SerialTransport:
             xonxoff=False,
             rtscts=False,
             dsrdtr=False,
+            exclusive=True if settings.exclusive and os.name == "posix" else None,
         )
 
     def write(self, data: bytes) -> None:
-        self._serial.write(data)
+        payload = bytes(data)
+        written = self._serial.write(payload)
+        if written != len(payload):
+            raise OSError(
+                f"serial write was incomplete: {written!r} of {len(payload)} bytes"
+            )
         self._serial.flush()
 
     def read(self, size: int = 1) -> bytes:
         return self._serial.read(size)
+
+    def read_available(self) -> bytes:
+        """Return bytes already buffered by the OS without waiting.
+
+        The live loader uses this only between bounded retries so a delayed
+        acknowledgement is retained in the audit instead of silently flushed.
+        """
+
+        waiting = int(self._serial.in_waiting)
+        return self._serial.read(waiting) if waiting > 0 else b""
+
+    def set_timeout(self, timeout: float) -> None:
+        """Adjust the read timeout for a bounded protocol phase."""
+
+        if (
+            not isinstance(timeout, (int, float))
+            or not math.isfinite(timeout)
+            or timeout <= 0
+        ):
+            raise ValueError("timeout must be greater than zero")
+        self._serial.timeout = float(timeout)
+        self.settings = SerialSettings(
+            self.settings.port,
+            self.settings.baudrate,
+            float(timeout),
+            self.settings.exclusive,
+        )
+
+    def set_baudrate(self, baudrate: int) -> None:
+        """Reconfigure an open handle without releasing exclusive ownership."""
+
+        if isinstance(baudrate, bool) or not isinstance(baudrate, int) or baudrate <= 0:
+            raise ValueError("baudrate must be a positive integer")
+        self._serial.baudrate = baudrate
+        actual = int(self._serial.baudrate)
+        if actual != baudrate:
+            raise OSError(
+                f"serial driver selected {actual} baud instead of requested {baudrate}"
+            )
+        self.settings = SerialSettings(
+            self.settings.port,
+            baudrate,
+            self.settings.timeout,
+            self.settings.exclusive,
+        )
 
     def close(self) -> None:
         self._serial.close()
@@ -163,6 +218,7 @@ class JsonlTrafficRecorder:
         *,
         metadata: Mapping[str, object] | None = None,
         overwrite: bool = False,
+        durable: bool = False,
     ):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -170,6 +226,7 @@ class JsonlTrafficRecorder:
             "w" if overwrite else "x", encoding="utf-8", newline="\n"
         )
         self._sequence = 0
+        self.durable = durable
         self._write(
             {
                 "schema": self.SCHEMA,
@@ -184,6 +241,8 @@ class JsonlTrafficRecorder:
     def _write(self, event: Mapping[str, object]) -> None:
         self._stream.write(json.dumps(dict(event), sort_keys=True) + "\n")
         self._stream.flush()
+        if self.durable:
+            os.fsync(self._stream.fileno())
 
     def record(self, direction: str, data: bytes) -> None:
         if direction not in ("tx", "rx"):
@@ -213,21 +272,73 @@ class JsonlTrafficRecorder:
 class RecordingTransport:
     """Transport decorator that records exact TX/RX chunks without altering them."""
 
-    def __init__(self, transport: Transport, recorder: TrafficRecorder):
+    def __init__(
+        self,
+        transport: Transport,
+        recorder: TrafficRecorder,
+        *,
+        close_transport: bool = True,
+        diagnostic_errors: list[str] | None = None,
+    ):
         self.transport = transport
         self.recorder = recorder
+        self.close_transport = close_transport
+        self.diagnostic_errors = diagnostic_errors
+
+    def _record(self, direction: str, data: bytes) -> None:
+        try:
+            self.recorder.record(direction, data)
+        except (OSError, RuntimeError, ValueError) as exc:
+            if self.diagnostic_errors is None:
+                raise
+            message = f"traffic recorder: {type(exc).__name__}: {exc}"
+            if message not in self.diagnostic_errors and len(self.diagnostic_errors) < 20:
+                self.diagnostic_errors.append(message)
+
+    @property
+    def settings(self):
+        return getattr(self.transport, "settings", None)
 
     def write(self, data: bytes) -> None:
-        self.recorder.record("tx", data)
+        self._record("tx", data)
         self.transport.write(data)
 
     def read(self, size: int = 1) -> bytes:
         data = self.transport.read(size)
-        self.recorder.record("rx", data)
+        self._record("rx", data)
         return data
+
+    def read_available(self) -> bytes:
+        reader = getattr(self.transport, "read_available", None)
+        data = bytes(reader()) if reader is not None else b""
+        self._record("rx", data)
+        return data
+
+    def set_timeout(self, timeout: float) -> None:
+        setter = getattr(self.transport, "set_timeout", None)
+        if setter is None:
+            raise AttributeError("underlying transport cannot change timeout")
+        setter(timeout)
+
+    def set_baudrate(self, baudrate: int) -> None:
+        setter = getattr(self.transport, "set_baudrate", None)
+        if setter is None:
+            raise AttributeError("underlying transport cannot change baudrate")
+        setter(baudrate)
 
     def close(self) -> None:
         try:
-            self.transport.close()
+            if self.close_transport:
+                self.transport.close()
         finally:
-            self.recorder.close()
+            try:
+                self.recorder.close()
+            except (OSError, RuntimeError, ValueError) as exc:
+                if self.diagnostic_errors is None:
+                    raise
+                message = f"traffic recorder close: {type(exc).__name__}: {exc}"
+                if (
+                    message not in self.diagnostic_errors
+                    and len(self.diagnostic_errors) < 20
+                ):
+                    self.diagnostic_errors.append(message)

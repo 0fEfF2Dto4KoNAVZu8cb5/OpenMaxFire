@@ -50,6 +50,9 @@ class LoaderAttemptOutcome(str, Enum):
     ACKNOWLEDGED = "acknowledged"
     CHECKSUM_REJECTED = "checksum_rejected_e8"
     WRITE_VERIFICATION_FAILED = "write_verification_failed_e5"
+    PRE_ACCEPT_TIMEOUT = "timeout_before_e7"
+    POST_ACCEPT_TIMEOUT = "timeout_after_e7"
+    TRANSPORT_ERROR = "transport_error"
     TIMEOUT = "timeout"
     UNEXPECTED_RESPONSE = "unexpected_response"
     TERMINAL_TRANSMISSION_UNREAD = "terminal_transmission_unread"
@@ -142,7 +145,10 @@ class LoaderPlan:
             "compatibility": self.compatibility.to_dict(),
             "blocks": [block.to_dict() for block in self.blocks],
             "safety_boundary": (
-                "offline plan only; bootloader entry and physical serial execution are absent"
+                "physical use additionally requires the flashing module's exact wire "
+                "authentication, manual power cycle, safety interlocks, and pre/post checks"
+                if self.live_executable
+                else "offline plan only; use the separately gated flashing workflow for physical execution"
             ),
         }
 
@@ -247,7 +253,10 @@ def build_loader_plan(
     profile: ControllerProfile,
     *,
     max_words: int = 16,
+    live_executable: bool = False,
 ) -> LoaderPlan:
+    if not isinstance(live_executable, bool):
+        raise TypeError("live_executable must be a boolean")
     compatibility = assess_firmware_compatibility(image, profile)
     return LoaderPlan(
         profile_key=profile.key,
@@ -256,6 +265,9 @@ def build_loader_plan(
         firmware_version=image.firmware_version,
         compatibility=compatibility,
         blocks=build_program_blocks(image, max_words=max_words),
+        live_executable=(
+            live_executable and compatibility.valid_for_offline_planning
+        ),
     )
 
 
@@ -589,7 +601,11 @@ def loader_simulation_supported() -> bool:
 
 
 def live_loader_supported() -> bool:
-    return False
+    """Return whether the separate guarded experimental live executor exists."""
+
+    from .flashing import live_flashing_supported
+
+    return live_flashing_supported()
 
 
 __all__ = [

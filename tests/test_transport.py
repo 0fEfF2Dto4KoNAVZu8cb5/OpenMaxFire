@@ -91,6 +91,7 @@ class TransportTests(unittest.TestCase):
         serial_module.PARITY_NONE = "N"
         serial_module.STOPBITS_ONE = 1
         device = mock.Mock()
+        device.write.return_value = 4
         serial_module.Serial = mock.Mock(return_value=device)
         with mock.patch.dict("sys.modules", {"serial": serial_module}):
             transport = SerialTransport(SerialSettings("COM7", 19200, 0.35))
@@ -107,6 +108,7 @@ class TransportTests(unittest.TestCase):
             xonxoff=False,
             rtscts=False,
             dsrdtr=False,
+            exclusive=None,
         )
         device.write.assert_called_once_with(b"CR00")
         device.flush.assert_called_once_with()

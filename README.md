@@ -38,6 +38,19 @@ reset-vector relocation, the exact BixCheck retry edge, and simulated
 handoff/reconnect. It also corrects format-04 `T09` as non-discriminating and
 adds a fail-closed PIC16F877A repeated-read/clone authentication toolkit plus a
 PICkit 3 preservation procedure. Physical flashing remains absent.
+Version 0.9 adds a separate guarded experimental J3 flasher. It authenticates
+the three exact factory Downloader images and their complete wire-frame
+sequences, fixes the loader rate at 9,600 baud, rapidly probes the roughly
+78 ms reset window, creates an authenticated exact-image rescue bundle, and
+requires a zero-write loader/handoff rehearsal. It then keeps one exclusive
+serial handle, inhibits host sleep, classifies and bounds every block outcome,
+defers ordinary termination during programming, writes crash-resistant state
+and byte evidence, verifies the target application at its own baud, and
+requires byte-identical EEPROM afterward. Delayed replies must match the exact
+prior phase, and unresolved recovery ownership advances to one self-contained
+session at a time. It never sends `CW0FC4`. Physical
+programming and recovery still require the published sacrificial-hardware
+qualification matrix before production use.
 
 On 2026-08-28 the first complete PICkit export from serial 5215's original
 firmware-2.02 PIC was preserved. It contains all program memory, EEPROM, User
@@ -76,7 +89,9 @@ Confirmed by static, photographic, emulator, and live evidence:
   are preserved.
 - CR0B/CR0C expose firmware identity bytes; the live controller reports `2.02`
   and `CR08=04`, older than the preserved 2.06/format-05 release.
-- BixCheck 5.0.21 selects 9,600 baud; 5.5.x selects 9,600/19,200, all at 8N1.
+- BixCheck 5.0.21 selects 9,600 baud; 5.5.x applications select
+  9,600/19,200, all at 8N1. The Downloader itself hard-codes 9,600, matching
+  the resident loader's `SPBRG=0x40` at 10 MHz.
 - The configuration/telemetry/Checkout tables, lean-burn transforms, and
   configuration checksum are now machine-readable.
 - The experimental emulator runs the actual firmware: all 45 `CR00`-`CR0E`
@@ -135,7 +150,9 @@ Not yet confirmed on physical hardware:
   execution, despite the low-level normal-control bytes now being live-proven.
 - Independent repeat-read authentication of the preserved complete 2.02
   image, followed by spare-chip readback and controlled board recovery.
-- Firmware-loader erase/program acknowledgements or interrupted-transfer recovery.
+- Physical firmware-loader erase/program timing, acknowledgement behavior,
+  and interrupted-transfer recovery on expendable hardware. The guarded host
+  implementation is emulator/fault-injection validated only.
 
 No new board revision or state-changing live connection should be attempted
 until [SAFETY.md](SAFETY.md), the
@@ -179,6 +196,11 @@ fw202-identify-firebox-door-open-long.jsonl --json
 
 maxfirectl transaction plan.json --dry-run
 # Validates and canonicalizes a register transaction without opening a port
+
+maxfirectl flash \
+  reverse-engineering/firmware/2.70/extracted/Bixby_0270_070206.hex \
+  --plan-only --current-profile fw206-format05
+# Authenticates and prints the complete J3 plan without opening a port
 ```
 
 The portable foundation now includes serial-port discovery, exact
@@ -200,6 +222,8 @@ The Python API builds profile-aware service models above that
 low-level layer without adding presentation-specific behavior. See the
 [API architecture](docs/api/README.md) and
 [v0.8 offline preservation milestone](docs/api/v0.8-offline-preservation.md).
+The experimental live path is documented separately in the
+[guarded J3 flashing guide](docs/guides/safe-j3-firmware-flashing.md).
 
 Run the read-only virtual endpoint without hardware:
 
@@ -236,6 +260,8 @@ Contribution and preservation rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
 Start with [the fault-light guide](docs/guides/fault-lights.md),
 [common problems and first checks](docs/guides/common-problems.md),
 [the PICkit 3 read-only preservation guide](docs/guides/pickit3-firmware-preservation.md),
+[the guarded J3 firmware-flashing guide](docs/guides/safe-j3-firmware-flashing.md),
+[the J3 flasher qualification plan](docs/guides/j3-flasher-qualification.md),
 [the research status](docs/STATUS.md),
 [the Python API roadmap](docs/api/README.md),
 [the firmware-2.02/data-format-04 live report](docs/reverse-engineering/live-fw202-format04.md),

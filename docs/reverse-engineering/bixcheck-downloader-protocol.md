@@ -4,7 +4,9 @@ Status: statically reconstructed from BixCheck 5.0.21, 5.5.00, and 5.5.01,
 the complete 2.06 PICkit firmware, and the recovered Downloader images. The
 `EA`/`EB` identify exchange is corroborated in the experimental PIC16F877A
 emulator. Physical erase, programming, interruption, and recovery behavior
-has not yet been validated on expendable hardware.
+has not yet been validated on expendable hardware. Version 0.9 implements a
+guarded physical host path behind spare-recovery and human safety interlocks;
+that implementation is not evidence that the physical path is validated.
 
 ## Two separate programming methods
 
@@ -38,6 +40,33 @@ The vendor workflow also power-cycles the stove while BixCheck repeatedly
 probes for the short reset-time loader window.
 
 `CW0FC4` is state-changing and unsafe for ordinary use.
+
+## Fixed loader baud and short reset window
+
+BixCheck 5.5's general serial constructor supports selector `1` for 9,600 and
+selector `2` for 19,200. `Bixby110Downloader()` always passes selector `1`.
+The Downloader therefore uses **9,600 baud even when the installed or target
+2.70/2.71 application uses 19,200**.
+
+The resident 2.02/2.06 loader independently confirms this rate. Its USART
+initialization sets asynchronous high-speed mode and `SPBRG=0x40`. With the
+photographed 10.000 MHz oscillator, the PIC16 baud equation gives approximately
+9,615 baud, the normal 9,600 setting.
+
+The first loader receive is also short. It permits three Timer1 overflow
+periods with `TMR1H=0x0B`, using the 10 MHz instruction clock. The resulting
+reset-time window is approximately 78 ms. A host that sends `EA` and then waits
+350 ms for each reply can repeatedly miss the entire window. The guarded
+OpenMaxFire executor uses a 20 ms probe read timeout plus 20 ms spacing during
+manual power-cycle entry, then switches to a longer block-response timeout.
+
+The Downloader dialog exposes Read delay, Write delay, Retry delay, and
+Interleave controls. Vendor screenshots and initialization use zero for all
+four. Write delay is between the five-byte E3 header and its payload; Interleave
+can add approximately millisecond pacing after a configured percentage of
+bytes. Retry delay is not used by the preserved core block loop. UART wire
+pacing at 9,600 already spaces bytes by about 1 ms, so OpenMaxFire sends one
+complete frame and adds no default artificial interleave.
 
 ## High-level exchange
 
@@ -162,12 +191,29 @@ present `E5` and `E8` as distinct operator errors.
 
 The original retry counter permits 30 attempts whose responses can be
 accepted. Its control flow can transmit a 31st attempt, but aborts before
-accepting that response. The current OpenMaxFire simulator models 30 retries
-after an initial attempt, so its accepted-attempt budget is one larger than
-BixCheck's and should be corrected separately.
+accepting that response. The OpenMaxFire v0.8 simulator reproduces this as one
+initial transmission plus 29 accepted retries, followed by the terminal unread
+31st transmission.
 
 The BixCheck Cancel control forces the retry counter to its terminal value so
 the transfer exits through the same failure path.
+
+The OpenMaxFire physical policy deliberately does not reproduce that edge. It
+classifies `E8`, `E5`, pre-accept timeout, post-accept timeout, unexpected
+bytes, and transport failures independently and never emits a final unread
+frame. `E8` and pre-accept timeout permit two retries; a post-`E7` timeout and
+the first session-wide `E5` permit one. The second `E5`, unexpected bytes, and
+transport failures abort immediately. No combination may transmit one block
+more than four times. A retry after `E7` is especially bounded because the
+previous write may have completed even if `E4` was lost; repeating identical
+row data is idempotent but causes another erase/write cycle.
+
+A timeout before observing `E7` is also treated as ambiguous, not proof that no
+write occurred: the response itself may have been lost. A delayed `E4` is
+accepted only when `E7` was already consumed for that same attempt; a delayed
+`E7 E4` pair is accepted only when neither byte was consumed. A stray `E4`
+after `E5`/`E8` cannot forge block success, and failure while checking the
+receive buffer aborts without retransmission.
 
 ## Completion and interrupted updates
 
@@ -192,10 +238,11 @@ The normalized machine code for `GetStoveVersion()`, `AttemptStoveReset()`,
 BixCheck 5.0.21, 5.5.00, and 5.5.01. This strongly indicates that Bixby kept
 the host protocol stable from firmware 2.06 through 2.71.
 
-The exact resident loader in the original 2.02 PIC remains unknown until that
-chip is dumped. The 2.70 and 2.71 Downloader images do not replace a resident
-loader, so a stove retains whichever loader was installed by its original
-full-chip programming process.
+The complete original 2.02 PIC export preserved on 2026-08-28 proves its
+resident `0x1E80`-`0x1FFF` loader is word-for-word identical to the factory
+2.06 PICkit loader analyzed here. The 2.70 and 2.71 Downloader images do not
+replace that resident loader, so a stove retains whichever loader was installed
+by its original full-chip programming process.
 
 ## Emulator corroboration
 
@@ -207,36 +254,52 @@ programming.
 
 ## OpenMaxFire implementation consequences
 
-The OpenMaxFire v0.8 loader remains simulator-only. It now distinguishes `E5`
-from `E8`, models four-word partial-row preservation and two internal write
-attempts, applies reset-vector relocation and the protected boundary, reproduces
-30 accepted block attempts plus the terminal unread transmission, treats `ED`
-as one-shot completion, and fails closed on simulated application reconnect.
-Exact attempt responses and audit bytes remain available in the result.
+The OpenMaxFire v0.8 simulator distinguishes `E5` from `E8`, models four-word
+partial-row preservation and two internal write attempts, applies reset-vector
+relocation and the protected boundary, reproduces BixCheck's 30 accepted block
+attempts plus its terminal unread transmission, treats `ED` as one-shot
+completion, and fails closed on simulated application reconnect. Exact attempt
+responses and audit bytes remain available in the result.
 
-The simulator also keeps these boundaries explicit:
+Version 0.9 adds a separate guarded physical host. It accepts only exact
+allowlisted factory Downloader images, authenticates the complete block-frame
+sequence, requires a manual power cycle and proven external recovery, performs
+a zero-`E3` physical rehearsal, uses a short loader-entry probe timeout, applies
+the outcome-specific four-transmission ceiling above, and verifies target
+identity plus byte-identical EEPROM afterward. It keeps one exclusive serial
+handle across phases and does not reproduce BixCheck's terminal unread
+transmission. Recovery requires an unresolved durable marker and is delegated
+forward one session at a time so an old successful/recovered bundle cannot be
+reused as a same-version rewrite path.
+
+The implementation keeps these boundaries explicit:
 
 - `E4` is PIC-side block verification, not whole-image physical readback;
 - recovered Downloader images do not alter EEPROM;
 - full PICkit images are rejected from J3 planning;
 - simulator memory comparison and reconnect are not physical evidence;
-- no serial loader transport, `CW0FC4`, or erase/program entry point exists;
+- loader traffic is isolated from the normal/raw client and `CW0FC4` remains
+  unexposed;
 - a verified external-programmer recovery path remains mandatory.
 
 ## Remaining validation work
 
-- Dump and analyze the original firmware 2.02 resident loader.
+- Complete independent repeat reads of the original firmware 2.02 PIC.
 - Prove a 2.02 clone and full PICkit recovery on a spare PIC.
-- Capture an actual BixCheck update of expendable hardware.
+- Capture an actual BixCheck update of expendable hardware for comparison.
 - Confirm real loader timing, every response byte, interruption boundaries,
-  and post-transfer startup.
-- Test wrong checksum, failed write, disconnect, retry, downgrade, and
-  cancellation cases without a heating load attached.
+  post-transfer startup, and full-memory results.
+- Execute the complete
+  [J3 flasher qualification plan](../guides/j3-flasher-qualification.md),
+  including forced power, USB, process, sleep, checksum, write, and completion
+  faults without a heating load attached.
 
 ## Safety boundary
 
 OpenMaxFire does not expose `CW0FC4`, identify, program-block, or done
-operations through its normal client. Physical firmware programming remains
-blocked. Validation requires an externally recoverable spare PIC or bench
-controller that is not responsible for heating, an immutable backup, strict
-image and device compatibility checks, and a proven recovery procedure.
+operations through its normal or raw client. The dedicated physical executor
+is experimental and refuses to run until its image, controller, backup,
+wiring, cold/off state, disconnected igniters, and spare-recovery gates pass.
+Production use remains blocked by policy until the executor is validated on an
+externally recoverable spare PIC or bench controller that is not responsible
+for heating.

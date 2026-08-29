@@ -219,7 +219,7 @@ class LoaderStateMachineTests(unittest.TestCase):
         with self.assertRaises(CapabilityUnavailableError):
             execute_loader_plan(FakePhysicalTransport(), plan, authorize=True)
         self.assertTrue(loader_simulation_supported())
-        self.assertFalse(live_loader_supported())
+        self.assertTrue(live_loader_supported())
 
     def test_authorization_is_mandatory_even_for_simulation(self):
         plan = build_loader_plan(image(), PROFILES_BY_KEY["fw271-format07"])

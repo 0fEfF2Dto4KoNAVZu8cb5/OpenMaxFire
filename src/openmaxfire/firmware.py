@@ -1,8 +1,9 @@
 """Firmware-image validation and binary loader block construction.
 
-The image and framing APIs are offline only.  The separate loader module can
-exercise the reconstructed exchange against a strict simulator, but no live
-loader transport or erase/program entry path is exposed.
+The image and framing APIs are side-effect free. The separate loader module
+exercises the reconstructed exchange against a strict simulator; the guarded
+physical host lives in :mod:`openmaxfire.flashing` behind exact image and
+safety interlocks.
 """
 
 from __future__ import annotations
@@ -446,6 +447,6 @@ def loader_effective_word_address(word_address: int) -> int | None:
 
 
 def loader_state_machine_supported() -> bool:
-    """Remain explicit until a recoverable physical loader path is validated."""
+    """Return whether a guarded loader state machine is implemented."""
 
-    return False
+    return True

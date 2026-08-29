@@ -175,6 +175,14 @@ protocol or controller logic.
   internal row attempts, protected-range skipping, reset-vector relocation,
   BixCheck's exact 30-accepted/31st-unread retry edge, one-shot completion, and
   simulated application handoff/reconnect.
+- [x] Implement the separately gated live host: exact file and wire-frame
+  allowlist and rescue bundle, fixed 9,600-baud loader, rapid reset-window
+  probing, repeated identity/EEPROM preflight, zero-E3 physical rehearsal,
+  one exclusive serial handle, sleep/termination protection, conservative
+  outcome-specific retries without BixCheck's unread terminal frame, durable
+  one-way recovery state, phase-matched delayed replies, fail-operational
+  post-write diagnostics, target identity, EEPROM comparison, and final-ED
+  recovery only after all blocks have PIC-side E4 evidence.
 - [x] Document a PICkit 3 original-chip read procedure with a hard code-
   protection stop and offline repeated-read/clone authentication commands.
 - [x] Read and preserve one complete firmware 2.02 program-memory, EEPROM,
@@ -186,6 +194,9 @@ protocol or controller logic.
 - [ ] Resolve physical loader entry timing, row programming/readback behavior,
   interrupted-transfer recovery, application reconnect, and post-flash
   calibration guidance on sacrificial hardware.
+- [ ] Execute and publish the complete multi-controller, multi-host, multi-
+  adapter forced-interruption matrix in the
+  [J3 flasher qualification plan](guides/j3-flasher-qualification.md).
 - [ ] Do not flash a production controller until recovery has been proven on spare hardware.
 
 ## Phase 7 - permanent controller

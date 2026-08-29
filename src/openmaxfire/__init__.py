@@ -1,5 +1,7 @@
 """OpenMaxFire - open tooling for Bixby MaxFire 110/115."""
 
+__version__ = "0.9.0"
+
 from .audit import AuditEvent, AuditSpan, AuditTrail
 
 from .checkout import (
@@ -66,6 +68,43 @@ from .firmware_catalog import (
     FirmwareCorpusValidation,
     validate_firmware_corpus,
 )
+from .flashing import (
+    APPROVED_FIRMWARE,
+    FLASH_STATE_FILENAME,
+    LOADER_BAUDRATE,
+    LOADER_BOOT_WINDOW_ESTIMATE_SECONDS,
+    RECOVERY_DELEGATION_FILENAME,
+    RECOVERY_MANIFEST_FILENAME,
+    RECOVERY_MARKER_FILENAME,
+    UNSUPPORTED_FIRMWARE_MESSAGE,
+    ApplicationUnchangedVerification,
+    ApprovedFirmware,
+    FlashJournal,
+    FlashPreparation,
+    FlashSessionState,
+    FlashSessionStatus,
+    FlashSafetyInterlocks,
+    LiveAttemptEvent,
+    LiveLoaderPolicy,
+    LiveLoaderResult,
+    LoaderRehearsalResult,
+    PostFlashVerification,
+    approve_live_firmware,
+    delegate_recovery_source,
+    execute_loader_rehearsal,
+    execute_live_loader_plan,
+    load_recovery_bundle,
+    live_flashing_supported,
+    prepare_live_flash,
+    prepare_recovery_flash,
+    preserve_recovery_bundle,
+    qualify_flash_preparation,
+    recover_live_loader_completion,
+    verify_application_unchanged,
+    verify_post_flash,
+    validate_live_transition,
+)
+from .runtime_safety import DeferredTerminationSignals, SleepInhibitor
 from .faults import (
     FORMAT04_FAULT_PATTERNS,
     FORMAT04_INDICATOR_HOLD_SECONDS,
@@ -135,6 +174,7 @@ from .transactions import (
 )
 from .simulator import (
     SimulatedController,
+    SimulatedFlashSessionTransport,
     SimulatedLoaderFaults,
     SimulatedLoaderTransport,
     SimulatedTransport,
@@ -246,6 +286,42 @@ __all__ = [
     "FirmwareCorpusReport",
     "FirmwareCorpusValidation",
     "validate_firmware_corpus",
+    "APPROVED_FIRMWARE",
+    "FLASH_STATE_FILENAME",
+    "LOADER_BAUDRATE",
+    "LOADER_BOOT_WINDOW_ESTIMATE_SECONDS",
+    "RECOVERY_DELEGATION_FILENAME",
+    "RECOVERY_MANIFEST_FILENAME",
+    "RECOVERY_MARKER_FILENAME",
+    "UNSUPPORTED_FIRMWARE_MESSAGE",
+    "ApplicationUnchangedVerification",
+    "ApprovedFirmware",
+    "FlashJournal",
+    "FlashPreparation",
+    "FlashSessionState",
+    "FlashSessionStatus",
+    "FlashSafetyInterlocks",
+    "LiveAttemptEvent",
+    "LiveLoaderPolicy",
+    "LiveLoaderResult",
+    "LoaderRehearsalResult",
+    "PostFlashVerification",
+    "approve_live_firmware",
+    "delegate_recovery_source",
+    "execute_loader_rehearsal",
+    "execute_live_loader_plan",
+    "load_recovery_bundle",
+    "live_flashing_supported",
+    "prepare_live_flash",
+    "prepare_recovery_flash",
+    "preserve_recovery_bundle",
+    "qualify_flash_preparation",
+    "recover_live_loader_completion",
+    "verify_application_unchanged",
+    "verify_post_flash",
+    "validate_live_transition",
+    "DeferredTerminationSignals",
+    "SleepInhibitor",
     "LoaderAttemptOutcome",
     "LoaderAttemptReceipt",
     "LoaderBlockReceipt",
@@ -263,6 +339,7 @@ __all__ = [
     "compare_pic16f877a_dumps",
     "inspect_pic16f877a_dump",
     "SimulatedController",
+    "SimulatedFlashSessionTransport",
     "SimulatedLoaderFaults",
     "SimulatedLoaderTransport",
     "SimulatedTransport",
@@ -278,5 +355,3 @@ __all__ = [
     "execute_control",
     "execute_simulated_checkout",
 ]
-
-__version__ = "0.8.0"

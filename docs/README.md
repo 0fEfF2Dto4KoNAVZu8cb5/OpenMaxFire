@@ -13,6 +13,8 @@ files remain under `preservation/original/`; raw live evidence remains under
 | [Project roadmap](ROADMAP.md) | Preservation, bench validation, software, firmware, and permanent-controller work |
 | [Research log](RESEARCH_LOG.md) | Chronological record of findings and implementation milestones |
 | [Safety policy](../SAFETY.md) | Non-negotiable electrical, combustion, actuator, and firmware boundaries |
+| [Guarded J3 flashing](guides/safe-j3-firmware-flashing.md) | Authenticated experimental flasher, mandatory recovery gate, evidence, and failure procedure |
+| [J3 flasher qualification](guides/j3-flasher-qualification.md) | Sacrificial-hardware fault matrix and consumer-release gate |
 
 ## Owner and forum troubleshooting guides
 
@@ -61,6 +63,8 @@ layers. Controller semantics and safety rules belong in the API.
 | BixCheck workflows | [Runtime workflows](reverse-engineering/bixcheck-runtime-workflows.md) |
 | Firmware generations | [Firmware comparison](reverse-engineering/firmware-comparison.md) |
 | Firmware loader | [Downloader protocol](reverse-engineering/bixcheck-downloader-protocol.md) |
+| J3 flashing procedure | [Guarded firmware flashing](guides/safe-j3-firmware-flashing.md) |
+| J3 flasher release gate | [Qualification plan](guides/j3-flasher-qualification.md) |
 | Original-chip preservation | [PICkit 3 read-only guide](guides/pickit3-firmware-preservation.md) |
 | PIC emulation | [Exhaustive emulator pass](reverse-engineering/emulator-deep-pass.md) |
 | Operating states | [Operating-state machine](reverse-engineering/operating-state-machine.md) |

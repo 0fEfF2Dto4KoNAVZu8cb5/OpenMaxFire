@@ -1,5 +1,61 @@
 # Research log
 
+## 2026-08-29 - guarded J3 flasher and loader timing
+
+- Re-analyzed the preserved 5.0.21 and 5.5.01 Downloader paths and confirmed
+  that `Bixby110Downloader()` hard-codes baud selector `1`, or 9,600. The
+  resident 2.02/2.06 loader independently sets `SPBRG=0x40` at the photographed
+  10 MHz oscillator. Application firmware 2.70/2.71 switches to 19,200 only
+  after handoff.
+- Derived the first-byte reset window from the byte-identical loader:
+  three Timer1 overflows from `TMR1H=0x0B` at Fosc/4, approximately 78 ms.
+  The new host uses 20 ms read probes and 20 ms spacing instead of applying the
+  normal register timeout to loader entry.
+- Cross-checked the loader's four-word row preservation and write sequence
+  against Microchip PIC16F87XA data-sheet section 3.6. Microchip specifies
+  edge-aligned four-word erase/write blocks, preservation of untouched words,
+  and a typical 4 ms final erase/write halt; the host allows a bounded 500 ms
+  block response.
+- Confirmed from the vendor guide that both igniters are physically unplugged
+  for downloading and that the Downloader timing controls are shown as zero.
+  Confirmed from the 2.06 release notes that a version/data-format upgrade is
+  followed by model selection, Individualize, Calculate Fuel A/B, and Format.
+- Added an exact three-image live allowlist. Each entry authenticates file
+  SHA-256, metadata, word count, configuration word, block count, and the
+  SHA-256 of every length-delimited wire frame. PICkit, unknown, modified,
+  renamed, and 2.73 images fail closed.
+- Implemented the separate `maxfirectl flash` workflow: exact current identity,
+  valid complete EEPROM backup, authenticated self-contained rescue bundle,
+  manual power-cycle entry only, fixed 9,600-baud loader, classified/bounded
+  E8/E5/pre-accept/post-accept retry behavior, no BixCheck terminal unread send,
+  fsync'd state/traffic evidence, conservative final-ED recovery, target-baud
+  application identity, and byte-identical post-flash EEPROM.
+- Added a mandatory non-writing physical rehearsal (`EA/EB`, `ED/E4`, zero
+  `E3`), backed by execution of the recovered 2.02 PIC code with queued `EA ED`
+  producing exactly `EB E4`. The live workflow retains one exclusive serial
+  handle across preflight, rehearsal, programming, and verification, inhibits
+  host sleep, and defers ordinary termination during the destructive exchange.
+- Made recovery source-bound and one-way. Recovery requires an unresolved
+  durable marker, cross-authenticates the image/preparation/profile/identity/
+  EEPROM manifest, creates a complete successor first, then delegates recovery
+  responsibility so completed or older sessions cannot bypass rewrite rules.
+- Tightened delayed-byte handling so `E4` is accepted only after that attempt's
+  observed `E7`, while `E7 E4` is accepted only after a pre-accept timeout.
+  Stray acknowledgements after `E5`/`E8` and receive-buffer errors abort without
+  retransmission. Post-write identity/EEPROM verification continues even when
+  its diagnostic recorder fails.
+- Added full-image emulator and fault-injection coverage for successful 476-
+  block 2.06 programming, E8, E5, exhaustion, wrong baud, final-ED recovery,
+  target identity, EEPROM mutation, safety gates, and offline CLI planning.
+  The host also preserves a complete backup when a checksum/format gate fails,
+  retains a late buffered `EB`, and writes a durable result for post-flash
+  verification failure.
+- The complete source suite passes 234 tests. A clean version-0.9 wheel was
+  built and installed, and its 2.06→2.70 plan executed successfully. Source-
+  tree checks authenticated the complete 2.02→2.06, 2.06→2.70, and 2.70→2.71
+  sequence as 476/481/486 blocks at fixed 9,600-baud loader transport. No
+  physical loader traffic was sent during this implementation pass.
+
 ## 2026-08-28
 
 - Preserved the first complete PICkit export from serial 5215's original

@@ -186,7 +186,7 @@ def _capabilities(*, live_read: bool) -> ControllerCapabilities:
                 Capability.CONFIGURATION_WRITE: CapabilityState.PLANNED,
                 Capability.CHECKOUT_PASSIVE: CapabilityState.EXPERIMENTAL,
                 Capability.CHECKOUT_ACTUATOR: CapabilityState.PLANNED,
-                Capability.FIRMWARE_LOADER: CapabilityState.PLANNED,
+                Capability.FIRMWARE_LOADER: CapabilityState.EXPERIMENTAL,
                 Capability.D_SPACE: CapabilityState.EXPERIMENTAL,
                 Capability.PROGRAM_MEMORY_DUMP: CapabilityState.UNSUPPORTED,
             }

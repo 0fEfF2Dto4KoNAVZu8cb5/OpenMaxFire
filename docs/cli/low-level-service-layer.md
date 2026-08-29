@@ -23,7 +23,7 @@ operation has been validated on the physical production controller.
 | Exact-byte exchange | `exchange_raw()` | `raw` | Response is uninterpreted; known loader traffic is blocked |
 | Ordered register plan | `execute_transaction()` | `transaction` | Validated, fail-fast, optional per-write readback |
 | Controller/EEPROM backup | `identify()` / `read_eeprom()` | `backup` | Live-validated read-only workflow |
-| Firmware-loader state machine | — | — | Not implemented; isolated from generic traffic |
+| Firmware-loader state machine | Separate `flashing` API | `flash` | Authenticated and safety-gated; never exposed through generic raw traffic |
 | PIC program-memory dump | — | — | No J3 read command has been discovered |
 
 The same serial transport can carry all currently known BixCheck traffic, but
@@ -88,8 +88,9 @@ maxfirectl \
 
 `--ascii CR00` produces the same four transmitted bytes. Known loader markers
 (`CW0FC4`, `EA`, `E3`, and `ED`) are refused before the serial port is opened.
-They belong in a future loader implementation with image checks, expected
-acknowledgements, bounded retries, and recovery behavior.
+They belong only in the dedicated loader implementation with exact image/wire
+authentication, expected acknowledgements, bounded retries, recovery, and
+post-flash verification.
 
 ## Transaction plans
 

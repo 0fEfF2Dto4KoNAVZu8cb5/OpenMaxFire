@@ -3,7 +3,14 @@
 Status: the portable foundation is implemented, tested offline, and
 live-validated on serial 5215's firmware 2.02/data-format 04 controller at
 9,600 baud. Remote OFF/ON/UP/DOWN bytes are live-validated; unrelated writes
-remain unvalidated and excluded from the documented workflow.
+remain unvalidated and excluded from the documented workflow. Version 0.9 also
+contains a separate authenticated J3 flasher, but that path is emulator-tested
+only and remains gated on proven PICkit recovery using sacrificial hardware.
+
+Firmware work is not part of the generic live-I/O gate below. Read the
+[guarded J3 firmware-flashing guide](../guides/safe-j3-firmware-flashing.md);
+the dedicated `flash` command has stricter image, wiring, igniter, recovery,
+manual-power-cycle, backup, and post-flash verification requirements.
 
 `maxfirectl` uses one Python codebase on Windows, Linux, and macOS. The protocol,
 identity, backup, and safety logic does not contain OS-specific port assumptions.

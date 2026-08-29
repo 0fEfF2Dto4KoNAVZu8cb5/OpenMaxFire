@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import platform
 import sys
 import time
@@ -82,11 +83,13 @@ class AuditTrail:
         metadata: Mapping[str, object] | None = None,
         overwrite: bool = False,
         session_id: str | None = None,
+        durable: bool = False,
     ):
         self.path = Path(path) if path is not None else None
         self.metadata = dict(metadata or {})
         self.session_id = session_id or str(uuid.uuid4())
         self.created_utc = datetime.now(timezone.utc).isoformat()
+        self.durable = durable
         self._events: list[AuditEvent] = []
         self._stream: TextIO | None = None
         self._closed = False
@@ -120,6 +123,8 @@ class AuditTrail:
         if self._stream is not None:
             self._stream.write(json.dumps(dict(event), sort_keys=True) + "\n")
             self._stream.flush()
+            if self.durable:
+                os.fsync(self._stream.fileno())
 
     def record(self, direction: str, data: bytes) -> None:
         if self._closed:

@@ -455,5 +455,125 @@ class SimulatedLoaderTransport:
         del self.incoming[:size]
         return chunk
 
+    def read_available(self) -> bytes:
+        data = bytes(self.incoming)
+        self.incoming.clear()
+        return data
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class SimulatedFlashSessionTransport:
+    """One-handle application/rehearsal/programming/application lifecycle.
+
+    This is a deterministic CLI test fixture, not an electrical or timing
+    model.  The first loader entry is treated as a zero-block rehearsal; a
+    later entry accepts the real plan and hands off to the target profile.
+    """
+
+    def __init__(
+        self,
+        current_profile: ControllerProfile | str,
+        target_profile: ControllerProfile | str,
+        *,
+        eeprom: bytes | bytearray | memoryview | None = None,
+        rehearsal_faults: SimulatedLoaderFaults | None = None,
+        programming_faults: SimulatedLoaderFaults | None = None,
+        post_eeprom: bytes | bytearray | memoryview | None = None,
+        skip_rehearsal: bool = False,
+        port: str = "SIM0",
+        baudrate: int = 9600,
+        timeout: float = 0.50,
+    ):
+        self.current_profile = (
+            PROFILES_BY_KEY[current_profile]
+            if isinstance(current_profile, str)
+            else current_profile
+        )
+        self.target_profile = (
+            PROFILES_BY_KEY[target_profile]
+            if isinstance(target_profile, str)
+            else target_profile
+        )
+        baseline = default_eeprom(self.current_profile) if eeprom is None else bytes(eeprom)
+        self.before = SimulatedController(self.current_profile, eeprom=baseline)
+        self.after = SimulatedController(
+            self.target_profile,
+            eeprom=baseline if post_eeprom is None else bytes(post_eeprom),
+        )
+        self.rehearsal_faults = rehearsal_faults or SimulatedLoaderFaults()
+        self.programming_faults = programming_faults or SimulatedLoaderFaults()
+        self.settings = SerialSettings(port, baudrate, timeout, exclusive=True)
+        self.incoming = bytearray()
+        self.writes: list[bytes] = []
+        self.loader_entries = 1 if skip_rehearsal else 0
+        self.loader: SimulatedLoaderTransport | None = None
+        self.mode = "application_before"
+        self.closed = False
+
+    def set_baudrate(self, baudrate: int) -> None:
+        self.settings = SerialSettings(
+            self.settings.port,
+            baudrate,
+            self.settings.timeout,
+            self.settings.exclusive,
+        )
+
+    def set_timeout(self, timeout: float) -> None:
+        self.settings = SerialSettings(
+            self.settings.port,
+            self.settings.baudrate,
+            timeout,
+            self.settings.exclusive,
+        )
+
+    def _enter_loader(self) -> None:
+        self.loader_entries += 1
+        faults = (
+            self.rehearsal_faults
+            if self.loader_entries == 1
+            else self.programming_faults
+        )
+        self.loader = SimulatedLoaderTransport(faults=faults)
+        self.mode = "loader"
+
+    def write(self, data: bytes) -> None:
+        if self.closed:
+            raise OSError("simulated flash-session transport is closed")
+        payload = bytes(data)
+        self.writes.append(payload)
+        if self.mode != "loader" and payload == LOADER_IDENTIFY_REQUEST:
+            self._enter_loader()
+        if self.mode == "loader":
+            assert self.loader is not None
+            self.loader.write(payload)
+            self.incoming.extend(self.loader.read_available())
+            if payload == LOADER_COMPLETE_REQUEST and self.loader.application_running:
+                self.mode = (
+                    "application_before"
+                    if self.loader_entries == 1
+                    else "application_after"
+                )
+            return
+        controller = self.after if self.mode == "application_after" else self.before
+        self.incoming.extend(controller.handle(payload))
+
+    def read(self, size: int = 1) -> bytes:
+        if self.closed:
+            raise OSError("simulated flash-session transport is closed")
+        if size < 1:
+            raise ValueError("read size must be positive")
+        if not self.incoming:
+            return b""
+        chunk = bytes(self.incoming[:size])
+        del self.incoming[:size]
+        return chunk
+
+    def read_available(self) -> bytes:
+        data = bytes(self.incoming)
+        self.incoming.clear()
+        return data
+
     def close(self) -> None:
         self.closed = True

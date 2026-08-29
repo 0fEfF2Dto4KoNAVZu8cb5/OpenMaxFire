@@ -69,7 +69,7 @@ class FirmwareApiTests(unittest.TestCase):
         self.assertFalse(result.j3_layout_eligible)
         self.assertFalse(result.valid_for_offline_planning)
         self.assertFalse(result.live_programming_supported)
-        self.assertFalse(loader_state_machine_supported())
+        self.assertTrue(loader_state_machine_supported())
 
     def test_format_migration_is_reported_not_hidden(self):
         result = assess_firmware_compatibility(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping
@@ -95,4 +96,6 @@ def save_json_document(
     ) as stream:
         json.dump(dict(document), stream, indent=2, sort_keys=True)
         stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
     return destination

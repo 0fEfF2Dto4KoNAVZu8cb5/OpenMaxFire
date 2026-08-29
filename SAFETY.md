@@ -24,6 +24,39 @@ This project interacts with a mains-powered solid-fuel appliance containing hot 
   enabled or unknown. Clearing PIC16F877A protection requires a destructive
   chip erase. Follow the [PICkit 3 read-only procedure](docs/guides/pickit3-firmware-preservation.md).
 
+## Firmware-flashing boundary
+
+The experimental guarded J3 executor does not make physical flashing proven.
+Before its live gate can be satisfied, PICkit recovery must have been programmed,
+read back, authenticated, and exercised on a spare PIC/controller. Do not assert
+that merely owning a PICkit, spare chip, or known-good file proves recovery.
+
+For any J3 firmware session, the stove must be cold and OFF and both igniters
+must be physically unplugged. Use only the validated 5 V TTL ground/TX/RX
+wiring; keep J3-3 and adapter VCC disconnected. Entry is by manual AC power
+cycle. Keep AC, J3, and the host stable until the tool finishes. The flasher
+must first preserve an authenticated exact-image rescue bundle and pass a
+non-writing `EA/EB`, `ED/E4` rehearsal with no `E3` frames. It retains one
+exclusive serial handle and must acquire the platform sleep inhibitor before
+the destructive window.
+
+Once any `E3` may have been sent, a failure is a recovery event, not permission
+to operate the stove or choose another image. Preserve the failed session and
+replay its authenticated image from block zero. One `E5` receives one bounded
+identical retry and triggers a hardware-inspection gate even if programming
+finishes; a second `E5` anywhere aborts. The durable recovery marker is removed
+only after repeated target identity and byte-identical EEPROM verification.
+Recovery is one-way: a newer self-contained recovery session atomically takes
+responsibility from its source, and an older or completed session cannot be
+replayed as a shortcut around compatibility rules.
+
+The resident loader always uses 9,600 baud. A target 2.70/2.71 application uses
+19,200 only after handoff. Do not reconnect igniters or operate the stove after
+a data-format migration until the vendor calibration/Format procedure is
+complete. See the [guarded flashing guide](docs/guides/safe-j3-firmware-flashing.md)
+and the mandatory
+[sacrificial-hardware qualification plan](docs/guides/j3-flasher-qualification.md).
+
 ## Fail-out-of-the-way requirement
 
 A disconnected, crashed, unpowered, or removed OpenMaxFire device must not

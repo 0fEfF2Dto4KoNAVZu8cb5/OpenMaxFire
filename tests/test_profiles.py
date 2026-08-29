@@ -38,7 +38,7 @@ class ControllerProfileTests(unittest.TestCase):
         )
         self.assertEqual(
             profile.capabilities.state(Capability.FIRMWARE_LOADER),
-            CapabilityState.PLANNED,
+            CapabilityState.EXPERIMENTAL,
         )
         self.assertEqual(profile.controller_registers[0x02].name, "physical_inputs")
         self.assertEqual(profile.controller_writes[0x0E].name, "remote_front_panel")

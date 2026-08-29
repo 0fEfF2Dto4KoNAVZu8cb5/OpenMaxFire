@@ -105,14 +105,15 @@ Downloader images still do not replace a complete external-programmer image.
 
 ## OpenMaxFire policy
 
-No physical firmware write will be implemented or attempted on serial 5215
-until:
+Version 0.9 implements a separate guarded host, but it remains
+emulator/fault-injection validated rather than physical evidence. No production
+firmware write will be attempted on serial 5215 until:
 
 - the preserved first 2.02 program/EEPROM/configuration/User-ID read is matched
   against the remaining independent exports;
 - a 2.02 clone is proven on a spare PIC;
 - full external-programmer recovery is proven on expendable hardware;
-- an actual BixCheck update is captured byte for byte;
+- the loader exchange is first captured and validated on expendable hardware;
 - the newly decoded `E5`, `E8`, protection, row-write, retry, and completion
   behavior is represented in the loader simulator (completed in v0.8);
 - current calibration is backed up;
@@ -123,4 +124,8 @@ until:
 The original-chip preparation and offline dump-authentication commands are in
 the [PICkit 3 read-only preservation guide](../guides/pickit3-firmware-preservation.md).
 That workflow stops rather than erases if code protection is enabled or
-unknown.
+unknown. The dedicated host, its stronger pre/post checks, and the exact bench
+procedure are documented in the
+[guarded J3 flashing guide](../guides/safe-j3-firmware-flashing.md). Physical
+release requires every case in the
+[J3 flasher qualification plan](../guides/j3-flasher-qualification.md).

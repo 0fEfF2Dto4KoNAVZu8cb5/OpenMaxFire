@@ -6,6 +6,7 @@ from tools.pic14_emulator import (
     PIC16F877A,
     execute_silent_write,
     execute_telemetry_slot,
+    probe_image,
     synthetic_controller_eeprom,
 )
 
@@ -63,6 +64,23 @@ class WriteAndTelemetryExperimentTests(unittest.TestCase):
         self.assertTrue(result.sender_seen)
         self.assertIsNone(result.error)
         self.assertRegex(result.response, rb"^T09[0-9a-fA-F]{2}\n$")
+
+    def test_loader_ea_ed_rehearsal_returns_eb_e4_without_eeprom_write(self):
+        summary, _, events = probe_image(
+            ROOT
+            / "reverse-engineering/firmware/2.02/extracted/"
+            "Bixby_0202_260827_PICkit.hex",
+            "loader-rehearsal",
+            b"\xEA\xED",
+            "non-writing loader entry and handoff",
+            boot_steps=0,
+            probe_steps=200_000,
+        )
+        self.assertIsNone(summary["error"])
+        self.assertEqual(summary["tx_hex"], "EB E4")
+        self.assertEqual(summary["uart_rx_events"], 2)
+        self.assertEqual(summary["uart_tx_events"], 2)
+        self.assertFalse(any(item.kind == "eeprom_write" for item in events))
 
 
 if __name__ == "__main__":
