@@ -16,11 +16,13 @@ image.
 - **Immediate abort on `E5`** write/readback verification failure.
 - `E4` block success handling.
 - `ED` -> `E4` completion.
-- Structured JSONL event logging with monotonic timestamps and exact TX/RX bytes.
+- Required structured JSONL event logging with monotonic timestamps and exact TX/RX bytes.
 - Strict rejection of full PICkit images on the J3 path.
 - Acceptance only of the preserved 2.06, 2.70, and 2.71 J3 image families.
 - Optional post-flash read-only controller identity verification at an explicitly
   selected baud.
+- Required `--i-understand-this-can-brick` acknowledgement for every physical
+  loader operation.
 
 Unlike BixCheck, this tool does not broadly retry an `E5` failure. A PIC-side
 write/readback verification failure stops the transfer immediately so the
@@ -49,7 +51,7 @@ python tools/experimental_j3_flasher.py probe \
   --port /dev/ttyUSB0 \
   --baud 9600 \
   --event-log captures/loader-probe.jsonl \
-  --authorize I-UNDERSTAND-J3-FLASHING-CAN-BRICK-THE-CONTROLLER
+  --i-understand-this-can-brick
 ```
 
 The normal vendor workflow power-cycles the stove/controller while the host is
@@ -71,7 +73,7 @@ python tools/experimental_j3_flasher.py protected-test \
   --port /dev/ttyUSB0 \
   --baud 9600 \
   --event-log captures/protected-test-001.jsonl \
-  --authorize I-UNDERSTAND-J3-FLASHING-CAN-BRICK-THE-CONTROLLER
+  --i-understand-this-can-brick
 ```
 
 A successful result must show loader identification, `E7`, `E4`, and final
@@ -91,7 +93,7 @@ python tools/experimental_j3_flasher.py flash \
   --baud 9600 \
   --post-baud 19200 \
   --event-log captures/fw206-to-fw270-001.jsonl \
-  --authorize I-UNDERSTAND-J3-FLASHING-CAN-BRICK-THE-CONTROLLER
+  --i-understand-this-can-brick
 ```
 
 `--post-baud` is optional because the correct application baud must be selected
