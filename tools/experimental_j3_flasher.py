@@ -19,8 +19,10 @@ from openmaxfire.experimental_flasher import (
     FlasherEventRecorder,
     PhysicalFlasherPolicy,
     dry_run_image,
+    validate_j3_image,
 )
 from openmaxfire.firmware import FirmwareImage, FirmwareImageError
+from openmaxfire.loader_entry import reset_application_into_loader
 from openmaxfire.transport import SerialSettings, SerialTransport
 
 
@@ -73,6 +75,15 @@ def parser() -> argparse.ArgumentParser:
             required=True,
             help="required acknowledgement for all physical loader operations",
         )
+        if name in ("protected-test", "flash"):
+            cmd.add_argument(
+                "--power-cycle-entry",
+                action="store_true",
+                help=(
+                    "do not issue CW0FC4; instead wait for a manual power-cycle. "
+                    "Default is BixCheck-style software reset from the running application"
+                ),
+            )
         if name == "flash":
             cmd.add_argument("image", type=Path)
             cmd.add_argument(
@@ -117,6 +128,18 @@ def _post_flash_identity(args: argparse.Namespace) -> dict[str, object] | None:
         transport.close()
 
 
+def _enter_loader_if_requested(
+    args: argparse.Namespace,
+    transport: SerialTransport,
+    recorder: FlasherEventRecorder,
+) -> None:
+    if getattr(args, "power_cycle_entry", False):
+        recorder.record("loader_entry_mode", mode="manual_power_cycle")
+        return
+    recorder.record("loader_entry_mode", mode="application_CW0FC4")
+    reset_application_into_loader(transport, recorder)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     if args.command == "dry-run":
@@ -133,9 +156,12 @@ def main(argv: list[str] | None = None) -> int:
             attempts = flasher.identify()
             result = {"mode": "probe", "success": True, "identify_attempt": attempts}
         elif args.command == "protected-test":
+            _enter_loader_if_requested(args, transport, recorder)
             result = flasher.run_protected_test()
         else:
             image = FirmwareImage.load(args.image)
+            validate_j3_image(image)
+            _enter_loader_if_requested(args, transport, recorder)
             result = flasher.flash(image)
             transport.close()
             closed = True
