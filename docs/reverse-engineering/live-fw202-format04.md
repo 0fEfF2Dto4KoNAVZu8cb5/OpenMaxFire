@@ -51,7 +51,7 @@ J3 mapping. Numbering follows the square pin-1 pad:
 | ---: | --- | --- | --- |
 | 1 | Bottom, square pad | Stove RX, toward PIC pin 26 `RC7/RX/DT` | Corrected owner continuity/wiring identification plus successful transmit path |
 | 2 | Third from top | Stove TX, toward PIC pin 25 `RC6/TX/CK` | Corrected owner continuity/wiring identification plus successful receive path |
-| 3 | Second from top | Unresolved; left disconnected | No voltage/function conclusion; measured 0 V in an earlier standalone-board check |
+| 3 | Second from top | Board VDD through approximately 100 ohms; nominal +5 V; left disconnected | Subsequent 2026-08-30 owner-reported unpowered tracing measured approximately 100 ohms to both PIC VDD pins 11 and 32 and broad logic-rail fan-out; powered voltage remains unverified. The earlier standalone-board observation was 0 V. |
 | 4 | Top | Board ground | Direct continuity to board power-input ground |
 
 The working cable is an FTDI `TTL-232R-5V-WE`, USB `0403:6001`, serial
@@ -358,7 +358,9 @@ Regression tests cover 32 interleaved frames and `0f\n` resynchronization.
   read over the normal application protocol.
 - No physical ON, actuator, igniter, fan, feed, ash-drive, or remote-write test
   was performed.
-- J3-3 remains unresolved and must stay disconnected.
+- J3-3 was subsequently passively traced to board VDD through approximately
+  100 ohms and is provisionally nominal +5 V, but its powered voltage and
+  source/load behavior remain unverified; it must stay disconnected.
 - `T06` scaling, `DW06`, the remaining format-04 slots, exact operating state,
   and heat/target-level decoding remain unresolved.
 - Firmware 2.02 itself is not among the preserved HEX images. A non-destructive

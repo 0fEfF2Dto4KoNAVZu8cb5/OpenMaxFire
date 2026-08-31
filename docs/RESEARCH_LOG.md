@@ -2,6 +2,16 @@
 
 ## 2026-08-30 - first live firmware-2.06 compatibility pass
 
+- Recorded owner-reported unpowered J3-3 tracing on serial 5215's `9067-0604`
+  controller: approximately 100 ohms from J3-3 to each PIC16F877A VDD pin,
+  physical pins 11 and 32, with the post-resistor node observed to fan out
+  across multiple IC supply paths.
+- Classified J3-3 as board VDD through approximately 100 ohms and provisionally
+  nominal +5 V. This is a passive topology result, not a powered voltage or
+  available-current measurement; J3-3 and FTDI VCC remain disconnected.
+- Recorded the plan to attach a red identification lead at the board while
+  keeping its free connector end disconnected and individually insulated until
+  protected powered verification is complete.
 - Identified the externally programmed spare controller as exact firmware
   2.06/data format 05/build 21 through read-only J3 traffic. A leading NUL on
   the first valid reply exposed a receive-resynchronization edge case; the

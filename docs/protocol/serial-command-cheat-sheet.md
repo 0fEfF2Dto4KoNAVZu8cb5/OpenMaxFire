@@ -8,8 +8,10 @@ configuration bytes, telemetry fields, and loader controls in one place.
 > three preserved application-firmware generations, offline execution of the
 > real PIC code, and a read-only live session on serial 5215's firmware
 > 2.02/data-format 04 controller. That board's J3 ground/TX/RX and 5 V TTL cable
-> are validated; J3-3 remains unresolved. Do not connect a generic USB serial
-> adapter or generalize this pinout to another board revision.
+> are validated. J3-3 is passively traced through approximately 100 ohms to
+> board VDD and is provisionally nominal +5 V, but its powered voltage is not
+> yet measured; leave it and adapter VCC disconnected. Do not connect a generic
+> USB serial adapter or generalize this pinout to another board revision.
 
 ## Safety legend
 

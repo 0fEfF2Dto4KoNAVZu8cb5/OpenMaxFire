@@ -51,7 +51,7 @@ OpenMaxFire separates evidence into five levels:
 | J10 exhaust sensor | RA4/T0CKI falling-edge count is sampled into RAM 0x34 and returned as CR05; live 2.02 moved `00`→`0C` with the operator-observed blower and returned to `00` after OFF | Equivalent four-version producer paths, bounded live 2.02 correlation, BixCheck predicates, and board diagram |
 | J9 feeder sensor | RD0 high-then-low wheel cycle is timed while RB1 is active; CR02.4 is current state and CR07 is the scaled interval. 2.02 pre-shifts the latch once; a bounded start/stop changed CR02.4 0→1 and CR07 `1E`→`1F`, then both remained stable for 20 Off cycles. The observed `1F` excludes the `2D` boot initializer and `16` range clamp, proving runtime latch execution | Equivalent four-version paths plus live 2.02 cycle-latch evidence; physical edge polarity, movement per edge, and time unit remain unverified |
 | A-unit storage | Firmware reads A00-AFF through PIC16F877A internal data EEPROM registers | Emulator events and bank-aware handler trace |
-| J3/cable | J3-1=stove RX/PIC26 with FTDI orange/TX, J3-2=stove TX/PIC25 with FTDI yellow/RX, J3-4=ground, J3-3 unresolved; adapter VCC disconnected. Bare FTDI completed 10 zero-write loader handoffs but entry remained nondeterministic. Its powered idle-high TX can plausibly backfeed the unpowered PIC; the waveform is not yet captured | Corrected continuity/wiring, application traffic, corpus-wide `EA/EB` and `ED/E4` evidence, PIC/FTDI electrical specifications |
+| J3/cable | J3-1=stove RX/PIC26 with FTDI orange/TX, J3-2=stove TX/PIC25 with FTDI yellow/RX, J3-4=ground; J3-3 measures approximately 100 ohms to PIC VDD pins 11/32 and is provisionally nominal +5 V, with powered voltage unverified; adapter VCC remains disconnected. Bare FTDI completed 10 zero-write loader handoffs but entry remained nondeterministic. Its powered idle-high TX can plausibly backfeed the unpowered PIC; the waveform is not yet captured | Corrected continuity/wiring, follow-up owner-reported unpowered tracing, application traffic, corpus-wide `EA/EB` and `ED/E4` evidence, PIC/FTDI electrical specifications |
 | Board diagram | Online-found MaxFire pinout labels J3 and board subsystems; pictured PCB is 9067-0404 | Preserved image plus visible silkscreen; related-family evidence |
 | Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Equivalent 2.02/2.06/2.70/2.71 scanners with version-specific RAM staging, configuration-bank flow, BixCheck predicates, diagram labels |
@@ -70,9 +70,9 @@ OpenMaxFire separates evidence into five levels:
 
 | Question | Current position | Next evidence |
 | --- | --- | --- |
-| J3 pin 3 | Ground/TX/RX are live-validated; pin 3 remains unused/unresolved | Protected measurement and revision-specific tracing; do not connect |
+| J3 pin 3 | Passively traced through approximately 100 ohms to PIC VDD pins 11/32 and the broad logic-supply net; nominal +5 V is strongly supported, but the powered voltage and source/load limits are unverified | Protected powered voltage/source characterization; do not connect or load |
 | M/I families | Outer dispatch known; CW0D emits `I` plus LF, but general payload semantics remain unresolved | Deeper data-flow analysis or controlled capture |
-| Board routing | Full 9067-0604 marking and both PCB sides are photographed; J3 continuity is owner-measured, but pin 3 and some under-component routing remain unresolved | Additional protected net tracing only as needed |
+| Board routing | Full 9067-0604 marking and both PCB sides are photographed; J3 continuity is owner-measured, including the pin-3-to-VDD series path; some under-component routing remains unresolved | Additional protected net tracing only as needed |
 | Input wiring | Door/drawer/thermostat/fuel/buttons/pots and the J10 blower correlation are live-validated; J9 has partial start/stop support; CR02.1/CR02.7, J9 polarity, and J9 timing remain unresolved | Passive observation or a separately supervised bounded sensor test |
 | Telemetry conversions | Later format-05/07 map is statically decoded; live format 04 differs and only several fields, inputs, and fault indicators are correlated | Additional controlled operating captures and recovered 2.02 firmware/software |
 | Table-only telemetry | BixCheck 5.5.01 names TFD-TFF, but no producer is recovered in periodic 2.71 firmware; T20 is a separate 2.06/2.70/2.71 display-event path and live 2.06 `02`/`00` matched flashing light 2 | Passive capture or newly identified conditional producer |
@@ -95,7 +95,8 @@ relocated reset-vector words. The operator reported restoring the sole hash-
 pinned pre-write 2.02 image with the external programmer; the controller then
 showed a normal boot and matching J3 identity/EEPROM. No post-program whole-chip
 readback or IPE log was retained.
-J3-3 is unresolved and
+J3-3 is passively traced through approximately 100 ohms to PIC VDD and is
+provisionally nominal +5 V, but its powered behavior remains unverified. It
 must stay disconnected regardless of the historical forum cable's red-wire
 position. No J3 update/recovery path has been proven on sacrificial hardware.
 Configuration and Checkout actuators remain simulator-only. The corrected

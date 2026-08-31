@@ -6,7 +6,13 @@ This project interacts with a mains-powered solid-fuel appliance containing hot 
 
 - Disconnect mains power and allow the stove to cool before opening, cleaning, or servicing it. Never operate it with the side panel removed.
 - Operate only with the hopper door closed and the firebox door and ash drawer fully latched. The factory manual says a firebox door left open for about one minute or an ash drawer left open for about 20 minutes causes shutdown; opening the drawer also disables the ash dump and blocks startup.
-- On the validated 9067-0604 controller, J3-1 is stove RX, J3-2 is stove TX, and J3-4 is ground. Leave unresolved J3-3 and adapter VCC disconnected. Do not generalize this pinout to another board revision without tracing it.
+- On the validated 9067-0604 controller, J3-1 is stove RX, J3-2 is stove TX,
+  and J3-4 is ground. Owner-reported unpowered tracing places J3-3 on the PIC
+  VDD/logic-supply net through approximately 100 ohms, supporting nominal +5 V,
+  but the powered voltage and available current remain unverified. Leave J3-3
+  and adapter VCC disconnected. Any attached identification lead must have its
+  free end individually insulated. Do not generalize this pinout to another
+  board revision without tracing it.
 - Do not connect standard RS-232 voltage levels directly to J3. Historical
   functional UART tests used an FTDI TTL-232R-5V-WE with black/GND on J3-4,
   orange/adapter-TX on J3-1, yellow/adapter-RX on J3-2, and no VCC connection.

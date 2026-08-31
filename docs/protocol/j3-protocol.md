@@ -22,9 +22,13 @@ locate the black, single-row, four-contact J3. The later
 [bare-controller photographs](../hardware/bare-controller-photographs.md)
 directly show both PCB sides, complete `9067-0604` marking, PIC16F877A, and
 `10.000` MHz oscillator. Owner continuity tracing plus successful live traffic
-establish J3-1=stove RX, J3-2=stove TX, J3-4=ground. J3-3 remains unresolved
-and disconnected. The preserved pre-validation FTDI photograph has the two
-signal wires reversed and is explicitly marked incorrect. See
+establish J3-1=stove RX, J3-2=stove TX, and J3-4=ground. Follow-up
+owner-reported unpowered tracing measured approximately 100 ohms from J3-3 to
+both PIC VDD pins 11 and 32 and found broad logic-supply-net fan-out. J3-3 is
+therefore provisionally nominal +5 V through a series resistor, but its powered
+voltage and available current remain unverified and it stays disconnected. The
+preserved pre-validation FTDI photograph has the two signal wires reversed and
+is explicitly marked incorrect. See
 [the hardware pinout](../hardware/j3-interface.md).
 
 The working adapter is an FTDI `TTL-232R-5V-WE`; adapter VCC was not connected.
@@ -152,7 +156,8 @@ grammar and is intentionally excluded from normal OpenMaxFire APIs. See
 The 2026-08-22 session completed the intended first-live sequence without any
 write:
 
-1. traced J3 ground/TX/RX and left J3-3 disconnected;
+1. traced J3 ground/TX/RX and left J3-3 disconnected; later unpowered tracing
+   placed J3-3 on board VDD through approximately 100 ohms;
 2. confirmed the physical 10 MHz oscillator marking;
 3. inventoried and wired the official 5 V TTL FTDI adapter without VCC;
 4. observed no spontaneous passive traffic;

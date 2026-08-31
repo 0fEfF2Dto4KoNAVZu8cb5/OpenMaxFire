@@ -39,6 +39,11 @@ sequence and is retained with that set.
   a visible MAX232, USB PHY, or RS-485 transceiver.
 - Corrected owner continuity and wiring identification maps J3-1 toward PIC
   physical pin 26/RC7-RX, J3-2 toward pin 25/RC6-TX, and J3-4 to board ground.
+- Follow-up owner-reported unpowered tracing on 2026-08-30 measured
+  approximately 100 ohms from J3-3 to both PIC VDD pins 11 and 32 and observed
+  the post-resistor node fanning out across multiple IC supply paths. This
+  supports a nominal +5 V function but does not replace a powered voltage
+  measurement.
 - `j3-ftdi-correct-wiring-solder-side.jpg` is the authoritative positive
   reference: black on J3-4, J3-3 unused, yellow on J3-2, and orange on J3-1.
   Only those three conductors terminate on J3; the visible loose green conductor
@@ -63,7 +68,10 @@ archive.
 
 ## Limits
 
-- J3-3 remains electrically unresolved and was not used for live communication.
+- J3-3 is passively identified as board VDD through approximately 100 ohms,
+  nominally +5 V, but its powered voltage and available current remain
+  unverified. It was not used for live communication and must remain
+  disconnected.
 - A successful 5 V TTL cable establishes compatibility for the tested board;
   it does not authorize attaching adapter VCC or applying the mapping to an
   unverified controller revision.

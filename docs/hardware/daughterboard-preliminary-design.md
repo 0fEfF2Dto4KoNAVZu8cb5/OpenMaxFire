@@ -24,9 +24,11 @@ extension header for the relay coil. The stove-facing UART supply must follow
 the target power domain; it must not be an always-on isolated output driving an
 unpowered PIC.
 
-J3-3 is unresolved. The PCB may reserve a disconnected, protected supply input
-for it, but may use it only if measurement proves that it safely tracks PIC VDD.
-Otherwise a separately identified stove-domain supply is required.
+J3-3 is passively traced through approximately 100 ohms to PIC VDD and is
+provisionally nominal +5 V, but its powered voltage and source/load behavior
+remain unverified. The PCB may reserve a disconnected, protected supply-sense
+input for it, but may use it only after measurement proves that it safely tracks
+PIC VDD. Otherwise a separately identified stove-domain supply is required.
 
 ## Functional block diagram
 

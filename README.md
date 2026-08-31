@@ -158,8 +158,12 @@ Confirmed by static, photographic, emulator, and live evidence:
 - Bare-board photographs directly expose the complete `9067-0604` marking,
   PIC16F877A, `10.000` MHz oscillator, both PCB sides, and J3 routing area.
 - Corrected continuity and live-wiring evidence establish J3-1=stove RX,
-  J3-2=stove TX, J3-4=ground; J3-3 is unresolved and disconnected. An official FTDI
-  `TTL-232R-5V-WE`, used without VCC, exchanged valid 9,600-baud traffic.
+  J3-2=stove TX, and J3-4=ground. Owner-reported unpowered tracing subsequently
+  found approximately 100 ohms from J3-3 to both PIC VDD pins 11 and 32 and
+  broad fan-out across the logic-supply net. This supports J3-3 as nominal +5 V
+  through a series resistor, but its powered voltage is not yet measured and it
+  remains disconnected. An official FTDI `TTL-232R-5V-WE`, used without VCC,
+  exchanged valid 9,600-baud traffic.
 - Three independent live A00-AFF reads agree byte-for-byte and have a matching
   `EFCE` EEPROM checksum. The stored controller serial/date strings differ from
   the appliance nameplate and are preserved without an assumed explanation.
@@ -182,8 +186,8 @@ Confirmed by static, photographic, emulator, and live evidence:
 
 Not yet confirmed on physical hardware:
 
-- J3-3 function, exact idle/noise-margin measurements, and behavior under
-  operating electrical loads.
+- J3-3 powered voltage and source/load limits, exact UART idle/noise-margin
+  measurements, and behavior under operating electrical loads.
 - Complete J9 polarity/timing correlation, CR02.1/CR02.7 functions, and most
   format-04 telemetry meanings. J10 now has a bounded live blower correlation,
   while J9 has partial start/stop evidence.

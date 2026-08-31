@@ -69,8 +69,9 @@ protocol or controller logic.
   and compare visible connector placement with the preserved 9067-0404 diagram.
 - [x] Photograph the unobstructed full part-number silkscreen and solder side of
   the installed board, then trace J3 without assuming the 9067-0404 routing.
-- [x] Identify J3 ground/TX/RX without assuming standard RS-232; leave the
-  unresolved fourth function/pin 3 disconnected.
+- [x] Identify J3 ground/TX/RX without assuming standard RS-232 and passively
+  trace pin 3 through approximately 100 ohms to PIC VDD; leave pin 3
+  disconnected pending powered-voltage verification.
 - [ ] Measure idle voltage and polarity through a protected interface.
 - [x] Physically confirm the controller oscillator's `10.000` MHz marking.
 - [ ] Capture BixCheck startup traffic if the Windows application can run.
@@ -216,8 +217,9 @@ protocol or controller logic.
 
 - [x] Document the candidate Olimex ESP32-POE-ISO-IND plus consolidated
   stove-interface daughterboard architecture.
-- [ ] Complete remaining J3-3, idle-level/noise-margin, and thermostat contact
-  measurements required to select isolation, protection, and relay ratings.
+- [ ] Complete J3-3 powered-voltage/source-limit, UART idle-level/noise-margin,
+  and thermostat-contact measurements required to select isolation,
+  protection, and relay ratings.
 - [ ] Prototype isolated read-only UART with the controller powered independently
   from J3.
 - [ ] Prototype the non-latching thermostat transfer relay and verify that its

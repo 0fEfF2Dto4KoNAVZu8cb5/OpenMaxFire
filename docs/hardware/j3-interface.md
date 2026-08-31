@@ -30,7 +30,7 @@ The J3 square pad is pin 1. With the board upright in the documented view, pin
 | ---: | --- | --- |
 | 1 | Stove RX | Corrected continuity/tracing toward PIC physical pin 26, `RC7/RX/DT`; successful transmit path |
 | 2 | Stove TX | Corrected continuity/tracing toward PIC physical pin 25, `RC6/TX/CK`; successful receive path |
-| 3 | Unresolved; leave disconnected | No function established; earlier standalone-board measurement was 0 V |
+| 3 | Board VDD through approximately 100 ohms; nominal +5 V; leave disconnected pending powered verification | Owner-reported unpowered resistance of approximately 100 ohms to both PIC VDD pins 11 and 32, with broad logic-supply-net fan-out; actual powered voltage and available current not measured |
 | 4 | Board/signal ground | Continuity to board power-input ground |
 
 The two signal paths include nearby passive conditioning/protection components;
@@ -42,6 +42,13 @@ It does not show J3 pin numbering, cable electronics, continuity, or voltage.
 That unverified color/position clue is deliberately ignored. It does not
 override the successful three-wire connection: **do not connect J3-3 or adapter
 VCC**. See the [artifact-specific evidence limits](historical-j3-cable-photograph.md).
+
+The J3-3 resistance and fan-out identify its circuit topology with high
+confidence but do not constitute a live voltage measurement. The earlier 0 V
+standalone-board observation is therefore retained as historical evidence, not
+as a contradiction-free powered result. Do not use J3-3 as a supply or connect
+it to another 5 V source until its live voltage and source behavior are safely
+measured.
 
 ## Validated cable connection
 
@@ -57,7 +64,7 @@ The working adapter inventory is preserved as
 | Black | GND | Pin 4 / stove ground |
 | Orange | TX | Pin 1 / stove RX |
 | Yellow | RX | Pin 2 / stove TX |
-| Red | VCC | Disconnected |
+| Red | VCC | Disconnected; do not connect to J3-3 without further validation |
 | Brown/green | Flow control | Disconnected |
 
 ## Authoritative correct-wiring photograph
@@ -84,7 +91,9 @@ data cable, or unknown-color generic adapter must not be substituted directly.
 
 ## Remaining electrical limits
 
-- J3-3 remains unresolved and must stay unused.
+- J3-3 is passively traced to board VDD through approximately 100 ohms and is
+  provisionally nominal +5 V, but its powered voltage and source/load behavior
+  remain unverified; it must stay electrically unused.
 - The successful adapter proves compatibility for this board/cable pair but is
   not a substitute for measuring an unknown controller revision.
 - The USB-powered FTDI TX idles high. During stove power removal it can
