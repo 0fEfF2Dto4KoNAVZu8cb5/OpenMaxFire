@@ -1,0 +1,7 @@
+{
+  "message": "aborted before loader rehearsal; no E3 frame was sent",
+  "programming_performed": false,
+  "recovery_required": false,
+  "schema": "openmaxfire.flash-result.v2",
+  "successful": false
+}

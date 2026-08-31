@@ -1,6 +1,7 @@
 import unittest
 
 from openmaxfire.client import MaxFireClient
+from openmaxfire.errors import SafetyInterlockError
 
 
 class FakeTransport:
@@ -58,6 +59,29 @@ class ClientReadOnlyTests(unittest.TestCase):
             r"no matching CR08 response before serial timeout after 2 frame\(s\)",
         ):
             MaxFireClient(transport).query_register(0x08)
+
+    def test_read_only_retry_reissues_request_after_telemetry_timeout(self):
+        class RetryTransport(FakeTransport):
+            def write(self, data: bytes) -> None:
+                super().write(data)
+                if len(self.writes) == 2:
+                    self.incoming.extend(b"CR0804\n")
+
+        transport = RetryTransport(b"T0000\nT0100\n")
+        identity_client = MaxFireClient(transport)
+        response = identity_client._query_read_only_with_retries(
+            0x08,
+            attempts=2,
+        )
+        self.assertEqual(response.value, 0x04)
+        self.assertEqual(transport.writes, [b"CR08", b"CR08"])
+
+    def test_read_only_retry_count_is_bounded(self):
+        client = MaxFireClient(FakeTransport())
+        with self.assertRaises(ValueError):
+            client._query_read_only_with_retries(0x08, attempts=0)
+        with self.assertRaises(ValueError):
+            client._query_read_only_with_retries(0x08, attempts=6)
 
     def test_query_register_resynchronizes_after_partial_opening_line(self):
         transport = FakeTransport(b"0f\nT0000\nCR0b02\n")
@@ -134,6 +158,57 @@ class ClientReadOnlyTests(unittest.TestCase):
         transport = FakeTransport()
         with self.assertRaises(ValueError):
             MaxFireClient(transport).exchange_raw(b"CR00", receive_duration=-1)
+        self.assertEqual(transport.writes, [])
+
+    def test_generic_client_rejects_binary_loader_markers_anywhere(self):
+        for payload in (b"\xEA", b"prefix\xE3payload", b"\xED", b"x\xE7y"):
+            with self.subTest(payload=payload):
+                transport = FakeTransport()
+                with self.assertRaises(SafetyInterlockError):
+                    MaxFireClient(transport).send_raw(payload)
+                self.assertEqual(transport.writes, [])
+
+    def test_generic_client_blocks_split_cw0fc4_before_final_bytes(self):
+        transport = FakeTransport()
+        client = MaxFireClient(transport)
+        with self.assertRaises(SafetyInterlockError):
+            client.send_raw(b"CW0F")
+        self.assertEqual(transport.writes, [])
+
+    def test_generic_raw_rejects_fragmented_or_arbitrary_byte_streams(self):
+        for payload in (b"C", b"W0F", b"C4", b"hello", b"\x01\x02\x03\x04"):
+            with self.subTest(payload=payload):
+                transport = FakeTransport()
+                with self.assertRaises(SafetyInterlockError):
+                    MaxFireClient(transport).send_raw(payload)
+                self.assertEqual(transport.writes, [])
+
+    def test_split_cw0fc4_guard_is_shared_by_clients_on_one_transport(self):
+        transport = FakeTransport()
+        with self.assertRaises(SafetyInterlockError):
+            MaxFireClient(transport).send_raw(b"CW0F")
+        with self.assertRaises(SafetyInterlockError):
+            MaxFireClient(transport).send_raw(b"FC4")
+        self.assertEqual(transport.writes, [])
+
+    def test_raw_stream_stays_locked_after_indeterminate_write_error(self):
+        class FailingTransport(FakeTransport):
+            def write(self, data):
+                self.writes.append(bytes(data))
+                raise OSError("flush failed after possible transmission")
+
+        transport = FailingTransport()
+        client = MaxFireClient(transport)
+        with self.assertRaises(OSError):
+            client.send_raw(b"CR00")
+        with self.assertRaises(SafetyInterlockError):
+            client.send_raw(b"CR01")
+        self.assertEqual(transport.writes, [b"CR00"])
+
+    def test_generic_c_write_cannot_enter_loader(self):
+        transport = FakeTransport()
+        with self.assertRaises(SafetyInterlockError):
+            MaxFireClient(transport).write_register(0x0F, 0xC4, unit="C")
         self.assertEqual(transport.writes, [])
 
 

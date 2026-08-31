@@ -43,6 +43,12 @@ class ControllerSessionTests(unittest.TestCase):
             self.assertEqual(snapshot.alarms.indicator_lights, ())
             self.assertIsNone(snapshot.alarms.fault_code)
 
+    def test_format04_session_decodes_t0c_state(self):
+        with ControllerSession.simulated("fw202-format04") as session:
+            snapshot = session.poll_snapshot()
+        self.assertEqual(snapshot.operating_state.phase, "off")
+        self.assertEqual(snapshot.telemetry.format04_state_raw, 0x20)
+
     def test_snapshot_iterator_is_bounded_and_reuses_state(self):
         with ControllerSession.simulated() as session:
             snapshots = list(session.iter_snapshots(cycles=2, interval=0))

@@ -1,5 +1,238 @@
 # Research log
 
+## 2026-08-30 - first live firmware-2.06 compatibility pass
+
+- Identified the externally programmed spare controller as exact firmware
+  2.06/data format 05/build 21 through read-only J3 traffic. A leading NUL on
+  the first valid reply exposed a receive-resynchronization edge case; the
+  parser now accepts only leading NUL/control prefixes and still rejects an
+  embedded NUL.
+- Preserved two independent byte-identical A00-AFF backups. They decode format
+  05, `Bixby Model 115`, serial `Unknown`, and date `08282026`. All calibration
+  and fuel-table bytes match the complete vendor 2.06 PICkit defaults, but
+  stored checksum `D168` does not match calculated `576B`. The stale value is
+  exactly the checksum of the vendor record after changing only serial `5015`
+  to `Unknown`; applying the later date edit produces `576B`. This establishes
+  edit order but not which software performed it.
+- Executed the real 2.06 Downloader application with the captured record and a
+  checksum-corrected twin. Their first control-flow divergence occurs in the
+  validator around `0x0732`; the failing path clears configuration-validation
+  flags. This proves the mismatch is firmware-visible without assigning every
+  downstream physical effect from the incomplete emulator.
+- Located the nonperiodic T20 display-event path in 2.06, 2.70, and 2.71. Live
+  2.06 T20 alternated `02`/`00` with the owner-observed flashing second light;
+  T07 sampled the same display state and T13 remained raw `02`. The factory
+  meaning, operating temperature not reached, matches the no-fuel/no-ignition
+  condition.
+- Diagnosed the persistent fans from live command/feedback rather than EEPROM
+  speculation: T09=`10` Cooldown, T06=`19`, T18=`57`, and nonzero T04/T05/CR05.
+  Without a host command, T18/T06 fell to zero, T09 changed to `20` Off, and
+  T04/CR05 tracked the fan coast-down; the owner observed it stop.
+- Reconstructed the exact 2.06 duration. CCPR1=`C674`, CCP1 special-event mode,
+  T1CON=`31`, the 10 MHz oscillator, and the `1518` event threshold produce
+  877.893 seconds, or about 14 minutes 38 seconds. The live transition at
+  `22:50:29Z` back-calculates power-up to `22:35:51Z`, matching session start.
+  The fan was normal power-up cooldown, not a migrated fan curve or stuck
+  output. The invalid EEPROM checksum remains a separate defect to repair
+  before active 2.06 qualification.
+- Retained exact identify, EEPROM, baseline, cooldown-transition, and final-Off
+  traffic plus decoded JSONL. No remote button, actuator, EEPROM write, reset,
+  loader, or firmware-programming command was sent.
+- After explicit authorization, re-established exact identity, stable Off, and
+  a third byte-identical pre-write backup, then transmitted exactly one
+  `CW0100`. Two immediate complete backups showed only A00/A01 changing
+  `D1 68`→`57 6B` and both validated `576B/576B`. Following AC removal, USB
+  removal, and a cold boot with USB absent, a third complete backup remained
+  byte-identical and valid. Identity stayed 2.06/05/21 and the final monitor
+  showed normal power-up Cooldown with zero timeouts. This live-validates the
+  narrow 2.06 checksum-persistence command; no other write was sent.
+- Continued with the repaired checksum and an operator-present read-only input
+  matrix. One-at-a-time door, drawer, wood/corn, and thermostat actions changed
+  CR02 `12→32`, `12→52`, `12→16` and CR06 `03→07`, respectively; independent
+  fields and every return edge were retained. This live-confirms the recovered
+  2.06 input polarity rather than projecting the original 2.02 capture.
+- An accidental physical ON immediately after the input capture provided a
+  bounded checksum-valid startup test: T09=`30` Prefill, T07=`01`, T06=`19`,
+  T18=`5C`, and live T04/CR05 exhaust feedback. A `CW0E11` at
+  `23:26:27.602845Z` was followed by Prefill through `23:26:37.735946Z` and was
+  therefore ignored. One retry at `23:26:48.669208Z` was followed by repeated
+  T09=`10` Cooldown beginning with the first complete sample at
+  `23:26:58.294226Z`. Final monitoring had zero timeouts; no further active
+  test was needed.
+- Continued that checksum-valid cleanup unattended with read-only CR polling.
+  The last nonzero Cooldown command evidence was T06=`19` at
+  `23:41:34.543018Z`; after a 20.18-second serial gap, T09 first reported
+  `20`/Off at `23:41:54.722898Z`, with T18/T06 zero on their first subsequent
+  responses. The 877.893-second prediction from the first observed Cooldown
+  lands at `23:41:36.187Z`, inside the preserved bracket. T04 reached zero at
+  `23:42:08.667186Z`, CR05 at `23:42:11.960806Z`, and every later snapshot
+  remained Off with T07/T13 clear. All unattended transmissions were CR reads;
+  there was no state-changing request.
+
+## 2026-08-30 - exact firmware-2.02 compatibility pass
+
+- Re-ran a complete read-only baseline on the restored original controller:
+  exact 2.02/format-04 identity, a complete A00-AFF backup byte-identical to
+  the authenticated PICkit image, and eight cold/off monitor cycles with no
+  timeout. All artifacts are under
+  `research/live/2026-08-30-fw202-compatibility/`.
+- Mapped the older application rather than projecting 2.06 semantics onto it.
+  CR00-CR0C have real handlers; CR0D/CR0E use a generic zero-response path.
+  CW00-CW0E have real handlers; CW0F is absent, independently confirming that
+  2.02 cannot enter the loader through the later `CW0FC4` request.
+- Traced format-04 periodic production exactly. T0C reads RAM 0x4C, the same
+  byte consumed by the state-family dispatcher at 0x191F. T09 reads unrelated
+  RAM 0x2D, and T15 has no state assignment. The API now decodes state and
+  family-carried levels from T0C while retaining T09/T15 as raw non-state data.
+- Live monitoring confirmed `T0C=20` as Off. A bounded ON transitioned to the
+  decoded `0x30` Prefill family, but 2.02 temporarily stopped servicing UART;
+  an OFF transmitted 0.729 seconds after ON was ignored. A retried OFF after
+  UART recovery returned repeated fresh snapshots to `T0C=20`/Off.
+- Changed the live-validation cleanup contract twice in response to physical
+  evidence. It first retried OFF rather than trusting transmission. A later
+  bounded sensor run proved that global snapshot freshness could still retain
+  a pre-ON T0C `20`; the operator saw light 1 and the blower running after the
+  tool had incorrectly reported Off. The monitor now timestamps every
+  telemetry index, and recovery requires two distinct post-OFF T0C/T09 samples
+  reporting Off or Cooldown.
+- Extended the PIC14 harness and generated matrices to all four applications:
+  58/58 real CR handlers, 63/63 safe CW handlers, 55 normal CW exits plus eight
+  expected modeled actuator nonreturns, 113/113 requested telemetry slots, and
+  1,024/1,024 internal-EEPROM reads. Fixed two harness-only defects found by
+  this expansion: reusing a pre-idle parser boundary between A reads and
+  selecting an earlier auxiliary T line for the requested T15 row.
+- Extended the opcode-anchored input and sensor maps through exact 2.02 code.
+  Its mux topology matches later firmware but uses different RAM staging:
+  buttons pass through `0x51`→`0x52`, while external inputs use `0x50`.
+  The J9/J10 functional paths also match, except 2.02 right-shifts the feeder
+  interval once during its latch and then applies the common four-bit `CR07`
+  shift. Later versions copy at the latch, so raw `CR07` units differ by a
+  factor of two across that boundary.
+- Obtained the first physical J10 correlation on the 2.02 controller. During a
+  no-fuel start with igniters disconnected, the operator observed the blower
+  running while `CR05` changed `00`→`0C`; after a separate accepted OFF it
+  returned to `00`. Across the same interval J9-related `CR02.4` changed 0→1
+  and `CR07` changed `1E`→`1F`; the new values then remained stable for 20
+  read-only Off cycles with zero timeouts. Other bank-0 writers would yield
+  CR07 `2D` at boot or `16` at the range clamp, so `1F` proves the RB1-gated
+  RD0-cycle latch executed. Physical edge polarity, movement per edge, and
+  timing units remain unresolved. The operator-observed first light coincided
+  with T08 `01`.
+
+## 2026-08-30 - complete flash-session retrospective and new entry design
+
+- Analyzed every saved rehearsal/loader traffic file: 13,879 `EA`, 13 `EB`,
+  12 `E3`, three `E7`, ten `ED`, ten final `E4`, and no `E5`/`E8`. Ten
+  rehearsals completed `EA/EB` then `ED/E4` with zero program frames. All 24
+  saved EEPROM images are byte-identical.
+- Proved that all 12 host-recorded physical `E3` attempts used the former wrong
+  word-byte order. TX recording preceded the underlying write, so only the
+  three subsequent `E7` replies prove complete controller receipt. The
+  corrected high-byte-first frame has never been attempted: both later
+  programming phases failed before `EB`, recorded no `E3`, and caused no
+  change.
+- The dense 5,000-probe run contained a 255.301 ms host-side gap, longer than
+  the reconstructed approximately 200 ms first-byte window. Old traffic
+  timestamps occurred before JSON serialization, flush, `fsync`, and the
+  serial write, so they were not wire-time evidence. Physical AC-on time was
+  also not recorded.
+- Buffered only the non-state-changing identify evidence, timestamped `EA`
+  after the serial flush, aggregated in-window probe misses, and added an
+  explicit durable barrier before `ED` or any `E3`. A failed barrier now blocks
+  the first program frame. Identify pacing is independent of block-retry delay
+  and defaults to no added inter-probe delay.
+- Authenticated static regression proved original 2.02 has only `CW00`-`CW0E`
+  table GOTOs. Its `CW0F` lands on NOPs and it has no `SUBLW 0xC4` reset
+  handler. Firmware 2.06 does implement `CW0FC4`; therefore software reset
+  cannot bootstrap the initial 2.02-to-2.06 update.
+- Direct FTDI demonstrated functional loader-protocol and UART logic-level
+  behavior when entry occurred, but its shared electrical reference remains
+  unclassified and its
+  USB-powered idle-high TX can plausibly backfeed the unpowered PIC RX/VDD
+  network. BREAK reduces that injection only while held and cannot be released
+  without an unqualified transition at the power edge. The bare-FTDI/manual-AC
+  method is retired for writes pending waveform confirmation and replacement
+  hardware.
+- Defined two deterministic paths: a target-powered two-supply UART isolator
+  with an isolated open-drain MCLR channel, or receive-domain `Ioff` buffers
+  plus a fail-safe open-drain MCLR channel. An upstream USB isolator or an
+  always-powered isolated secondary does not by itself prevent UART-line
+  backpower.
+- The operator reported restoring the sole hash-pinned pre-write 2.02 image;
+  the controller then showed a normal boot and matching J3 identity/EEPROM,
+  without a retained IPE log or post-program whole-chip readback. All physical
+  loader traffic is now software-locked in the CLI and public executors. The 100/100 zero-write
+  and complete spare-target flash/PICkit-readback gates admit only a reviewed
+  qualification executor; production use additionally requires the complete
+  multi-specimen, forced-interruption, and cross-host release plan.
+
+Full evidence and acceptance criteria are in
+[physical flash-session forensics](reverse-engineering/physical-flash-session-forensics.md)
+and [loader-entry fixture](hardware/j3-loader-entry-fixture.md).
+
+## 2026-08-29 - physical J3 failure, root cause, and PICkit recovery image
+
+- The first physical 2.02-to-2.06 J3 program attempt entered the resident
+  loader and sent an image-derived but incorrectly low-byte-first `E3` block.
+  The loader returned `E7` for the byte-sum checksum but never returned `E4`;
+  bounded identical retries were silent. Source-bound recovery attempts repeated
+  the same frame and outcome before later corrected entries sent no `E3`.
+- A full PICkit read at 4.75 V preserved all 8,192 program words, all 256
+  EEPROM bytes, four User IDs, and configuration `0x3F32`; CP and CPD are
+  disabled. The readback SHA-256 is
+  `b281357f6b38db046361de3be1cdd455999b9b8b65d098d0b9d329d8fb789fca`.
+  EEPROM, User IDs, configuration, and every program word except three remain
+  identical to the original 2.02 preservation.
+- The only changed words are the relocated application reset vector:
+  `0x1E84 3018->1830`, `0x1E85 008A->0A00`, and
+  `0x1E86 2800->0028`. Each intended word's byte pair was reversed.
+- Rechecked BixCheck 5.0.21 assembly. `LoadHex()` stores the first Intel HEX
+  byte at object offset `e4b` and the second at `e4a`; `DownLoad()` sends
+  `e4a` first. The real wire order is therefore high byte then low byte. The
+  host and its simulator had shared the inverse assumption. The byte-sum
+  checksum is invariant under reversal, explaining `E7`. The invalid reset
+  vector explains why the application could not boot; it does not explain the
+  absent per-block `E4`, which remains unresolved because `ED`/handoff was
+  never reached.
+- Corrected host framing and simulator decoding, added a regression anchored
+  to the physical first block, and regenerated all authenticated wire hashes.
+- Constructed a 2.06-program/format-04-data hybrid from the hash-pinned donor
+  program/configuration plus the controller readback's EEPROM/User IDs. It was
+  not the image used for the reported restore, is incompatible with 2.06's
+  expected format-05/calibration path, and is now explicitly quarantined as an
+  unqualified do-not-import/do-not-program forensic candidate. No PICkit erase
+  or program action was performed by the build tool. Its original manifest is
+  immutable historical evidence and is superseded by the current quarantine.
+
+## 2026-08-29 - first physical zero-write loader rehearsal
+
+- On the original firmware-2.02 controller, a direct FTDI
+  `TTL-232R-5V-WE` cable did not enter the loader while TX remained at its
+  normal idle-high level during stove power removal. The adapter VCC lead and
+  J3 pin 3 were disconnected.
+- Added an explicit rehearsal-only UART BREAK option. It asserts BREAK before
+  the AC-off confirmation, holding FTDI orange/TX low, then releases BREAK
+  immediately before the bounded `EA` probes. Both transitions are journaled,
+  and cleanup releases BREAK after operator aborts and errors.
+- The first physical BREAK-assisted run entered the resident loader: attempt
+  331 received `EB`, then `ED` received `E4`. The durable audit contains zero
+  `E3` bytes and reports `program_blocks_sent=0` and
+  `flash_write_commands_sent=0`.
+- The front panel resumed after `ED/E4`, but J3 application reads did not resume
+  on that warm handoff. A true cold boot with stove AC removed and the FTDI USB
+  cable physically unplugged restored normal 2.02/format-04 identity. A fresh
+  complete `A00`-`AFF` backup was byte-identical to the pre-rehearsal backup.
+  This validates physical zero-write loader entry once, but does not validate
+  application programming, interrupted-write recovery, or a production flash.
+- Extended the BREAK workflow to guard loader-entry power cycles. Application
+  exit is treated separately: the operator must remove both stove AC and FTDI
+  USB power, start the controller normally with USB absent, reconnect USB, and
+  let the host open a newly enumerated handle before verification. A post-write
+  operator abort closes or releases the transport but deliberately retains the
+  exact-image recovery marker.
+- The complete source suite passes 238 tests after adding sustained-BREAK
+  transport, simulator, full-flow success, and abort-cleanup coverage.
+
 ## 2026-08-29 - guarded J3 flasher and loader timing
 
 - Added a deterministic complete-PICkit composer for the preserved Downloader
@@ -56,10 +289,11 @@
   resident 2.02/2.06 loader independently sets `SPBRG=0x40` at the photographed
   10 MHz oscillator. Application firmware 2.70/2.71 switches to 19,200 only
   after handoff.
-- Derived the first-byte reset window from the byte-identical loader:
-  three Timer1 overflows from `TMR1H=0x0B` at Fosc/4, approximately 78 ms.
-  The new host uses 20 ms read probes and 20 ms spacing instead of applying the
-  normal register timeout to loader entry.
+- Corrected the first-byte reset-window calculation from the byte-identical
+  loader. A pre-set `TMR1IF` consumes the first count immediately; the two real
+  overflows use `T1CON=0x21` (Fosc/4 with 1:4 prescale) from `TMR1H=0x0B`, or
+  approximately 200 ms. The host supports bounded 5 ms read/spacing settings
+  so many `EA` probes can land inside that window.
 - Cross-checked the loader's four-word row preservation and write sequence
   against Microchip PIC16F87XA data-sheet section 3.6. Microchip specifies
   edge-aligned four-word erase/write blocks, preservation of untouched words,
@@ -285,8 +519,10 @@
   lines; six logical 16-bit fields are adjacent big-endian slot pairs rather
   than physical seven-character frames.
 - Identified optional addressed D-unit auxiliary lines and separated their
-  BixCheck storage from the T array. Documented 2.71's non-periodic T20 event
-  path and the lack of a recovered 2.71 producer for table-only TFD-TFF.
+  BixCheck storage from the T array. The later live 2.06 pass proved that the
+  non-periodic T20 display-event path is shared by 2.06/2.70/2.71: T20 `02`
+  and `00` alternated with the flashing second light. No recovered 2.71
+  producer exists for table-only TFD-TFF.
 - Recovered BixCheck display math for control-board C/F temperature, fan/feed
   trim percentages, exhaust count-to-RPM, exhaust phase microseconds, feed
   ticks-to-seconds, and the vendor timer units. Kept thermocouple points and

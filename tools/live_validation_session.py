@@ -664,6 +664,117 @@ def _send_remote_button(
         )
 
 
+def _recover_remote_off(
+    session: ControllerSession,
+    *,
+    timeout_seconds: float = 30.0,
+    retry_interval: float = 0.75,
+    required_fresh_state_samples: int = 2,
+) -> dict[str, object]:
+    """Retry remote OFF until new state telemetry proves OFF or cooldown.
+
+    Firmware 2.02 can temporarily stop servicing UART traffic as it enters a
+    startup state. A single OFF transmitted during that interval is therefore
+    not a cleanup guarantee. Overall snapshot freshness is also insufficient:
+    an addressed response can be new while the retained T09/T0C state byte is
+    old. This loop requires distinct state samples observed after the first
+    transmitted OFF and treats every write as unacknowledged until two such
+    samples report the safe OFF/cooldown family.
+    """
+
+    for value, name in (
+        (timeout_seconds, "timeout_seconds"),
+        (retry_interval, "retry_interval"),
+    ):
+        if not math.isfinite(value) or value < 0:
+            raise ValueError(f"{name} must be finite and nonnegative")
+    if timeout_seconds == 0:
+        raise ValueError("timeout_seconds must be greater than zero")
+    if (
+        isinstance(required_fresh_state_samples, bool)
+        or not isinstance(required_fresh_state_samples, int)
+        or required_fresh_state_samples < 1
+    ):
+        raise ValueError("required_fresh_state_samples must be a positive integer")
+
+    started = time.monotonic()
+    deadline = started + timeout_seconds
+    state_index = 0x0C if session.identity.data_format == 0x04 else 0x09
+    requests: list[str] = []
+    snapshots: list[dict[str, object]] = []
+    errors: list[str] = []
+    verified = False
+    final_phase: str | None = None
+    first_off_sent_ns: int | None = None
+    last_state_sample_ns: int | None = None
+    fresh_state_samples: list[dict[str, object]] = []
+    consecutive_safe_samples = 0
+
+    while time.monotonic() < deadline:
+        try:
+            receipt = session.client.remote_button(RemoteButton.OFF)
+            requests.append(receipt.request.hex(" ").upper())
+            if first_off_sent_ns is None:
+                first_off_sent_ns = time.monotonic_ns()
+        except Exception as exc:
+            errors.append(f"OFF transmission: {exc}")
+
+        if retry_interval:
+            remaining = deadline - time.monotonic()
+            if remaining > 0:
+                time.sleep(min(retry_interval, remaining))
+
+        try:
+            snapshot = session.poll_snapshot(request_delay=0.10)
+            document = snapshot.to_dict()
+            snapshots.append(document)
+            state = snapshot.operating_state
+            final_phase = state.phase if state is not None else None
+            state_sample_ns = session.monitor.telemetry_observed_monotonic_ns(
+                state_index
+            )
+            state_is_new = (
+                first_off_sent_ns is not None
+                and state_sample_ns is not None
+                and state_sample_ns > first_off_sent_ns
+                and state_sample_ns != last_state_sample_ns
+            )
+            if state_is_new:
+                last_state_sample_ns = state_sample_ns
+                safe = final_phase in ("off", "cooldown")
+                fresh_state_samples.append(
+                    {
+                        "telemetry_index": f"T{state_index:02X}",
+                        "observed_monotonic_ns": state_sample_ns,
+                        "phase": final_phase,
+                        "safe": safe,
+                    }
+                )
+                consecutive_safe_samples = (
+                    consecutive_safe_samples + 1 if safe else 0
+                )
+                if consecutive_safe_samples >= required_fresh_state_samples:
+                    verified = True
+                    break
+        except Exception as exc:
+            errors.append(f"OFF verification: {exc}")
+
+    return {
+        "verified": verified,
+        "safe_state_phase": final_phase,
+        "requests_hex": requests,
+        "attempts": len(requests),
+        "snapshots": snapshots,
+        "errors": errors,
+        "elapsed_seconds": round(time.monotonic() - started, 3),
+        "timeout_seconds": timeout_seconds,
+        "state_telemetry_index": f"T{state_index:02X}",
+        "first_off_sent_monotonic_ns": first_off_sent_ns,
+        "required_fresh_state_samples": required_fresh_state_samples,
+        "fresh_state_samples": fresh_state_samples,
+    }
+
+
 def _run_control_tests(
     session: ControllerSession,
     audit: AuditTrail,
@@ -760,6 +871,7 @@ def _run_control_tests(
     up_result: dict[str, object] | None = None
     down_result: dict[str, object] | None = None
     post_shutdown_snapshot_error: str | None = None
+    off_recovery: dict[str, object] | None = None
     try:
         _drain_pending_frames(session)
         start_attempted = True
@@ -813,29 +925,43 @@ def _run_control_tests(
     finally:
         if start_attempted:
             print(
-                "Sending remote OFF recovery command now. Use the physical OFF "
-                "control too if needed."
+                "Beginning verified remote OFF recovery now. Use the physical "
+                "OFF control too if needed."
             )
             try:
-                stop_receipt = session.client.remote_button(RemoteButton.OFF)
-                request_hex.append(stop_receipt.request.hex(" ").upper())
+                off_recovery = _recover_remote_off(session)
+                request_hex.extend(off_recovery["requests_hex"])
+                if not off_recovery["verified"]:
+                    print(
+                        "WARNING: remote OFF was not proven by state telemetry.",
+                        file=sys.stderr,
+                    )
+                    print("USE THE PHYSICAL OFF CONTROL IMMEDIATELY.", file=sys.stderr)
             except Exception as exc:
-                print(f"WARNING: remote OFF transmission failed: {exc}", file=sys.stderr)
+                post_shutdown_snapshot_error = str(exc)
+                print(f"WARNING: remote OFF recovery failed: {exc}", file=sys.stderr)
                 print("USE THE PHYSICAL OFF CONTROL IMMEDIATELY.", file=sys.stderr)
     if start_attempted:
         stop_observation = console.observation(
             "Did the controller acknowledge OFF and begin its normal safe shutdown/cooldown?"
         )
-        try:
-            _drain_pending_frames(session)
-            snapshots.append(session.poll_snapshot(request_delay=0.10).to_dict())
-        except Exception as exc:
-            post_shutdown_snapshot_error = str(exc)
+        if off_recovery is not None:
+            snapshots.extend(off_recovery["snapshots"])
+            if off_recovery["errors"] and not off_recovery["verified"]:
+                post_shutdown_snapshot_error = str(off_recovery["errors"][-1])
     status = (
         "pass"
-        if start_observation == "yes" and stop_observation == "yes"
+        if (
+            start_observation == "yes"
+            and stop_observation == "yes"
+            and off_recovery is not None
+            and off_recovery["verified"]
+        )
         else "fail"
-        if "no" in (start_observation, stop_observation)
+        if (
+            "no" in (start_observation, stop_observation)
+            or (off_recovery is not None and not off_recovery["verified"])
+        )
         else "indeterminate"
     )
     results.append(
@@ -848,10 +974,15 @@ def _run_control_tests(
                 "requests_hex": request_hex,
                 "start_observed": start_observation,
                 "shutdown_observed": stop_observation,
+                "off_recovery": off_recovery,
                 "poll_snapshots": snapshots,
                 "post_shutdown_snapshot_error": post_shutdown_snapshot_error,
             },
-            message="operator-observed startup and recovery; exact traffic preserved",
+            message=(
+                "operator-observed startup; OFF recovery verified by fresh state"
+                if off_recovery is not None and off_recovery["verified"]
+                else "startup/recovery result is not fully verified; exact traffic preserved"
+            ),
             checkpoint=checkpoint,
         )
     )

@@ -1,10 +1,11 @@
 # Firmware CR register map
 
-The detailed map below combines bank-aware handler traces from all three
-preserved firmware images with BixCheck's Checkout masks. The common physical
-inputs were subsequently live-validated read-only on an older firmware
-2.02/data-format 04 controller. The same CR00-CR0E request structure is now
-observed in 2.02, 2.06, 2.70, and 2.71.
+The detailed map below combines bank-aware handler traces from all four
+preserved application generations with BixCheck's Checkout masks. Common
+physical inputs were subsequently live-validated read-only on the firmware
+2.02/data-format 04 controller. Firmware 2.02 has real handlers for CR00-CR0C;
+CR0D/CR0E use its generic zero-response path. Later versions have CR00-CR0E
+handlers.
 
 ## Cross-version constants
 
@@ -23,8 +24,8 @@ is now statically confirmed rather than inferred. CR0E read behavior changes
 even though BixCheck uses writes to 0x0E for remote-button actions. See the
 [full firmware comparison](../reverse-engineering/firmware-comparison.md).
 
-The 2.02 column is live observation, not a recovered firmware-image constant.
-The complete capture is in
+The 2.02 column is both exact recovered-code behavior and live observation.
+The complete live capture is in
 [the format-04 live report](../reverse-engineering/live-fw202-format04.md).
 
 ## 2.71 detailed handlers
@@ -95,12 +96,12 @@ live-validated as 1=open on this controller.
 - CR01 front-panel buttons: none `0x00`, ON `0x02`, OFF `0x01`, UP `0x04`,
   DOWN `0x08`. RD2 selects the active-low button bank, RD6:RD5 select
   OFF/ON/UP/DOWN, RD3 supplies the shared return, and the debounced result is
-  stored in RAM 0x53.
+  stored in RAM `0x52` on 2.02 and bank-1 RAM `0x53` in later firmware.
 - CR09 fan potentiometer: low `<=0x03`, detent `0x79-0x86`, high `>0xFB`.
 - CR0A feed potentiometer: the same low/detent/high thresholds.
 
-Reset-time synthetic ADC sweeps identify AN3→CR09 and AN4→CR0A in all three
-firmware generations. The reported byte is the high eight bits of the modeled
+Reset-time synthetic ADC sweeps identify AN3→CR09 and AN4→CR0A in all four
+firmware versions. The reported byte is the high eight bits of the modeled
 10-bit sample.
 
 Live cold/off testing returned OFF=`0x01`, UP=`0x04`, DOWN=`0x08`, and none=
@@ -111,8 +112,8 @@ with fan `0x78` and the owner's original feed setting `0x49`.
 ## J9 and J10 sensor counters
 
 The preserved board diagram supplies the connector names; firmware and
-BixCheck independently establish the data paths. The same instruction
-signatures occur in 2.06, 2.70, and 2.71.
+BixCheck independently establish the data paths. Equivalent paths occur in
+2.02, 2.06, 2.70, and 2.71.
 
 ### CR05 / J10 exhaust-fan sensor
 
@@ -142,8 +143,11 @@ RD0 is both exposed directly as `CR02.4` and used as the wheel-sensor input.
 While the RB1 feed-motor output is active, each RB0 external interrupt
 increments the 16-bit RAM counter `0x47:0x46`. The control loop remembers an
 RD0-high state, recognizes the following RD0-low transition, and then latches
-the elapsed count into `0x45:0x44`. `CR07` shifts that 16-bit value right by
-four and returns the low byte.
+the elapsed count into `0x45:0x44`. Firmware 2.02 shifts the value right once
+during that latch; later versions copy it directly. Every version then shifts
+the latched value right four more places in `CR07` and returns the low byte.
+Thus 2.02's effective raw scale contains one extra factor of two and `CR07`
+values should not be compared across firmware versions as identical units.
 
 All three BixCheck executables accept `CR07` values `0x10`-`0x68` (16-104)
 during the automatic feed-motor/sensor test. The value is therefore an
@@ -164,8 +168,15 @@ and set leaves Fuel A (`A40...`).
 
 The cold/off CR01/CR02/CR06 and potentiometer mappings above are now physically
 validated on serial 5215's directly photographed `9067-0604` board. CR02.1 and
-CR02.7 remain unnamed. CR05/J10 and CR07/J9 have not been correlated against
-live moving hardware because this session deliberately avoided actuator tests.
+CR02.7 remain unnamed. A bounded no-fuel start with the igniters disconnected
+live-correlated the operator-observed blower with CR05 `00`→`0C` and its
+post-OFF return to `00`. Across that interval CR02.4 changed 0→1 and CR07
+changed `1E`→`1F`; both post-run values then remained stable through 20
+read-only Off cycles. The other bank-0 writers would produce CR07 `2D` at boot
+or `16` at the range clamp, so the observed `1F` proves that the RB1-gated
+runtime latch executed after an RD0 high-to-low sequence. This does not
+establish electrical polarity, physical movement per edge, or engineering
+units.
 
 Machine-readable traces and stimulus results are documented in the
 [exhaustive emulator pass](../reverse-engineering/emulator-deep-pass.md).

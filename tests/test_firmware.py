@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from openmaxfire.firmware import (
     FirmwareImage,
@@ -53,8 +54,30 @@ class FirmwareApiTests(unittest.TestCase):
     def test_loader_blocks_use_reconstructed_framing(self):
         block = build_program_blocks(fixture())[0]
         self.assertEqual(block.word_address, 0)
-        self.assertEqual(block.data, b"\x34\x12\x78\x16")
-        self.assertEqual(block.frame, b"\xE3\x00\x00\x04\xD4\x34\x12\x78\x16")
+        self.assertEqual(block.data, b"\x12\x34\x16\x78")
+        self.assertEqual(block.frame, b"\xE3\x00\x00\x04\xD4\x12\x34\x16\x78")
+
+    def test_206_first_wire_words_match_physical_loader_evidence(self):
+        root = Path(__file__).resolve().parents[1]
+        path = (
+            root
+            / "reverse-engineering/firmware/2.06/extracted/"
+            "Bixby_02060021_Downloader.hex"
+        )
+        if not path.is_file():
+            self.skipTest("preserved 2.06 Downloader image is not present")
+        first = build_program_blocks(FirmwareImage.load(path))[0]
+        self.assertEqual(
+            [
+                (first.data[offset] << 8) | first.data[offset + 1]
+                for offset in range(0, 6, 2)
+            ],
+            [0x3018, 0x008A, 0x2800],
+        )
+        self.assertEqual(
+            first.frame[:11],
+            b"\xE3\x00\x00\x20\xBC\x30\x18\x00\x8A\x28\x00",
+        )
 
     def test_checksum_error_is_rejected(self):
         bad = record(0, 0, b"\x34\x12")[:-2] + "00\n" + record(0, 1)

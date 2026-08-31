@@ -175,6 +175,33 @@ COMMON_CONTROLLER_WRITES = _frozen_map(
 )
 
 
+# The exact 2.02 dispatcher has CR00-CR0C and CW00-CW0E table entries. CR0D
+# and CR0E fall through the generic zero-response path; CW0F is rejected
+# before dispatch, so the later CW0FC4 loader entry is not a format-04 write.
+FORMAT04_CONTROLLER_REGISTERS = _frozen_map(
+    {
+        **{
+            address: definition
+            for address, definition in COMMON_CONTROLLER_REGISTERS.items()
+            if address <= 0x0C
+        },
+        0x0D: ControllerRegisterDefinition(
+            0x0D, "generic_zero_not_implemented", "live/exact-2.02-static"
+        ),
+        0x0E: ControllerRegisterDefinition(
+            0x0E, "generic_zero_not_implemented", "live/exact-2.02-static"
+        ),
+    }
+)
+FORMAT04_CONTROLLER_WRITES = _frozen_map(
+    {
+        address: definition
+        for address, definition in COMMON_CONTROLLER_WRITES.items()
+        if address <= 0x0E
+    }
+)
+
+
 def _capabilities(*, live_read: bool) -> ControllerCapabilities:
     read_state = CapabilityState.AVAILABLE if live_read else CapabilityState.EXPERIMENTAL
     return ControllerCapabilities(
@@ -207,8 +234,8 @@ PROFILES: tuple[ControllerProfile, ...] = (
         telemetry_last_periodic=0x15,
         evidence="live-validated read/control/fault behavior on controller serial 5215",
         capabilities=_capabilities(live_read=True),
-        controller_registers=COMMON_CONTROLLER_REGISTERS,
-        controller_writes=COMMON_CONTROLLER_WRITES,
+        controller_registers=FORMAT04_CONTROLLER_REGISTERS,
+        controller_writes=FORMAT04_CONTROLLER_WRITES,
     ),
     ControllerProfile(
         key="fw206-format05",

@@ -62,6 +62,16 @@ class ProtocolResponseTests(unittest.TestCase):
         self.assertEqual((frame.unit, frame.opcode, frame.address, frame.value),
                          ("C", "R", 0x0E, 0x14))
 
+    def test_leading_nul_resynchronizes_first_fw206_reply(self):
+        frame = parse_response_line(b"\x00CR0000\n")
+        self.assertIsInstance(frame, AddressedResponse)
+        self.assertEqual((frame.unit, frame.opcode, frame.address, frame.value),
+                         ("C", "R", 0x00, 0x00))
+
+    def test_embedded_nul_remains_invalid(self):
+        with self.assertRaises(ProtocolError):
+            parse_response_line(b"CR00\x0000\n")
+
     def test_single_and_double_byte_telemetry(self):
         single = parse_response_line(b"T19af\n")
         double = parse_response_line(b"T0A1234\r")

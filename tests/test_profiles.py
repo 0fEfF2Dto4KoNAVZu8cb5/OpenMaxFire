@@ -41,7 +41,12 @@ class ControllerProfileTests(unittest.TestCase):
             CapabilityState.EXPERIMENTAL,
         )
         self.assertEqual(profile.controller_registers[0x02].name, "physical_inputs")
+        self.assertEqual(
+            profile.controller_registers[0x0D].name,
+            "generic_zero_not_implemented",
+        )
         self.assertEqual(profile.controller_writes[0x0E].name, "remote_front_panel")
+        self.assertNotIn(0x0F, profile.controller_writes)
         self.assertFalse(
             profile.controller_writes[0x0E].same_address_readback_meaningful
         )

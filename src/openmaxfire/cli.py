@@ -13,8 +13,13 @@ from typing import Mapping
 
 from .audit import AuditTrail
 from .backup import build_eeprom_backup, save_json_document
-from .client import MaxFireClient, StoveIdentity
-from .errors import OpenMaxFireError, VerificationError
+from .client import (
+    MaxFireClient,
+    StoveIdentity,
+    contains_loader_traffic,
+    validate_generic_raw_payload,
+)
+from .errors import OpenMaxFireError, SafetyInterlockError, VerificationError
 from .firmware import FirmwareImage
 from .flashing import (
     LOADER_BAUDRATE,
@@ -73,6 +78,12 @@ LIVE_COMMANDS = frozenset(
     ("capture", "read", "write", "raw", "transaction", "identify", "backup", "monitor", "button")
 )
 MONITOR_REGISTERS = tuple(range(0x0F))
+_LIVE_E3_CLI_DISABLED_MESSAGE = (
+    "Refusing physical loader traffic: the manual AC/BREAK rehearsal, "
+    "programming, and recovery workflows are retired. Only flash --plan-only "
+    "is available; future zero-write or write execution requires a separately "
+    "implemented fixture-specific path on safely powered spare hardware."
+)
 
 
 def _int_auto(value: str) -> int:
@@ -156,7 +167,7 @@ def _display_bytes(value: bytes) -> str:
 
 
 def _is_loader_traffic(value: bytes) -> bool:
-    return value == b"CW0FC4" or value.startswith((b"EA", b"E3", b"ED"))
+    return contains_loader_traffic(value)
 
 
 def _connect(
@@ -327,6 +338,9 @@ def _flash_interlocks(args: argparse.Namespace) -> FlashSafetyInterlocks:
     return FlashSafetyInterlocks(
         stove_cold_and_off=args.confirm_stove_cold_and_off,
         igniters_physically_unplugged=args.confirm_igniters_unplugged,
+        actuator_loads_physically_unplugged=(
+            args.confirm_actuator_loads_unplugged
+        ),
         correct_5v_ttl_wiring=args.confirm_correct_5v_ttl_wiring,
         j3_pin3_disconnected=args.confirm_j3_pin3_disconnected,
         adapter_vcc_disconnected=args.confirm_adapter_vcc_disconnected,
@@ -380,7 +394,9 @@ def _open_recorded_client(
                 "timeout": args.timeout,
                 "serial_format": "8N1",
                 "flow_control": "none",
-                "single_exclusive_handle": True,
+                "single_exclusive_handle": (
+                    not getattr(args, "hold_tx_break_during_power_off", False)
+                ),
             },
             durable=True,
         )
@@ -411,7 +427,7 @@ def _run_flash_plan(args: argparse.Namespace, image: FirmwareImage) -> int:
         return 2
     approved = approve_live_firmware(image)
     profile = PROFILES_BY_KEY[args.current_profile]
-    plan = build_loader_plan(image, profile, live_executable=True)
+    plan = build_loader_plan(image, profile, authenticated_simulator_plan=True)
     migration = approved.target_profile.data_format != profile.data_format
     calibration = approved.firmware_version != profile.firmware_version
     downgrade = tuple(map(int, approved.firmware_version.split("."))) < tuple(
@@ -419,14 +435,18 @@ def _run_flash_plan(args: argparse.Namespace, image: FirmwareImage) -> int:
     )
     validate_live_transition(profile.firmware_version, approved.firmware_version)
     document = {
-        "schema": "openmaxfire.live-flash-plan.v1",
+        "schema": "openmaxfire.live-flash-plan.v2",
         "approved_firmware": approved.to_dict(),
         "current_profile": profile.to_dict(),
         "data_format_migration_required": migration,
         "calibration_required": calibration,
         "downgrade": downgrade,
-        "manual_power_cycle_required": True,
-        "software_reset_used": False,
+        "execution_mode": "offline_authenticated_plan",
+        "physical_e3_enabled": False,
+        "safety_boundary": (
+            "planning only; all physical loader traffic is hard-disabled pending a "
+            "separately implemented and electrically qualified loader-entry fixture"
+        ),
         "loader_plan": plan.to_dict(),
     }
     print(json.dumps(document, indent=None if args.json else 2, sort_keys=True))
@@ -491,14 +511,101 @@ def _power_off_phrase(prompt: str, expected: str) -> bool:
 
 
 def _run_flash(args: argparse.Namespace) -> int:
+    # The only physical loader entry currently implemented below crosses a
+    # manual AC power boundary, optionally while a USB-powered FTDI asserts
+    # BREAK. Reject every physical loader invocation before image access,
+    # session mutation, serial I/O, or an operator power-cycle prompt. The
+    # direct executor API remains available for simulator qualification.
+    if not args.plan_only:
+        print(_LIVE_E3_CLI_DISABLED_MESSAGE, file=sys.stderr)
+        return 4
+
     journal: FlashJournal | None = None
     session_state: FlashSessionState | None = None
     serial_transport = None
     session_dir: Path | None = args.session_dir
     programming_armed = False
+    tx_break_active = False
     final_written = False
     preexisting_recovery = args.recover_from_session is not None
     host_diagnostic_errors: list[str] = []
+
+    def change_tx_break(active: bool, *, phase: str, purpose: str) -> None:
+        nonlocal tx_break_active
+        if serial_transport is None:
+            raise SafetyInterlockError(
+                "UART BREAK control requires an open exclusive serial handle"
+            )
+        serial_transport.set_break(active)
+        tx_break_active = active
+        if journal is not None:
+            journal.record(
+                "tx_break_changed",
+                active=active,
+                phase=phase,
+                purpose=purpose,
+            )
+
+    def close_after_confirmed_usb_removal(*, phase: str) -> None:
+        nonlocal serial_transport, tx_break_active
+        if serial_transport is None:
+            raise SafetyInterlockError(
+                "USB power removal requires an open serial handle to close"
+            )
+        try:
+            serial_transport.close()
+        except OSError:
+            # Physical USB removal commonly invalidates the old handle before
+            # pySerial can close it. The operator phrase is the power-removal
+            # interlock; the stale handle must never be reused.
+            pass
+        serial_transport = None
+        tx_break_active = False
+        if journal is not None:
+            journal.record(
+                "tx_break_changed",
+                active=False,
+                phase=phase,
+                purpose="FTDI USB power physically removed; stale handle closed",
+            )
+            journal.record(
+                "serial_handle_closed_for_usb_power_removal",
+                phase=phase,
+            )
+
+    def reopen_serial_after_usb_reconnect(*, baudrate: int, phase: str) -> None:
+        nonlocal serial_transport
+        if serial_transport is not None:
+            raise SafetyInterlockError(
+                "refusing to reopen FTDI while an earlier serial handle remains"
+            )
+        last_error: OSError | None = None
+        for attempt in range(1, 21):
+            try:
+                serial_transport = SerialTransport(
+                    SerialSettings(
+                        args.port,
+                        baudrate,
+                        args.timeout,
+                        exclusive=True,
+                    )
+                )
+                if journal is not None:
+                    journal.record(
+                        "serial_handle_reopened_after_usb_power_removal",
+                        phase=phase,
+                        baudrate=baudrate,
+                        attempt=attempt,
+                    )
+                return
+            except OSError as exc:
+                last_error = exc
+                time.sleep(0.25)
+        raise OSError(
+            f"FTDI did not re-enumerate on {args.port} after USB reconnect: "
+            f"{last_error}"
+        )
+
     try:
         if args.plan_only:
             if args.image is None:
@@ -515,6 +622,12 @@ def _run_flash(args: argparse.Namespace) -> int:
                 return 2
             if args.rehearsal_only:
                 print("--rehearsal-only cannot be combined with --plan-only", file=sys.stderr)
+                return 2
+            if args.hold_tx_break_during_power_off:
+                print(
+                    "--hold-tx-break-during-power-off requires a live flash run",
+                    file=sys.stderr,
+                )
                 return 2
             image = FirmwareImage.load(args.image)
             approve_live_firmware(image)
@@ -569,7 +682,11 @@ def _run_flash(args: argparse.Namespace) -> int:
 
         policy = LiveLoaderPolicy(
             identify_attempts=args.loader_identify_attempts,
+            identify_retry_delay=args.loader_identify_retry_delay,
             retry_delay=args.retry_delay,
+            probe_timeout=args.loader_probe_timeout,
+            post_identify_settle_delay=args.loader_settle_delay,
+            response_timeout=args.loader_response_timeout,
         )
 
         session_dir = args.session_dir
@@ -592,6 +709,9 @@ def _run_flash(args: argparse.Namespace) -> int:
                 "target_baudrate": approve_live_firmware(image).application_baudrate,
                 "image_sha256": image.sha256,
                 "recovery_source": str(recovery_source) if recovery_source else None,
+                "hold_tx_break_during_power_off": (
+                    args.hold_tx_break_during_power_off
+                ),
             },
         )
 
@@ -674,7 +794,15 @@ def _run_flash(args: argparse.Namespace) -> int:
                 "recovery_mode": preparation.recovery_mode,
                 "recovery_source": str(recovery_source) if recovery_source else None,
                 "recovery_manifest": recovery_bundle,
-                "single_exclusive_serial_handle": True,
+                "single_exclusive_serial_handle": (
+                    not args.hold_tx_break_during_power_off
+                ),
+                "usb_power_removal_before_application_verification": (
+                    args.hold_tx_break_during_power_off
+                ),
+                "hold_tx_break_during_power_off": (
+                    args.hold_tx_break_during_power_off
+                ),
             },
         )
         session_state.transition(
@@ -713,10 +841,24 @@ def _run_flash(args: argparse.Namespace) -> int:
                 message="waiting for the non-writing loader rehearsal power cycle",
                 recovery_required=False,
             )
-            _safe_console(
-                "NON-WRITING REHEARSAL: disconnect stove AC now. Keep both igniters "
-                "physically unplugged."
-            )
+            if args.hold_tx_break_during_power_off:
+                change_tx_break(
+                    True,
+                    phase="rehearsal_power_off",
+                    purpose="hold FTDI TX low while controller power is removed",
+                )
+                _safe_console(
+                    "NON-WRITING REHEARSAL: FTDI TX BREAK is active (orange TX held "
+                    "low). Disconnect stove AC now. Keep both igniters physically "
+                    "unplugged and hazardous actuator loads disconnected; do not "
+                    "restore AC until instructed."
+                )
+            else:
+                _safe_console(
+                    "NON-WRITING REHEARSAL: disconnect stove AC now. Keep both "
+                    "igniters physically unplugged and hazardous actuator loads "
+                    "disconnected."
+                )
             if not _power_off_phrase(
                 "After AC is physically disconnected, type POWER OFF FOR REHEARSAL: ",
                 "POWER OFF FOR REHEARSAL",
@@ -743,6 +885,12 @@ def _run_flash(args: argparse.Namespace) -> int:
                 return 3
 
             serial_transport.set_baudrate(LOADER_BAUDRATE)
+            if tx_break_active:
+                change_tx_break(
+                    False,
+                    phase="rehearsal_loader_probe",
+                    purpose="release FTDI TX immediately before loader probes",
+                )
             rehearsal_audit = AuditTrail(
                 session_dir / "rehearsal-traffic.jsonl",
                 metadata={
@@ -752,8 +900,15 @@ def _run_flash(args: argparse.Namespace) -> int:
                     "baudrate": LOADER_BAUDRATE,
                     "image_sha256": image.sha256,
                     "program_blocks_allowed": False,
+                    "identify_retry_delay": policy.identify_retry_delay,
+                    "probe_timeout": policy.probe_timeout,
+                    "tx_break_held_during_power_off": (
+                        args.hold_tx_break_during_power_off
+                    ),
+                    "buffered_identify_capture": True,
                 },
                 durable=True,
+                buffered=True,
             )
             try:
                 _safe_console(
@@ -863,10 +1018,31 @@ def _run_flash(args: argparse.Namespace) -> int:
                 "sleep_inhibitor_acquired",
                 backend=sleep_inhibitor.backend,
             )
-            _safe_console(
-                "FLASH POWER CYCLE: disconnect stove AC now. The exact recovery image "
-                "is already preserved in this session."
-            )
+            if args.hold_tx_break_during_power_off:
+                if serial_transport is None:
+                    serial_transport = SerialTransport(
+                        SerialSettings(
+                            args.port,
+                            LOADER_BAUDRATE,
+                            args.timeout,
+                            exclusive=True,
+                        )
+                    )
+                change_tx_break(
+                    True,
+                    phase="flash_power_off",
+                    purpose="hold FTDI TX low while controller power is removed",
+                )
+                _safe_console(
+                    "FLASH POWER CYCLE: FTDI TX BREAK is active (orange TX held low). "
+                    "Disconnect stove AC now. The exact recovery image is already "
+                    "preserved in this session; do not restore AC until instructed."
+                )
+            else:
+                _safe_console(
+                    "FLASH POWER CYCLE: disconnect stove AC now. The exact recovery "
+                    "image is already preserved in this session."
+                )
             if not _power_off_phrase(
                 "After AC is physically disconnected, type POWER OFF FOR FLASH: ",
                 "POWER OFF FOR FLASH",
@@ -906,6 +1082,12 @@ def _run_flash(args: argparse.Namespace) -> int:
             else:
                 serial_transport.set_baudrate(LOADER_BAUDRATE)
                 serial_transport.set_timeout(args.timeout)
+            if tx_break_active:
+                change_tx_break(
+                    False,
+                    phase="flash_loader_probe",
+                    purpose="release FTDI TX immediately before loader probes",
+                )
 
             audit = AuditTrail(
                 session_dir / "loader-traffic.jsonl",
@@ -916,9 +1098,21 @@ def _run_flash(args: argparse.Namespace) -> int:
                     "baudrate": LOADER_BAUDRATE,
                     "image_sha256": image.sha256,
                     "sleep_inhibitor": sleep_inhibitor.backend,
-                    "single_exclusive_handle": True,
+                    "identify_retry_delay": policy.identify_retry_delay,
+                    "probe_timeout": policy.probe_timeout,
+                    "single_exclusive_handle": (
+                        not args.hold_tx_break_during_power_off
+                    ),
+                    "usb_power_removal_before_verification": (
+                        args.hold_tx_break_during_power_off
+                    ),
+                    "tx_break_held_during_power_off": (
+                        args.hold_tx_break_during_power_off
+                    ),
+                    "buffered_identify_capture": True,
                 },
                 durable=True,
+                buffered=True,
             )
             session_state.transition(
                 FlashSessionStatus.PROGRAMMING,
@@ -1078,19 +1272,24 @@ def _run_flash(args: argparse.Namespace) -> int:
             post_eeprom = None
             post_backup = None
             post_error: BaseException | None = None
-            try:
-                post, post_eeprom, post_backup = _attempt_post_flash(
-                    args,
-                    preparation,
-                    transport=serial_transport,
-                    session_dir=session_dir,
-                    attempt=1,
-                    diagnostic_errors=host_diagnostic_errors,
-                )
-            except VerificationError as exc:
-                post_error = exc
-            except (OSError, ProtocolError, TimeoutError, ValueError) as exc:
-                post_error = exc
+            if (
+                not args.hold_tx_break_during_power_off
+                or not loader_result.completion_acknowledged
+            ):
+                time.sleep(args.handoff_delay)
+                try:
+                    post, post_eeprom, post_backup = _attempt_post_flash(
+                        args,
+                        preparation,
+                        transport=serial_transport,
+                        session_dir=session_dir,
+                        attempt=1,
+                        diagnostic_errors=host_diagnostic_errors,
+                    )
+                except VerificationError as exc:
+                    post_error = exc
+                except (OSError, ProtocolError, TimeoutError, ValueError) as exc:
+                    post_error = exc
 
             completion_recovered = False
             if post is None and not loader_result.completion_acknowledged:
@@ -1145,6 +1344,151 @@ def _run_flash(args: argparse.Namespace) -> int:
                         post_error = None
                     except (OSError, ProtocolError, TimeoutError, ValueError) as exc:
                         post_error = exc
+
+            if args.hold_tx_break_during_power_off:
+                change_tx_break(
+                    True,
+                    phase="post_flash_cold_boot_power_off",
+                    purpose="force a cold target-application boot after programming",
+                )
+                _safe_console(
+                    "POST-FLASH COLD BOOT: all authenticated program blocks have PIC-side "
+                    "readback evidence. FTDI TX BREAK is active (orange TX held low). "
+                    "Disconnect stove AC, then physically unplug FTDI USB from the "
+                    "computer. Do not restore AC until instructed."
+                )
+                if not _power_off_phrase(
+                    "After AC is off and FTDI USB is unplugged, type AC OFF USB OUT "
+                    "AFTER FLASH: ",
+                    "AC OFF USB OUT AFTER FLASH",
+                ):
+                    message = (
+                        "target cold boot was aborted after programming; verification "
+                        "and exact-image recovery remain required"
+                    )
+                    journal.record("operator_abort", reason=message)
+                    session_state.transition(
+                        FlashSessionStatus.RECOVERY_REQUIRED,
+                        message=message,
+                        recovery_required=True,
+                        blocks_total=loader_result.blocks_total,
+                        blocks_completed=loader_result.blocks_completed,
+                    )
+                    final = {
+                        "schema": "openmaxfire.flash-result.v2",
+                        "successful": False,
+                        "ready_for_operation": False,
+                        "programming_performed": True,
+                        "recovery_required": True,
+                        "loader": loader_result.to_dict(),
+                        "cancellation_deferred": deferred.requested,
+                        "deferred_signals": list(deferred.signal_names),
+                        "message": message,
+                    }
+                    _save_flash_result(session_dir, final)
+                    final_written = True
+                    _safe_console(f"RECOVERY REQUIRED: {message}", error=True)
+                    return 6
+                close_after_confirmed_usb_removal(
+                    phase="post_flash_usb_power_removed",
+                )
+                _safe_console(
+                    "FTDI USB power removal confirmed and the stale serial handle is "
+                    "closed. Restore stove AC with USB still unplugged; wait for normal "
+                    "target-controller startup. Keep the igniters unplugged and "
+                    "hazardous actuator loads disconnected."
+                )
+                if not _power_off_phrase(
+                    "After the target application normally starts, type TARGET "
+                    "APPLICATION BOOTED: ",
+                    "TARGET APPLICATION BOOTED",
+                ):
+                    message = (
+                        "target cold boot was not confirmed after programming; "
+                        "verification and exact-image recovery remain required"
+                    )
+                    journal.record("operator_abort", reason=message)
+                    session_state.transition(
+                        FlashSessionStatus.RECOVERY_REQUIRED,
+                        message=message,
+                        recovery_required=True,
+                        blocks_total=loader_result.blocks_total,
+                        blocks_completed=loader_result.blocks_completed,
+                    )
+                    final = {
+                        "schema": "openmaxfire.flash-result.v2",
+                        "successful": False,
+                        "ready_for_operation": False,
+                        "programming_performed": True,
+                        "recovery_required": True,
+                        "loader": loader_result.to_dict(),
+                        "cancellation_deferred": deferred.requested,
+                        "deferred_signals": list(deferred.signal_names),
+                        "message": message,
+                    }
+                    _save_flash_result(session_dir, final)
+                    final_written = True
+                    _safe_console(f"RECOVERY REQUIRED: {message}", error=True)
+                    return 6
+                journal.record(
+                    "application_boot_confirmed",
+                    phase="post_flash_cold_boot",
+                    expected_profile=preparation.approved.target_profile_key,
+                )
+                _safe_console(
+                    "Leave stove AC on and reconnect FTDI USB to the computer now."
+                )
+                if not _power_off_phrase(
+                    "After FTDI re-enumerates, type USB CONNECTED AFTER FLASH: ",
+                    "USB CONNECTED AFTER FLASH",
+                ):
+                    message = (
+                        "FTDI reconnect was not confirmed after programming; target "
+                        "verification and exact-image recovery remain required"
+                    )
+                    journal.record("operator_abort", reason=message)
+                    session_state.transition(
+                        FlashSessionStatus.RECOVERY_REQUIRED,
+                        message=message,
+                        recovery_required=True,
+                        blocks_total=loader_result.blocks_total,
+                        blocks_completed=loader_result.blocks_completed,
+                    )
+                    final = {
+                        "schema": "openmaxfire.flash-result.v2",
+                        "successful": False,
+                        "ready_for_operation": False,
+                        "programming_performed": True,
+                        "recovery_required": True,
+                        "loader": loader_result.to_dict(),
+                        "cancellation_deferred": deferred.requested,
+                        "deferred_signals": list(deferred.signal_names),
+                        "message": message,
+                    }
+                    _save_flash_result(session_dir, final)
+                    final_written = True
+                    _safe_console(f"RECOVERY REQUIRED: {message}", error=True)
+                    return 6
+                reopen_serial_after_usb_reconnect(
+                    baudrate=preparation.approved.application_baudrate,
+                    phase="post_flash_usb_reconnected",
+                )
+                time.sleep(args.handoff_delay)
+                post = None
+                post_eeprom = None
+                post_backup = None
+                try:
+                    post, post_eeprom, post_backup = _attempt_post_flash(
+                        args,
+                        preparation,
+                        transport=serial_transport,
+                        session_dir=session_dir,
+                        attempt=3,
+                        diagnostic_errors=host_diagnostic_errors,
+                    )
+                    post_error = None
+                except (OSError, ProtocolError, TimeoutError, ValueError) as exc:
+                    post_error = exc
 
             if post is None:
                 message = (
@@ -1342,6 +1686,23 @@ def _run_flash(args: argparse.Namespace) -> int:
         _safe_console(message, error=True)
         return 6 if recovery_required else 4
     finally:
+        if tx_break_active and serial_transport is not None:
+            try:
+                serial_transport.set_break(False)
+                tx_break_active = False
+                if journal is not None:
+                    journal.record(
+                        "tx_break_changed",
+                        active=False,
+                        phase="final_cleanup",
+                        purpose="fail-safe BREAK release before closing serial handle",
+                    )
+            except (OSError, AttributeError, TypeError, ValueError) as exc:
+                _safe_console(
+                    f"Warning: explicit UART BREAK release failed; closing the serial "
+                    f"handle: {exc}",
+                    error=True,
+                )
         if journal is not None:
             try:
                 journal.close()
@@ -1446,11 +1807,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     raw = sub.add_parser(
         "raw",
-        help="transmit exact bytes and capture an uninterpreted response window",
+        help=(
+            "transmit one exact A/C/D register request and capture an "
+            "uninterpreted response window"
+        ),
     )
     raw_payload = raw.add_mutually_exclusive_group(required=True)
-    raw_payload.add_argument("--ascii", help="exact ASCII bytes; no terminator is added")
-    raw_payload.add_argument("--hex", dest="raw_hex", type=_raw_hex, help="exact hex bytes")
+    raw_payload.add_argument(
+        "--ascii", help="one complete A/C/D request; no terminator is added"
+    )
+    raw_payload.add_argument(
+        "--hex", dest="raw_hex", type=_raw_hex, help="one complete A/C/D request as hex"
+    )
     raw.add_argument(
         "--read-for",
         type=_nonnegative_float,
@@ -1528,15 +1896,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     flash = sub.add_parser(
         "flash",
-        help="plan or execute the guarded authenticated J3 firmware loader",
+        help="authenticate a J3 firmware plan offline",
+        description=(
+            "Authenticate a J3 firmware plan offline. All physical loader "
+            "traffic, including non-writing rehearsal, E3 programming, and "
+            "recovery, is disabled until a fixture-specific path is implemented "
+            "and qualified on safely powered spare hardware."
+        ),
     )
     flash.add_argument(
         "image",
         nargs="?",
         type=Path,
         help=(
-            "exact preserved factory Downloader HEX image; omit only when "
-            "--recover-from-session supplies its authenticated rescue copy"
+            "exact preserved factory Downloader HEX image for --plan-only"
         ),
     )
     flash.add_argument(
@@ -1558,16 +1931,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--recover-from-session",
         type=Path,
         help=(
-            "authenticate and replay the exact image/backup bundle from an "
-            "interrupted session when the application no longer identifies"
+            "dormant recovery-bundle input; CLI replay is rejected while all "
+            "physical loader traffic is disabled"
         ),
     )
     flash.add_argument(
         "--rehearsal-only",
         action="store_true",
         help=(
-            "run EA/EB and ED/E4 plus unchanged-app verification with zero E3 "
-            "program frames, then stop"
+            "retired; physical EA/EB and ED/E4 traffic is rejected before image "
+            "or serial access"
+        ),
+    )
+    flash.add_argument(
+        "--hold-tx-break-during-power-off",
+        action="store_true",
+        help=(
+            "retired with the manual-AC physical loader workflow; accepted only "
+            "as syntax and always rejected outside --plan-only validation"
         ),
     )
     flash.add_argument("--json", action="store_true", help="compact JSON for --plan-only")
@@ -1578,10 +1959,49 @@ def build_parser() -> argparse.ArgumentParser:
         help="rapid bounded EA/EB probes after the manual power cycle (default: 1500)",
     )
     flash.add_argument(
+        "--loader-identify-retry-delay",
+        type=_nonnegative_float,
+        default=0.0,
+        help=(
+            "additional delay between missed EA/EB identify probes in seconds "
+            "(0 to 0.050; default: 0)"
+        ),
+    )
+    flash.add_argument(
         "--retry-delay",
         type=_nonnegative_float,
         default=0.020,
-        help="delay before a bounded loader retry in seconds (default: 0.020)",
+        help=(
+            "dormant direct-executor program-block retry delay; the CLI "
+            "cannot send E3 (default: 0.020)"
+        ),
+    )
+    flash.add_argument(
+        "--loader-probe-timeout",
+        type=_positive_float,
+        default=0.020,
+        help=(
+            "timeout for each EA/EB loader identify probe in seconds "
+            "(0.001 to 0.050; default: 0.020)"
+        ),
+    )
+    flash.add_argument(
+        "--loader-settle-delay",
+        type=_nonnegative_float,
+        default=0.0,
+        help=(
+            "dormant direct-executor delay after EB and before E3; the CLI "
+            "cannot send E3 (default: 0.0)"
+        ),
+    )
+    flash.add_argument(
+        "--loader-response-timeout",
+        type=_positive_float,
+        default=0.50,
+        help=(
+            "timeout for loader responses (E4 in a rehearsal; E7/E4 only in "
+            "the dormant direct executor; default: 0.50)"
+        ),
     )
     flash.add_argument(
         "--handoff-delay",
@@ -1603,6 +2023,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     flash.add_argument("--confirm-stove-cold-and-off", action="store_true")
     flash.add_argument("--confirm-igniters-unplugged", action="store_true")
+    flash.add_argument(
+        "--confirm-actuator-loads-unplugged",
+        action="store_true",
+        help=(
+            "confirm hazardous actuator loads are physically disconnected for the "
+            "powered rehearsal"
+        ),
+    )
     flash.add_argument("--confirm-correct-5v-ttl-wiring", action="store_true")
     flash.add_argument("--confirm-j3-pin3-disconnected", action="store_true")
     flash.add_argument("--confirm-adapter-vcc-disconnected", action="store_true")
@@ -1617,7 +2045,10 @@ def build_parser() -> argparse.ArgumentParser:
     flash.add_argument(
         "--confirm-recovery-target-matches-backup",
         action="store_true",
-        help="required with --recover-from-session because loader mode has no app identity",
+        help=(
+            "dormant recovery interlock; --recover-from-session is rejected "
+            "by the CLI E3 lock"
+        ),
     )
 
     return p
@@ -1746,10 +2177,21 @@ def main(argv: list[str] | None = None) -> int:
                 return 4
         else:
             raw_payload = args.raw_hex
-        if _is_loader_traffic(raw_payload):
+        try:
+            validate_generic_raw_payload(raw_payload)
+        except (SafetyInterlockError, ValueError) as exc:
             print(
-                "OpenMaxFire error: known firmware-loader traffic is isolated from raw "
-                "mode; use the authenticated, safety-gated flash command",
+                f"OpenMaxFire error: {exc}",
+                file=sys.stderr,
+            )
+            return 4
+
+    if args.command == "write":
+        write_payload = encode_write_register(args.address, args.value, unit=args.unit)
+        if contains_loader_traffic(write_payload):
+            print(
+                "OpenMaxFire error: the CW0F reset/loader register family is forbidden "
+                "through generic register writes, including CW0FC4",
                 file=sys.stderr,
             )
             return 4

@@ -1,0 +1,19 @@
+{
+  "blocks_completed": 0,
+  "blocks_total": 476,
+  "failure_outcome": "timeout_before_e7",
+  "message": "loader did not answer EA with a clean EB response; no program block was sent",
+  "metadata": {
+    "current_baudrate": 9600,
+    "hold_tx_break_during_power_off": true,
+    "image_sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+    "port": "/dev/ttyUSB0",
+    "recovery_source": null,
+    "target_baudrate": 9600
+  },
+  "recovery_required": false,
+  "schema": "openmaxfire.flash-session-state.v1",
+  "sequence": 6,
+  "status": "failed_before_programming",
+  "updated_utc": "2026-08-30T02:48:13.135062+00:00"
+}

@@ -100,7 +100,7 @@ class SimulatedController:
             {("D", address): value for address, value in (d_space or {}).items()}
         )
         self.telemetry = (
-            {0x08: 0x00, 0x09: 0x07}
+            {0x08: 0x00, 0x09: 0x07, 0x0C: 0x20, 0x14: 0x0F, 0x15: 0x0F}
             if self.profile.telemetry_layout is TelemetryLayout.FORMAT_04
             else {0x08: 0x07, 0x09: 0x43}
         )
@@ -148,27 +148,37 @@ class SimulatedController:
             self.registers[("A", 0x01)] = checksummed[0x01]
         if request.unit == "C" and request.address == 0x0E:
             self._apply_remote_button(request.value)
+        state_index = (
+            0x0C
+            if self.profile.telemetry_layout is TelemetryLayout.FORMAT_04
+            else 0x09
+        )
         return f"{request.unit}W{request.address:02x}{request.value:02x}\n".encode(
             "ascii"
         ) + (
-            f"T09{self.telemetry[0x09]:02x}\n".encode("ascii")
+            f"T{state_index:02x}{self.telemetry[state_index]:02x}\n".encode("ascii")
             if request.unit == "C" and request.address == 0x0E
             else b""
         )
 
     def _apply_remote_button(self, value: int) -> None:
-        state = self.telemetry.get(0x09, 0x43) & 0x7F
+        state_index = (
+            0x0C
+            if self.profile.telemetry_layout is TelemetryLayout.FORMAT_04
+            else 0x09
+        )
+        state = self.telemetry.get(state_index, 0x43) & 0x7F
         family = (state >> 4) & 0x07
         level = (state & 0x07) + 1 if family in (4, 5) else 4
         if value == 0x11:
-            self.telemetry[0x09] = 0x20
+            self.telemetry[state_index] = 0x20
         elif value == 0x12:
             if family in (0, 1, 2):
-                self.telemetry[0x09] = 0x30
+                self.telemetry[state_index] = 0x30
         elif value == 0x14:
-            self.telemetry[0x09] = 0x40 | (min(8, level + 1) - 1)
+            self.telemetry[state_index] = 0x40 | (min(8, level + 1) - 1)
         elif value == 0x18:
-            self.telemetry[0x09] = 0x40 | (max(1, level - 1) - 1)
+            self.telemetry[state_index] = 0x40 | (max(1, level - 1) - 1)
 
 
 class SimulatedTransport:
@@ -278,6 +288,11 @@ class SimulatedLoaderTransport:
     loader mode by construction and accepts only the reconstructed binary
     identify, program-block, and completion frames.
     """
+
+    # Safety-sensitive callers use this explicit marker to distinguish the
+    # deterministic in-process model from every physical transport.  Physical
+    # transports must never set or inherit it.
+    simulation_only = True
 
     def __init__(
         self,
@@ -389,7 +404,10 @@ class SimulatedLoaderTransport:
             target_address = loader_effective_word_address(source_address)
             if target_address is None:
                 continue
-            value = data[offset] | (data[offset + 1] << 8)
+            # The preserved BixCheck downloader sends PIC14 words high byte
+            # first.  Keeping this decode independent of Intel HEX byte order
+            # prevents the simulator from blessing a byte-swapped host.
+            value = (data[offset] << 8) | data[offset + 1]
             row_address = target_address - (target_address % LOADER_FLASH_ROW_WORDS)
             updates_by_row.setdefault(row_address, {})[target_address] = value
 
@@ -472,6 +490,8 @@ class SimulatedFlashSessionTransport:
     later entry accepts the real plan and hands off to the target profile.
     """
 
+    simulation_only = True
+
     def __init__(
         self,
         current_profile: ControllerProfile | str,
@@ -513,6 +533,8 @@ class SimulatedFlashSessionTransport:
         self.loader: SimulatedLoaderTransport | None = None
         self.mode = "application_before"
         self.closed = False
+        self.break_active = False
+        self.break_states: list[bool] = []
 
     def set_baudrate(self, baudrate: int) -> None:
         self.settings = SerialSettings(
@@ -530,6 +552,12 @@ class SimulatedFlashSessionTransport:
             self.settings.exclusive,
         )
 
+    def set_break(self, active: bool) -> None:
+        if not isinstance(active, bool):
+            raise TypeError("active must be a boolean")
+        self.break_active = active
+        self.break_states.append(active)
+
     def _enter_loader(self) -> None:
         self.loader_entries += 1
         faults = (
@@ -543,6 +571,8 @@ class SimulatedFlashSessionTransport:
     def write(self, data: bytes) -> None:
         if self.closed:
             raise OSError("simulated flash-session transport is closed")
+        if self.break_active:
+            raise OSError("cannot transmit while simulated UART BREAK is active")
         payload = bytes(data)
         self.writes.append(payload)
         if self.mode != "loader" and payload == LOADER_IDENTIFY_REQUEST:

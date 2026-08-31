@@ -1,0 +1,7 @@
+{
+  "message": "OpenMaxFire flash error: Could not configure port: (5, 'Input/output error')",
+  "ready_for_operation": false,
+  "recovery_required": false,
+  "schema": "openmaxfire.flash-result.v2",
+  "successful": false
+}

@@ -1,0 +1,3 @@
+OPENMAXFIRE RECOVERY REQUIRED
+
+Do not operate the stove or reconnect the igniters. Do not delete or edit this directory. Start a new flash session with --recover-from-session flash-sessions/fw202-to-fw206-recovery-005 so the exact preserved image is replayed from block zero. J3 pin 3 and adapter VCC must remain disconnected.

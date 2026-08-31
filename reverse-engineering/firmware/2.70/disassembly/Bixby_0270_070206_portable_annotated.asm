@@ -2043,6 +2043,8 @@
 07DF: 08C2  movf    0x42, F
 07E0: 1903  btfsc   0x03, 2
 07E1: 2FEB  goto    0x7EB ; low-11 target; resolve page through PCLATH
+
+; RE: Non-periodic T20 display-LED event path.
 07E2: 3020  movlw   0x20
 07E3: 00D4  movwf   0x54
 07E4: 1283  bcf     0x03, 5

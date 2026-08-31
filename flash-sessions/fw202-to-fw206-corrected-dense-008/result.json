@@ -1,0 +1,19 @@
+{
+  "message": "loader did not answer EA with EB; no E3 frame was sent",
+  "programming_performed": false,
+  "recovery_required": false,
+  "rehearsal": {
+    "completion_acknowledged": false,
+    "completion_sent": false,
+    "flash_write_commands_sent": 0,
+    "identify_attempts": 5000,
+    "loader_identified": false,
+    "message": "loader did not answer EA with EB; no E3 frame was sent",
+    "program_blocks_sent": 0,
+    "protocol": "EA/EB then ED/E4; no E3 frame",
+    "schema": "openmaxfire.loader-rehearsal-result.v1",
+    "successful": false
+  },
+  "schema": "openmaxfire.flash-result.v2",
+  "successful": false
+}

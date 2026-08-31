@@ -18,8 +18,8 @@ protocol or controller logic.
 - [x] Deep-analyze all three BixCheck EXEs and export symbols, call graphs,
   configuration/telemetry/Checkout tables, focused assembly, and semantic diffs.
 - [x] Build a read-only virtual serial lab and experimental PIC execution harness.
-- [x] Execute CR00-CR0E on all three application generations with handler-level
-  RAM/SFR traces, watchpoints, and response artifacts.
+- [x] Execute all real CR handlers across all four application generations with
+  handler-level RAM/SFR traces, watchpoints, and response artifacts.
 - [x] Model synthetic GPIO/ADC inputs and map door, drawer, thermostat, and both
   potentiometers offline.
 - [x] Recover both RD3 input-multiplexer banks and map the panel buttons,
@@ -33,10 +33,11 @@ protocol or controller logic.
   stove-interior photograph set for serial 5215.
 - [x] Preserve the bare 9067-0604 component/solder-side, J3/PIC, oscillator,
   routing, and working-cable photograph set.
-- [x] Model PIC internal data EEPROM and verify AR00-ARFF across all three
-  generations with checksum-valid format-05/07 fixtures.
-- [x] Map every CW00-CW0F dispatcher/handler and execute safe synthetic probes
-  in disposable CPU/RAM/EEPROM clones without taking the CW0FC4 loader branch.
+- [x] Model PIC internal data EEPROM and verify AR00-ARFF across all four
+  generations with checksum-valid format-04/05/07 fixtures.
+- [x] Map every real C-write dispatcher/handler—CW00-CW0E in 2.02 and
+  CW00-CW0F later—and execute safe synthetic probes in disposable clones
+  without taking the CW0FC4 loader branch.
 - [x] Trace every periodic telemetry producer through the real UART sender,
   resolve physical one-byte framing, adjacent-slot words, auxiliary D lines,
   and core BixCheck display conversions.
@@ -53,8 +54,9 @@ protocol or controller logic.
 - [x] Preserve the first complete original-controller firmware 2.02 PICkit
   export, validate its structure/protection state, tie it to serial 5215 by an
   exact live-EEPROM match, and generate deterministic analysis artifacts.
-- [ ] Add the remaining independent 2.02 PICkit exports and authenticate the
-  complete repeat-read set.
+- [x] Record that the preserved 2.02 export is the sole pre-write original
+  capture; the original was subsequently restored externally, so independent
+  pre-write reads cannot be recreated retroactively.
 - [x] Generate complete derived PICkit predictions for factory-2.06 and
   serial-5215 lineages by applying the reconstructed loader overlay/remap rules.
 - [ ] Compare each derived image against a complete physical PICkit read taken
@@ -106,9 +108,8 @@ protocol or controller logic.
   TFD-TFF provenance, and M/I payload semantics.
 - [x] Expose profile-aware alarm state, including temporal format-04 flashing
   indicators and later-format raw BixCheck alarm status.
-- [x] Prove format-04 T09 is non-discriminating in the preserved live control
-  session and expose T0C/T15 cold/off versus startup/control-active candidates
-  without making them control-verification eligible.
+- [x] Prove format-04 T09 is non-discriminating, trace exact 2.02 state RAM
+  0x4C to T0C, reject T15 as a state source, and live-confirm T0C Off/Prefill.
 - [ ] Complete stove state, heat level, temperatures, fan values, door timers,
   ash values, and remaining alarm semantics.
 - [x] Add decoded JSONL snapshot logging and offline replay against preserved
@@ -121,19 +122,24 @@ protocol or controller logic.
 ## Phase 3 - verified normal control
 
 - [x] Add offline-tested generic A/C/D writes, optional fresh-readback
-  verification, exact-byte exchange, and fail-fast JSON register transactions.
+  verification, exact complete-request exchange, and fail-fast JSON register
+  transactions; later disable arbitrary/fragmented raw transmission.
 - [x] Prevent possible write echoes from satisfying readback matching; require
   an actual addressed `R` response.
 - [x] Isolate known loader traffic from generic raw/transaction commands.
 - [x] Validate OFF, ON, UP, and DOWN individually on firmware 2.02 with exact
   traffic preservation and operator-observed physical response.
 - [ ] Read back state after every command.
+- [x] Demonstrate that one OFF can be ignored during the post-ON UART-silent
+  interval; make the validation harness retry OFF until two distinct state
+  samples timestamped after OFF prove Off or Cooldown.
 - [x] Add offline idempotent OFF/ON/UP/DOWN/set-level planning with profile and
   stale-state checks; live rate limits, lockouts, and recovery remain pending.
 - [x] Execute and verify complete control workflows against the public simulator
   with authorization, rate limiting, and door/drawer interlocks; physical use
   remains blocked.
-- [ ] Never infer success from transmission alone.
+- [x] Never infer success from transmission alone; require machine or explicit
+  operator observation and report missing verification as indeterminate/fail.
 - [ ] Expose only the everyday safe subset to Home Assistant.
 
 ## Phase 4 - BixCheck configuration parity
@@ -179,20 +185,23 @@ protocol or controller logic.
   internal row attempts, protected-range skipping, reset-vector relocation,
   BixCheck's exact 30-accepted/31st-unread retry edge, one-shot completion, and
   simulated application handoff/reconnect.
-- [x] Implement the separately gated live host: exact file and wire-frame
-  allowlist and rescue bundle, fixed 9,600-baud loader, rapid reset-window
-  probing, repeated identity/EEPROM preflight, zero-E3 physical rehearsal,
-  one exclusive serial handle, sleep/termination protection, conservative
-  outcome-specific retries without BixCheck's unread terminal frame, durable
-  one-way recovery state, phase-matched delayed replies, fail-operational
-  post-write diagnostics, target identity, EEPROM comparison, and final-ED
-  recovery only after all blocks have PIC-side E4 evidence.
+- [x] Implement authenticated planning, a historical zero-E3 physical research
+  rehearsal now retired, and a complete simulator-only rehearsal/write/recovery state machine: exact file and
+  wire-frame allowlist and rescue bundle, fixed 9,600-baud loader, rapid
+  reset-window probing, repeated identity/EEPROM preflight, outcome-specific
+  retries, durable state, phase-matched delayed replies, target identity, and
+  EEPROM comparison. Hard-lock all physical loader traffic in the CLI and
+  public executors.
+- [ ] After the target-power-safe reset fixture passes its spare-target gates,
+  add separately reviewed fixture-specific non-writing and write executors; do
+  not revive the retired manual-AC/BREAK path.
 - [x] Document a PICkit 3 original-chip read procedure with a hard code-
   protection stop and offline repeated-read/clone authentication commands.
 - [x] Read and preserve one complete firmware 2.02 program-memory, EEPROM,
   configuration, and User-ID export.
-- [ ] Preserve at least two more independently saved 2.02 exports and
-  authenticate the repeat-read set.
+- [x] Preserve and hash the sole pre-write 2.02 export; record that later reads
+  can verify restored state but cannot independently authenticate the former
+  factory state.
 - [ ] Program only a spare chip, verify it, read it back, authenticate it
   against the original, and prove controlled board recovery.
 - [ ] Resolve physical loader entry timing, row programming/readback behavior,

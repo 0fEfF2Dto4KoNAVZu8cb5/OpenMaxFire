@@ -52,6 +52,10 @@ def indicator_lights(mask: int) -> tuple[int, ...]:
 
 
 _LIVE = "live-confirmed on firmware 2.02/data format 04"
+_LIVE_LIGHT_FACTORY_MEANING = (
+    "light position live-confirmed on firmware 2.02/data format 04; "
+    "fault meaning factory-documented"
+)
 _DOCUMENTED = "factory-documented light pattern; serial mask inferred"
 
 
@@ -62,7 +66,7 @@ FORMAT04_FAULT_PATTERNS: Mapping[int, FaultIndicatorPattern] = MappingProxyType(
             (1,),
             "power_interruption",
             "Power interruption during operation",
-            _DOCUMENTED,
+            _LIVE_LIGHT_FACTORY_MEANING,
         ),
         0x02: FaultIndicatorPattern(
             0x02,

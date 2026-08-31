@@ -1,0 +1,77 @@
+{
+  "cancellation_deferred": false,
+  "deferred_signals": [],
+  "loader": {
+    "anomalies": [],
+    "block_receipts": [
+      {
+        "accepted_attempts": 4,
+        "acknowledged": false,
+        "attempt_receipts": [
+          {
+            "accepted_for_decision": true,
+            "attempt": 1,
+            "outcome": "timeout_after_e7",
+            "responses_hex": [
+              "E7",
+              ""
+            ]
+          },
+          {
+            "accepted_for_decision": true,
+            "attempt": 2,
+            "outcome": "timeout_before_e7",
+            "responses_hex": [
+              ""
+            ]
+          },
+          {
+            "accepted_for_decision": true,
+            "attempt": 3,
+            "outcome": "timeout_before_e7",
+            "responses_hex": [
+              ""
+            ]
+          },
+          {
+            "accepted_for_decision": true,
+            "attempt": 4,
+            "outcome": "timeout_before_e7",
+            "responses_hex": [
+              ""
+            ]
+          }
+        ],
+        "attempts": 4,
+        "byte_count": 32,
+        "outcome": "timeout_before_e7",
+        "transmissions": 4,
+        "word_address": "0x0000"
+      }
+    ],
+    "blocks_completed": 0,
+    "blocks_total": 476,
+    "completion_acknowledged": false,
+    "completion_sent": false,
+    "diagnostic_errors": [],
+    "diagnostics_complete": true,
+    "evidence_boundary": "E4 proves the resident PIC loader read back each submitted block; J3 cannot perform an independent whole-program-memory readback",
+    "failure_outcome": "timeout_before_e7",
+    "image_sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+    "loader_identified": true,
+    "message": "block 0x0000 failed after 4 bounded attempts (timeout_before_e7); do not operate the stove; replay the session's exact image from block zero",
+    "pic_side_blocks_verified": false,
+    "recovery_required": true,
+    "retries": 3,
+    "schema": "openmaxfire.live-loader-result.v2",
+    "state": "failed",
+    "successful": false,
+    "write_failure_events": 0
+  },
+  "message": "block 0x0000 failed after 4 bounded attempts (timeout_before_e7); do not operate the stove; replay the session's exact image from block zero",
+  "programming_performed": true,
+  "ready_for_operation": false,
+  "recovery_required": true,
+  "schema": "openmaxfire.flash-result.v2",
+  "successful": false
+}

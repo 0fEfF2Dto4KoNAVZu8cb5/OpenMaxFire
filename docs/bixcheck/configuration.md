@@ -1,8 +1,11 @@
 # BixCheck configuration model
 
 This map combines vendor documentation with decoded tables and methods from all
-three BixCheck executables. Addresses are statically established; no
-configuration has been read from or written to serial 5215.
+three BixCheck executables. Addresses are statically established. Complete
+format-04 and format-05 configurations have since been read from serial 5215
+under documented read-only sessions. A checksum-only `CW0100` repair that
+changed A00/A01 and survived a true cold boot is live-validated on firmware
+2.06; arbitrary configuration writes and formatting remain unqualified.
 
 ## Data-element record layout
 

@@ -61,7 +61,7 @@ class MonitorStateTests(unittest.TestCase):
         self.assertTrue(decoded["physical_inputs"]["ash_drawer_open"])
         self.assertFalse(decoded["physical_inputs"]["firebox_door_open"])
         self.assertTrue(decoded["thermostat_open"])
-        self.assertNotIn("operating_state", decoded)
+        self.assertEqual(decoded["operating_state"]["phase"], "undefined")
         self.assertNotIn("bixcheck_55_igniter_display", decoded)
         self.assertTrue(decoded["warning_flash_bits"]["firebox_door"])
         self.assertTrue(decoded["warning_flash_bits"]["ash_drawer"])
@@ -75,10 +75,17 @@ class MonitorStateTests(unittest.TestCase):
             decoded["format04_live_correlations"]["t09_meaning_unresolved_raw"],
             0x4B,
         )
-        self.assertEqual(decoded["format04_state_candidate"]["code"], "unclassified")
+        self.assertEqual(
+            decoded["format04_live_correlations"]["t09_nonstate_raw"], 0x4B
+        )
+        self.assertEqual(
+            decoded["format04_live_correlations"]["state_source"], "T0C"
+        )
+        self.assertEqual(decoded["format04_state_candidate"]["code"], "undefined")
         self.assertFalse(
             decoded["format04_state_candidate"]["control_verification_eligible"]
         )
+        self.assertIn("Named format-04", snapshot["evidence_boundary"])
 
         summary = format_monitor_summary(snapshot)
         self.assertIn("drawer=open", summary)
@@ -91,9 +98,15 @@ class MonitorStateTests(unittest.TestCase):
         state.observe(addressed(0x08, 0x07), monotonic_ns=1)
         state.observe(TelemetryResponse(0x08, (0x07,), b"T0807"), monotonic_ns=2)
         state.observe(TelemetryResponse(0x09, (0x4B,), b"T094b"), monotonic_ns=3)
-        decoded = state.snapshot(now_monotonic_ns=3)["decoded"]
+        snapshot = state.snapshot(now_monotonic_ns=3)
+        decoded = snapshot["decoded"]
         self.assertEqual(decoded["operating_state"]["label"], "TSTAT L 4")
         self.assertEqual(decoded["bixcheck_55_igniter_display"]["label"], "L R good")
+        self.assertIn("Named format-05/07", snapshot["evidence_boundary"])
+
+    def test_unidentified_format_uses_unresolved_evidence_boundary(self):
+        snapshot = MonitorState().snapshot(now_monotonic_ns=0)
+        self.assertIn("meaning is unresolved", snapshot["evidence_boundary"])
 
     def test_format04_fault_indicator_survives_dark_flash_phase_then_clears(self):
         state = MonitorState(format04_indicator_hold=8.0)
@@ -142,6 +155,27 @@ class MonitorStateTests(unittest.TestCase):
         snapshot = state.snapshot(now_monotonic_ns=3_000_000_000)
         self.assertTrue(snapshot["stale"])
         self.assertEqual(snapshot["age_seconds"], 2.0)
+
+    def test_specific_telemetry_observation_time_is_not_global_freshness(self):
+        state = MonitorState()
+        self.assertIsNone(state.telemetry_observed_monotonic_ns(0x0C))
+        state.observe(
+            TelemetryResponse(0x0C, (0x20,), b"T0c20"),
+            monotonic_ns=100,
+        )
+        state.observe(addressed(0x00, 0), monotonic_ns=200)
+        self.assertEqual(state.last_monotonic_ns, 200)
+        self.assertEqual(state.telemetry_observed_monotonic_ns(0x0C), 100)
+        state.observe(
+            TelemetryResponse(0x0B, (0x00, 0x30), b"T0b0030"),
+            monotonic_ns=300,
+        )
+        self.assertEqual(state.telemetry_observed_monotonic_ns(0x0B), 300)
+        self.assertEqual(state.telemetry_observed_monotonic_ns(0x0C), 300)
+        with self.assertRaises(TypeError):
+            state.telemetry_observed_monotonic_ns(True)
+        with self.assertRaises(ValueError):
+            state.telemetry_observed_monotonic_ns(0x100)
 
     def test_recorder_refuses_silent_replacement(self):
         with tempfile.TemporaryDirectory() as directory:

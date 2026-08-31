@@ -26,8 +26,9 @@ The immutable source is
 The EEPROM match ties the export to the previously observed controller much
 more strongly than a filename alone. The live identification and program
 structure together support cataloguing it as the serial-5215 firmware 2.02
-read. Repeat programmer exports are still required for independent read
-authentication.
+read. It is the sole pre-write export: the original was
+subsequently programmed during emergency recovery, so later reads cannot serve
+as independent captures of that earlier state.
 
 ## Structural inspection
 
@@ -71,10 +72,11 @@ under `reverse-engineering/firmware/2.02/` and
 
 ## Remaining gates
 
-1. Preserve the other independently saved exports and compare all normalized
-   program, EEPROM, User ID, configuration, protection, and file hashes.
-2. Keep the original chip read-only and safely stored.
-3. Program only a spare PIC, verify it, read it back, and authenticate that
+1. Preserve immutable copies and hashes of the sole pre-write original export;
+   do not represent later reads as independent pre-write captures.
+2. Keep the original safely stored and do not program it again absent an
+   explicit recovery need.
+3. Program a spare PIC, verify it, read it back, and authenticate that
    readback against the original image.
 4. Install the verified clone in the socket and confirm board boot, 2.02/04
    identification, EEPROM identity, and normal read-only J3 behavior.

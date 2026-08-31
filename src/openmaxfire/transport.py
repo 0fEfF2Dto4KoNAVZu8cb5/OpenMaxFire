@@ -196,6 +196,13 @@ class SerialTransport:
             self.settings.exclusive,
         )
 
+    def set_break(self, active: bool) -> None:
+        """Hold TX at the UART BREAK level until explicitly released."""
+
+        if not isinstance(active, bool):
+            raise TypeError("active must be a boolean")
+        self._serial.break_condition = active
+
     def close(self) -> None:
         self._serial.close()
 
@@ -325,6 +332,12 @@ class RecordingTransport:
         if setter is None:
             raise AttributeError("underlying transport cannot change baudrate")
         setter(baudrate)
+
+    def set_break(self, active: bool) -> None:
+        setter = getattr(self.transport, "set_break", None)
+        if setter is None:
+            raise AttributeError("underlying transport cannot control UART BREAK")
+        setter(active)
 
     def close(self) -> None:
         try:

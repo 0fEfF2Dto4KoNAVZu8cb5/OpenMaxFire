@@ -51,7 +51,7 @@ class TypedSnapshotTests(unittest.TestCase):
         self.assertIsNone(snapshot.alarms.indicator_active_mask)
         self.assertIsNone(snapshot.alarms.indicator_hold_seconds)
 
-    def test_format04_does_not_apply_later_state_decoder(self):
+    def test_format04_does_not_treat_t09_as_state_without_t0c(self):
         state = MonitorState()
         for address, value in {
             0x00: 0,
@@ -66,6 +66,7 @@ class TypedSnapshotTests(unittest.TestCase):
         state.observe(TelemetryResponse(0x09, (0x4B,), b"T094b"), monotonic_ns=1)
         typed = state.typed_snapshot(now_monotonic_ns=1)
         self.assertIsNone(typed.operating_state)
+        self.assertEqual(typed.telemetry.format04_t09_raw, 0x4B)
         self.assertEqual(typed.telemetry.format04_state_unresolved_raw, 0x4B)
         self.assertEqual(typed.format04_state_candidate.code, "unclassified")
         self.assertFalse(
@@ -79,12 +80,12 @@ class TypedSnapshotTests(unittest.TestCase):
         self.assertEqual(typed.alarms.indicator_lights, (4, 5))
         self.assertIsNone(typed.alarms.fault_code)
 
-    def test_format04_composite_candidates_preserve_control_gate(self):
+    def test_format04_t0c_decodes_exact_state_family_and_ignores_t15(self):
         for t0c, t15, expected in (
-            (0x20, 0x0F, "cold_off_candidate"),
-            (0x28, 0x0F, "cold_off_candidate"),
-            (0x30, 0x08, "startup_or_control_active_candidate"),
-            (0x38, 0x08, "startup_or_control_active_candidate"),
+            (0x20, 0x0F, "off"),
+            (0x28, 0x00, "off"),
+            (0x30, 0x08, "prefill"),
+            (0x38, 0xFF, "prefill"),
         ):
             with self.subTest(t0c=t0c, t15=t15):
                 state = MonitorState()
@@ -107,12 +108,31 @@ class TypedSnapshotTests(unittest.TestCase):
                     TelemetryResponse(0x15, (t15,), b"T15"), monotonic_ns=1
                 )
                 typed = state.typed_snapshot(now_monotonic_ns=1)
-                self.assertIsNone(typed.operating_state)
+                self.assertEqual(typed.operating_state.phase, expected)
+                self.assertEqual(typed.telemetry.format04_state_raw, t0c)
                 self.assertEqual(typed.format04_state_candidate.code, expected)
-                self.assertFalse(
+                self.assertTrue(
                     typed.format04_state_candidate.control_verification_eligible
                 )
                 self.assertFalse(typed.format04_state_candidate.t09_discriminating)
+
+    def test_format04_t0c_exposes_operating_level(self):
+        state = MonitorState()
+        for address, value in {
+            0x00: 0,
+            0x08: 4,
+            0x0B: 2,
+            0x0C: 2,
+            0x0D: 0,
+            0x0E: 0,
+        }.items():
+            state.observe(addressed(address, value), monotonic_ns=1)
+        state.observe(TelemetryResponse(0x0C, (0x4B,), b"T0c4b"), monotonic_ns=1)
+        typed = state.typed_snapshot(now_monotonic_ns=1)
+        self.assertEqual(typed.operating_state.phase, "operating")
+        self.assertEqual(typed.current_heat_level, 4)
+        self.assertEqual(typed.target_heat_level, 4)
+        self.assertTrue(typed.operating_state.thermostat)
 
 
 if __name__ == "__main__":

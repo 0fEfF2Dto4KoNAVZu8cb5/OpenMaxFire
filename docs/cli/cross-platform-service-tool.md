@@ -3,17 +3,18 @@
 Status: the portable foundation is implemented, tested offline, and
 live-validated on serial 5215's firmware 2.02/data-format 04 controller at
 9,600 baud. Remote OFF/ON/UP/DOWN bytes are live-validated; unrelated writes
-remain unvalidated and excluded from the documented workflow. Version 0.9.1
-also contains a separate authenticated J3 flasher. Its physical zero-write
-identify/completion handshake has been observed, but electrical reset behavior,
-Flash programming, and recovery remain gated on proven PICkit recovery and the
-sacrificial-hardware qualification matrix. After loader handoff, it passively
-waits for unsolicited application telemetry before transmitting `CR00`.
+remain unvalidated and excluded from the documented workflow. Version 0.10
+contains authenticated J3 planning, passive post-handoff readiness, derived
+PICkit composition, and simulator-only rehearsal/write executors. Failed
+2026-08-29/30 physical attempts exposed a byte-order defect and nondeterministic
+loader entry; the corrected frame was never sent. The historical physical
+zero-write path is retired, and every physical loader workflow is hard-disabled
+in the CLI and public executors.
 
 Firmware work is not part of the generic live-I/O gate below. Read the
 [guarded J3 firmware-flashing guide](../guides/safe-j3-firmware-flashing.md);
-the dedicated `flash` command has stricter image, wiring, igniter, recovery,
-manual-power-cycle, backup, and post-flash verification requirements.
+the dedicated `flash` command currently exposes only offline planning. It has
+no physical rehearsal, live-programming, or J3-recovery override.
 
 `maxfirectl` uses one Python codebase on Windows, Linux, and macOS. The protocol,
 identity, backup, and safety logic does not contain OS-specific port assumptions.
@@ -210,9 +211,11 @@ prints compact human-readable status lines.
 
 Snapshots preserve all latest CR and T bytes, adjacent telemetry words,
 per-frame counts, last-observed time, age, and a configurable stale threshold.
-Format-04 names are limited to the correlations established on serial 5215.
-In particular, format-04 `T09=07` is retained as unresolved raw data rather than
-being passed through the later BixCheck 5.5 state decoder.
+For firmware 2.02/format 04, the exact recovered application proves T0C is the
+state-family source and T09 is unrelated RAM 0x2D. The monitor therefore
+decodes `operating_state` from T0C while retaining T09 under explicit non-state
+raw compatibility fields. Later formats continue to decode their state from
+T09.
 
 Format-04 fault indicators are temporal. The monitor accumulates nonzero T08
 bits across an eight-second observed-stream window so a snapshot taken while a
@@ -239,13 +242,18 @@ altering the original capture.
 
 ## Most low-level writes remain unvalidated
 
-Version 0.4 adds generic A/C/D writes, optional fresh readback, exact-byte raw
-exchange, and validated register transaction plans. They require a second
+Version 0.4 added generic A/C/D writes, optional fresh readback, and validated
+register transaction plans. The former arbitrary exact-byte raw exchange is
+now restricted to one complete A/C/D request with an uninterpreted response
+window. State-changing commands require a second
 state-change acknowledgement. Remote front-panel writes are now live-validated
 on firmware 2.02; other write addresses remain offline-tested only. The read-only
 monitor, backup, identify, capture, and replay workflows still never emit a
-write. Known `CW0FC4`, `EA`, `E3`, and `ED` loader traffic is blocked from raw
-and transaction mode. See [Low-level service layer](low-level-service-layer.md).
+write. The keyed `CW0FC4` entry request and every known binary loader marker
+(`E3`, `E4`, `E5`, `E7`, `E8`, `EA`, `EB`, and `ED`) are blocked from raw and
+transaction mode. The client reserves the full `CW0F` reset-register family,
+known boundary fragments, and same-stream splits. See
+[Low-level service layer](low-level-service-layer.md).
 
 ## Cross-platform verification
 

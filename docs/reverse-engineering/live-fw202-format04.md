@@ -262,25 +262,58 @@ observed the corresponding physical behavior:
 | UP | `CW0E14` |
 | DOWN | `CW0E18` |
 
-The generated validation report remains conservative where an automated
-format-04 state snapshot could not independently verify the transition. The
-low-level bytes are physically validated; the high-level API executor remains
-blocked pending reliable format-04 state and level decoding.
+The original generated validation report remained conservative because an
+automated format-04 state snapshot could not then independently verify the
+transition. The recovered 2.02 program image has since resolved the state
+source exactly: T0C is loaded from RAM 0x4C, and the main state dispatcher
+reads the same RAM byte. A bounded 2026-08-30 session live-confirmed T0C `20`
+as Off and the `30` family as Prefill. The high-level physical executor remains
+blocked pending format-04 level-change validation and robust cleanup timing.
 
 Replaying the exact traffic around those commands corrected an earlier
 interpretation of `T09=07`: that byte did not change between cold/off and the
-period after physically observed UP/DOWN responses. It cannot be used as an off
-readback. Two other raw composites did correlate in this one session:
+period after physically observed UP/DOWN responses. Static tracing now proves
+why: 2.02 T09 comes from RAM 0x2D, not the state byte. T15 also has no state
+producer assignment. The earlier composites were accidental correlations:
 
-| Condition | T0C with thermostat bit 3 ignored | T15 | Provisional observation |
-| --- | ---: | ---: | --- |
-| Cold baseline and after OFF | `20` | `0F` | Cold/off candidate |
-| After confirmed UP/DOWN responses during startup | `30` | `08` | Startup/control-active candidate |
+| Condition | T0C with thermostat bit 3 ignored | Exact state interpretation |
+| --- | ---: | --- |
+| Cold baseline and after OFF | `20` | Off |
+| Startup | `30` | Prefill |
 
-The API exposes these as candidates with
-`control_verification_eligible=false`. They do not identify a startup phase,
-heat level, target level, or command acceptance and therefore do not weaken the
-physical-control gate.
+The API now decodes the shared state-family layout directly from T0C, including
+startup phases and the low-bit level where that family carries one. T09 and
+T15 remain preserved as raw non-state evidence for compatibility. This closes
+the format-04 state-source gap, but does not by itself prove command acceptance
+or safe recovery.
+
+The 2026-08-30 tests exposed two control-verification hazards. Firmware 2.02
+stopped replying immediately after `CW0E12`; an early `CW0E11` was not acted
+on. A later no-fuel sensor run remained serial-silent for 27.149 seconds. When
+replies returned, the tool incorrectly accepted retained T0C `20` from before
+ON because unrelated addressed replies made the whole snapshot fresh. The
+operator still saw light 1 and the blower running. A separate OFF returned the
+stove physically Off; the subsequent stream supplied genuinely post-command
+T0C `20` samples. Cleanup must therefore retry OFF and require distinct state
+field samples timestamped after the command, not merely a fresh composite
+snapshot. The implementation now requires two such T09/T0C samples.
+The exact artifacts and boundary are in
+[`research/live/2026-08-30-fw202-compatibility/`](../../research/live/2026-08-30-fw202-compatibility/).
+
+### Bounded J9/J10 and light-1 correlation
+
+During that no-fuel start the operator observed the blower running. CR05 moved
+from its Off baseline `00` to `0C`, then returned to `00` after the accepted
+OFF, physically anchoring the J10 pulse-count path without establishing RPM.
+CR02.4 changed from 0 to 1 and CR07 later changed `1E`→`1F`, giving partial J9
+support. Those post-run values remained stable through 20 zero-timeout
+read-only Off cycles, consistent with a parked sensor level and latched
+interval. The other bank-0 writers would report CR07 `2D` at boot or `16` at
+the range clamp, so `1F` proves the RB1-gated RD0 cycle latch executed. There
+is still no captured running interval or operator-confirmed feeder motion, so
+physical edge polarity and time units remain unresolved. The operator-observed
+first physical light coincided with T08 `01`, adding bit 0 to the live bitmap
+correlations.
 
 ### Flashing light 8
 
@@ -293,9 +326,10 @@ to flash.
 
 This establishes `T08.7`/`0x80` as format-04 flashing light 8, which the owner
 manual names feeder-wheel failure. Together with the earlier live `0x08`
-firebox/light-4 and `0x10` ash-drawer/light-5 cases, the evidence supports a
-one-bit-per-light bitmap. Other factory patterns are decoded from that layout
-but retain an inferred rather than live-confirmed serial evidence label.
+firebox/light-4, `0x10` ash-drawer/light-5, and later `0x01`/light-1 cases, the
+evidence supports a one-bit-per-light bitmap. Other factory patterns are
+decoded from that layout but retain an inferred rather than live-confirmed
+serial evidence label.
 
 `T13` remained `BA`, matching the cold/off evidence. This reinforces the
 profile boundary: later BixCheck labels T13 Alarm status, but it is not the

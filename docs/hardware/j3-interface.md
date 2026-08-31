@@ -87,7 +87,15 @@ data cable, or unknown-color generic adapter must not be substituted directly.
 - J3-3 remains unresolved and must stay unused.
 - The successful adapter proves compatibility for this board/cable pair but is
   not a substitute for measuring an unknown controller revision.
-- Controller-side isolation remains recommended for a permanent installation.
+- The USB-powered FTDI TX idles high. During stove power removal it can
+  plausibly inject through the PIC RX protection network; with USB removed,
+  the stove TX can backfeed the FTDI receiver in the opposite direction. The
+  saved loader sessions show nondeterministic reset entry, so this direct cable
+  is not qualified for another program frame.
+- Controller-side isolation remains recommended for a permanent installation,
+  but its stove-facing output must also be target-powered or explicitly
+  high-impedance at target VDD=0. An upstream USB isolator or always-powered
+  isolated secondary is insufficient by itself.
 - The test was performed cold/off and did not validate noise margins while
   motors, igniters, or phase-controlled outputs are operating.
 - The stove contains exposed mains circuitry. Perform continuity work only
@@ -96,3 +104,6 @@ data cable, or unknown-color generic adapter must not be substituted directly.
 Protocol framing, live captures, and the read-only test sequence are documented
 in [the J3 protocol specification](../protocol/j3-protocol.md) and
 [the firmware-2.02 live report](../reverse-engineering/live-fw202-format04.md).
+The loader power-boundary evidence and replacement interface requirements are
+in the [physical flash-session forensics](../reverse-engineering/physical-flash-session-forensics.md)
+and [loader-entry fixture](j3-loader-entry-fixture.md).

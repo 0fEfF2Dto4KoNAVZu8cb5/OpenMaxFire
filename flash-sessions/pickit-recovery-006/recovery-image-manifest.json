@@ -1,0 +1,67 @@
+{
+  "expected_section_hashes": {
+    "eeprom_from_controller": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+    "program_from_donor": "7d917528fee18432140ca73bb16af0ff1a906ecfba72411b3afeb9c8d2201a09",
+    "user_ids_from_controller": "f4b00be966113b53640abe29c492144fd5e017f83155fe1707ab2e97f69e5bc8"
+  },
+  "incident_program_differences": [
+    {
+      "readback": "0x1830",
+      "reference": "0x3018",
+      "word_address": "0x1E84"
+    },
+    {
+      "readback": "0x0A00",
+      "reference": "0x008A",
+      "word_address": "0x1E85"
+    },
+    {
+      "readback": "0x0028",
+      "reference": "0x2800",
+      "word_address": "0x1E86"
+    }
+  ],
+  "inputs": {
+    "controller_dump": {
+      "path": "flash-sessions/pickit-recovery-006/pre-recovery-read.hex",
+      "sha256": "b281357f6b38db046361de3be1cdd455999b9b8b65d098d0b9d329d8fb789fca"
+    },
+    "donor": {
+      "path": "reverse-engineering/firmware/2.06/extracted/Bixby_02060021_PICkit.hex",
+      "sha256": "2adb6dca20a0318662aa73d96b700d5f83a76b36779596fa0e9db8a26db357d4"
+    },
+    "reference": {
+      "path": "preservation/original/firmware/2.02/Bixby_0202_260827_PICkit.hex",
+      "sha256": "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab"
+    }
+  },
+  "operation": "offline Intel HEX construction only; no hardware was accessed",
+  "output": {
+    "configuration_word": "0x3F32",
+    "eeprom_bytes": 256,
+    "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+    "path": "flash-sessions/pickit-recovery-006/Bixby_02060021_PICkit_controller-preserved_recovery.hex",
+    "program_sha256": "7d917528fee18432140ca73bb16af0ff1a906ecfba72411b3afeb9c8d2201a09",
+    "program_words": 8192,
+    "sha256": "93dd010dbaafd5ccf4df9097e1351937280b73f298cc8de0d0ab67cc3447870e",
+    "user_id_words": 4,
+    "user_ids_sha256": "f4b00be966113b53640abe29c492144fd5e017f83155fe1707ab2e97f69e5bc8"
+  },
+  "safe_to_import_in_ipe": true,
+  "schema": "openmaxfire.pickit-recovery-image.v1",
+  "section_sources": {
+    "configuration_word": "authenticated full 2.06 PICkit donor",
+    "data_eeprom": "controller pre-recovery readback",
+    "program_memory": "authenticated full 2.06 PICkit donor",
+    "user_ids": "controller pre-recovery readback"
+  },
+  "target": "PIC16F877A",
+  "verification": {
+    "code_protection_checks_pass": true,
+    "configuration_matches_authenticated_206_donor": true,
+    "eeprom_matches_controller_dump": true,
+    "mapped_byte_set_matches_full_donor": true,
+    "program_matches_authenticated_206_donor": true,
+    "user_ids_match_controller_dump": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "anomalies": [],
+  "block_receipts": [],
+  "blocks_completed": 0,
+  "blocks_total": 476,
+  "completion_acknowledged": false,
+  "completion_sent": false,
+  "diagnostic_errors": [],
+  "diagnostics_complete": true,
+  "evidence_boundary": "E4 proves the resident PIC loader read back each submitted block; J3 cannot perform an independent whole-program-memory readback",
+  "failure_outcome": "timeout_before_e7",
+  "image_sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+  "loader_identified": false,
+  "message": "loader did not answer EA with a clean EB response; no program block was sent",
+  "pic_side_blocks_verified": false,
+  "recovery_required": false,
+  "retries": 1499,
+  "schema": "openmaxfire.live-loader-result.v2",
+  "state": "failed",
+  "successful": false,
+  "write_failure_events": 0
+}

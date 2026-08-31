@@ -56,6 +56,7 @@ def safe_interlocks(**overrides):
     values = {
         "stove_cold_and_off": True,
         "igniters_physically_unplugged": True,
+        "actuator_loads_physically_unplugged": True,
         "correct_5v_ttl_wiring": True,
         "j3_pin3_disconnected": True,
         "adapter_vcc_disconnected": True,
@@ -146,6 +147,7 @@ class LiveFlashingTests(unittest.TestCase):
         finally:
             client.close()
         self.assertIn("igniters", str(raised.exception))
+        self.assertIn("hazardous actuator loads", str(raised.exception))
         self.assertIn("spare PIC", str(raised.exception))
 
     def test_complete_live_protocol_uses_9600_and_pic_side_verification(self):
@@ -162,6 +164,80 @@ class LiveFlashingTests(unittest.TestCase):
         self.assertEqual(transport.writes[0], b"\xEA")
         self.assertEqual(transport.writes[-1], b"\xED")
         self.assertTrue(transport.application_running)
+
+    def test_live_protocol_settles_after_identify_before_first_program_frame(self):
+        transport = SimulatedLoaderTransport()
+        with mock.patch("openmaxfire.flashing.time.sleep") as sleep:
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(
+                    retry_delay=0,
+                    post_identify_settle_delay=2.0,
+                    response_timeout=2.0,
+                ),
+            )
+        self.assertTrue(result.successful)
+        sleep.assert_any_call(2.0)
+        self.assertEqual(transport.writes[0], b"\xEA")
+        self.assertEqual(transport.writes[1][0], 0xE3)
+
+    def test_live_loader_policy_rejects_invalid_settle_delay(self):
+        for value in (-0.01, 5.01, float("inf"), float("nan")):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    LiveLoaderPolicy(post_identify_settle_delay=value)
+
+    def test_live_loader_policy_bounds_probe_timeout(self):
+        self.assertEqual(LiveLoaderPolicy(probe_timeout=0.005).probe_timeout, 0.005)
+        for value in (0, 0.0009, 0.0501, float("inf"), float("nan")):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    LiveLoaderPolicy(probe_timeout=value)
+
+    def test_identify_retry_delay_is_independent_and_bounded(self):
+        self.assertEqual(LiveLoaderPolicy().identify_retry_delay, 0.0)
+        self.assertEqual(
+            LiveLoaderPolicy(identify_retry_delay=0.050).identify_retry_delay,
+            0.050,
+        )
+        for value in (-0.001, 0.0501, True, float("inf"), float("nan")):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    LiveLoaderPolicy(identify_retry_delay=value)
+
+    def test_rehearsal_uses_identify_delay_not_block_retry_delay(self):
+        transport = SimulatedLoaderTransport(
+            faults=SimulatedLoaderFaults(identify_failures=1)
+        )
+        with mock.patch("openmaxfire.flashing.time.sleep") as sleep:
+            result = execute_loader_rehearsal(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(
+                    identify_attempts=2,
+                    identify_retry_delay=0.007,
+                    retry_delay=0.031,
+                ),
+            )
+        self.assertTrue(result.successful)
+        sleep.assert_called_once_with(0.007)
+
+    def test_default_identify_loop_adds_no_retry_sleep(self):
+        transport = SimulatedLoaderTransport(
+            faults=SimulatedLoaderFaults(identify_failures=1)
+        )
+        with mock.patch("openmaxfire.flashing.time.sleep") as sleep:
+            result = execute_loader_rehearsal(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(identify_attempts=2),
+            )
+        self.assertTrue(result.successful)
+        sleep.assert_not_called()
 
     def test_non_writing_loader_rehearsal_sends_only_ea_and_ed(self):
         transport = SimulatedLoaderTransport()
@@ -227,6 +303,204 @@ class LiveFlashingTests(unittest.TestCase):
         ):
             wait_for_application_ready(client, timeout=0.001)
         self.assertEqual(transport.writes, [])
+    def test_rehearsal_rejects_simulator_subclass_before_loader_traffic(self):
+        class PhysicalLookalike(SimulatedLoaderTransport):
+            pass
+
+        transport = PhysicalLookalike()
+        with self.assertRaisesRegex(SafetyInterlockError, "physical loader traffic"):
+            execute_loader_rehearsal(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+            )
+        self.assertEqual(transport.writes, [])
+
+    def test_rehearsal_makes_probe_audit_durable_before_ed(self):
+        operations = []
+
+        class OrderingAudit:
+            buffered = True
+
+            def record(self, direction, data):
+                operations.append(("audit", direction, bytes(data)))
+
+            def sync_durable(self):
+                operations.append(("sync",))
+
+        audit = OrderingAudit()
+        transport = SimulatedLoaderTransport()
+        original_write = transport.write
+
+        def record_wire_write(data):
+            operations.append(("wire", bytes(data)))
+            original_write(data)
+
+        with mock.patch.object(transport, "write", side_effect=record_wire_write):
+            result = execute_loader_rehearsal(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+                audit=audit,
+            )
+
+        self.assertTrue(result.successful)
+        wire_ea = operations.index(("wire", b"\xEA"))
+        audit_ea = operations.index(("audit", "tx", b"\xEA"))
+        sync = operations.index(("sync",))
+        audit_ed = operations.index(("audit", "tx", b"\xED"))
+        wire_ed = operations.index(("wire", b"\xED"))
+        self.assertLess(wire_ea, audit_ea)  # EA timestamp follows serial flush.
+        self.assertLess(audit_ea, sync)
+        self.assertLess(sync, audit_ed)
+        self.assertLess(audit_ed, wire_ed)  # ED retains pre-write persistence.
+        self.assertFalse(audit.buffered)
+
+    def test_live_flash_makes_probe_audit_durable_before_first_e3(self):
+        operations = []
+
+        class OrderingAudit:
+            buffered = True
+
+            def record(self, direction, data):
+                operations.append(("audit", direction, bytes(data)))
+
+            def sync_durable(self):
+                operations.append(("sync",))
+
+        audit = OrderingAudit()
+        transport = SimulatedLoaderTransport()
+        original_write = transport.write
+
+        def record_wire_write(data):
+            operations.append(("wire", bytes(data)))
+            original_write(data)
+
+        with mock.patch.object(transport, "write", side_effect=record_wire_write):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+                audit=audit,
+            )
+
+        self.assertTrue(result.successful)
+        sync = operations.index(("sync",))
+        audit_e3 = next(
+            index
+            for index, operation in enumerate(operations)
+            if operation[0:2] == ("audit", "tx") and operation[2][0] == 0xE3
+        )
+        wire_e3 = next(
+            index
+            for index, operation in enumerate(operations)
+            if operation[0] == "wire" and operation[1][0] == 0xE3
+        )
+        self.assertLess(sync, audit_e3)
+        self.assertLess(audit_e3, wire_e3)
+        self.assertFalse(audit.buffered)
+
+    def test_failed_rehearsal_syncs_exhausted_probe_evidence_without_ed(self):
+        operations = []
+
+        class OrderingAudit:
+            buffered = True
+
+            def record(self, direction, data):
+                operations.append(("audit", direction, bytes(data)))
+
+            def sync_durable(self):
+                operations.append(("sync",))
+
+        transport = SimulatedLoaderTransport(
+            faults=SimulatedLoaderFaults(identify_failures=2)
+        )
+        result = execute_loader_rehearsal(
+            transport,
+            self.preparation,
+            interlocks=self.safety,
+            policy=LiveLoaderPolicy(identify_attempts=2, retry_delay=0),
+            audit=OrderingAudit(),
+        )
+
+        self.assertFalse(result.successful)
+        self.assertEqual(transport.writes, [b"\xEA", b"\xEA"])
+        self.assertEqual(operations[-1], ("sync",))
+
+    def test_failed_probe_audit_barrier_blocks_first_e3(self):
+        class FailedBarrierAudit:
+            buffered = True
+
+            def record(self, _direction, _data):
+                return None
+
+            def sync_durable(self):
+                raise OSError("simulated fsync failure")
+
+        transport = SimulatedLoaderTransport()
+        result = execute_live_loader_plan(
+            transport,
+            self.preparation,
+            interlocks=self.safety,
+            policy=LiveLoaderPolicy(retry_delay=0),
+            audit=FailedBarrierAudit(),
+        )
+
+        self.assertFalse(result.successful)
+        self.assertEqual(transport.writes, [b"\xEA"])
+        self.assertIn("could not be made durable", result.message)
+        self.assertTrue(
+            any("fsync failure" in error for error in result.diagnostic_errors)
+        )
+
+    def test_probe_miss_journal_is_deferred_until_after_timing_barrier(self):
+        operations = []
+
+        class OrderingAudit:
+            buffered = True
+
+            def record(self, direction, data):
+                operations.append(("audit", direction, bytes(data)))
+
+            def sync_durable(self):
+                operations.append(("sync",))
+
+        class OrderingJournal:
+            def record(self, event, **_fields):
+                operations.append(("journal", event))
+
+        transport = SimulatedLoaderTransport(
+            faults=SimulatedLoaderFaults(identify_failures=1)
+        )
+        original_write = transport.write
+
+        def record_wire_write(data):
+            operations.append(("wire", bytes(data)))
+            original_write(data)
+
+        with mock.patch.object(transport, "write", side_effect=record_wire_write):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+                audit=OrderingAudit(),
+                journal=OrderingJournal(),
+            )
+
+        self.assertTrue(result.successful)
+        self.assertNotIn(("journal", "loader_probe_miss"), operations)
+        sync = operations.index(("sync",))
+        misses = operations.index(("journal", "loader_probe_misses"))
+        first_e3 = next(
+            index
+            for index, operation in enumerate(operations)
+            if operation[0] == "wire" and operation[1][0] == 0xE3
+        )
+        self.assertLess(sync, misses)
+        self.assertLess(misses, first_e3)
 
     def test_exact_plan_passes_mandatory_offline_whole_image_qualification(self):
         result = qualify_flash_preparation(self.preparation)
@@ -257,6 +531,23 @@ class LiveFlashingTests(unittest.TestCase):
                 LoaderAttemptOutcome.ACKNOWLEDGED,
             ],
         )
+
+    def test_block_retry_delay_remains_separate_from_identify_pacing(self):
+        transport = SimulatedLoaderTransport(
+            faults=SimulatedLoaderFaults(checksum_failures={0: 1})
+        )
+        with mock.patch("openmaxfire.flashing.time.sleep") as sleep:
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(
+                    identify_retry_delay=0.0,
+                    retry_delay=0.031,
+                ),
+            )
+        self.assertTrue(result.successful)
+        sleep.assert_called_once_with(0.031)
 
     def test_exhaustion_never_transmits_bixcheck_terminal_unread_frame(self):
         transport = SimulatedLoaderTransport(
@@ -296,22 +587,26 @@ class LiveFlashingTests(unittest.TestCase):
         self.assertNotIn(b"\xED", transport.writes)
 
     def test_post_e7_timeout_gets_one_idempotent_retry(self):
-        class DropFirstE4(SimulatedLoaderTransport):
-            dropped = False
+        transport = SimulatedLoaderTransport()
+        original_program_block = transport._program_block
+        dropped = False
 
-            def _program_block(self, frame):
-                super()._program_block(frame)
-                if not self.dropped and self.incoming.endswith(b"\xE7\xE4"):
-                    self.incoming.pop()
-                    self.dropped = True
+        def drop_first_e4(frame):
+            nonlocal dropped
+            original_program_block(frame)
+            if not dropped and transport.incoming.endswith(b"\xE7\xE4"):
+                transport.incoming.pop()
+                dropped = True
 
-        transport = DropFirstE4()
-        result = execute_live_loader_plan(
-            transport,
-            self.preparation,
-            interlocks=self.safety,
-            policy=LiveLoaderPolicy(retry_delay=0),
-        )
+        with mock.patch.object(
+            transport, "_program_block", side_effect=drop_first_e4
+        ):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+            )
         self.assertTrue(result.successful)
         outcomes = [
             item.outcome for item in result.block_receipts[0].attempt_receipts
@@ -325,22 +620,24 @@ class LiveFlashingTests(unittest.TestCase):
         )
 
     def test_delayed_e4_is_accepted_only_after_observed_e7(self):
-        class DelayedE4(SimulatedLoaderTransport):
-            delayed = False
+        transport = SimulatedLoaderTransport()
+        original_read = transport.read
+        delayed = False
 
-            def read(self, size=1):
-                if self.incoming == bytearray(b"\xE4") and not self.delayed:
-                    self.delayed = True
-                    return b""
-                return super().read(size)
+        def delay_first_e4(size=1):
+            nonlocal delayed
+            if transport.incoming == bytearray(b"\xE4") and not delayed:
+                delayed = True
+                return b""
+            return original_read(size)
 
-        transport = DelayedE4()
-        result = execute_live_loader_plan(
-            transport,
-            self.preparation,
-            interlocks=self.safety,
-            policy=LiveLoaderPolicy(retry_delay=0),
-        )
+        with mock.patch.object(transport, "read", side_effect=delay_first_e4):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+            )
         self.assertTrue(result.successful)
         self.assertEqual(transport.writes.count(self.preparation.loader_plan.blocks[0].frame), 1)
         self.assertEqual(
@@ -349,71 +646,86 @@ class LiveFlashingTests(unittest.TestCase):
         )
 
     def test_stray_late_e4_after_e5_cannot_forge_success(self):
-        class E5ThenStrayE4(SimulatedLoaderTransport):
-            injected = False
+        transport = SimulatedLoaderTransport()
+        original_program_block = transport._program_block
+        injected = False
 
-            def _program_block(self, frame):
-                if not self.injected:
-                    self.injected = True
-                    self.incoming.extend(b"\xE7\xE5\xE4")
-                    return
-                super()._program_block(frame)
+        def inject_e5_then_stray_e4(frame):
+            nonlocal injected
+            if not injected:
+                injected = True
+                transport.incoming.extend(b"\xE7\xE5\xE4")
+                return
+            original_program_block(frame)
 
-        transport = E5ThenStrayE4()
-        result = execute_live_loader_plan(
-            transport,
-            self.preparation,
-            interlocks=self.safety,
-            policy=LiveLoaderPolicy(retry_delay=0),
-        )
+        with mock.patch.object(
+            transport, "_program_block", side_effect=inject_e5_then_stray_e4
+        ):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+            )
         self.assertFalse(result.successful)
         self.assertEqual(result.blocks_completed, 0)
         self.assertEqual(result.failure_outcome, LoaderAttemptOutcome.UNEXPECTED_RESPONSE)
         self.assertEqual(transport.writes.count(self.preparation.loader_plan.blocks[0].frame), 1)
 
     def test_retry_drain_transport_error_aborts_without_resending(self):
-        class FailedRetryDrain(SimulatedLoaderTransport):
-            awaiting_retry = False
+        transport = SimulatedLoaderTransport()
+        original_program_block = transport._program_block
+        original_read_available = transport.read_available
+        awaiting_retry = False
 
-            def _program_block(self, frame):
-                if not self.awaiting_retry:
-                    self.awaiting_retry = True
-                    return
-                super()._program_block(frame)
+        def drop_until_retry(frame):
+            nonlocal awaiting_retry
+            if not awaiting_retry:
+                awaiting_retry = True
+                return
+            original_program_block(frame)
 
-            def read_available(self):
-                if self.awaiting_retry:
-                    raise OSError("simulated in-waiting failure")
-                return super().read_available()
+        def fail_retry_drain():
+            if awaiting_retry:
+                raise OSError("simulated in-waiting failure")
+            return original_read_available()
 
-        transport = FailedRetryDrain()
-        result = execute_live_loader_plan(
-            transport,
-            self.preparation,
-            interlocks=self.safety,
-            policy=LiveLoaderPolicy(retry_delay=0),
-        )
+        with mock.patch.object(
+            transport, "_program_block", side_effect=drop_until_retry
+        ), mock.patch.object(
+            transport, "read_available", side_effect=fail_retry_drain
+        ):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+            )
         self.assertFalse(result.successful)
         self.assertEqual(result.failure_outcome, LoaderAttemptOutcome.TRANSPORT_ERROR)
         self.assertEqual(transport.writes.count(self.preparation.loader_plan.blocks[0].frame), 1)
 
     def test_pre_e7_timeout_is_distinct_and_bounded(self):
-        class DropFirstFrame(SimulatedLoaderTransport):
-            dropped = False
+        transport = SimulatedLoaderTransport()
+        original_program_block = transport._program_block
+        dropped = False
 
-            def _program_block(self, frame):
-                if not self.dropped:
-                    self.dropped = True
-                    return
-                super()._program_block(frame)
+        def drop_first_frame(frame):
+            nonlocal dropped
+            if not dropped:
+                dropped = True
+                return
+            original_program_block(frame)
 
-        transport = DropFirstFrame()
-        result = execute_live_loader_plan(
-            transport,
-            self.preparation,
-            interlocks=self.safety,
-            policy=LiveLoaderPolicy(retry_delay=0),
-        )
+        with mock.patch.object(
+            transport, "_program_block", side_effect=drop_first_frame
+        ):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+            )
         self.assertTrue(result.successful)
         self.assertEqual(
             result.block_receipts[0].attempt_receipts[0].outcome,
@@ -435,8 +747,24 @@ class LiveFlashingTests(unittest.TestCase):
         self.assertEqual(result.failure_outcome, LoaderAttemptOutcome.UNEXPECTED_RESPONSE)
         self.assertEqual(result.block_receipts[0].attempts, 1)
 
-    def test_diagnostic_sink_failure_does_not_interrupt_programming(self):
-        class FailedDiagnostics:
+    def test_diagnostic_sink_failure_after_first_e3_does_not_interrupt_programming(self):
+        class FailedAuditAfterProgrammingStarts:
+            buffered = True
+
+            def __init__(self):
+                self.e3_intents = 0
+
+            def record(self, direction, data):
+                if direction == "tx" and bytes(data).startswith(b"\xE3"):
+                    self.e3_intents += 1
+                if self.e3_intents > 1:
+                    raise OSError("simulated full disk")
+
+            def sync_durable(self):
+                if self.e3_intents > 1:
+                    raise OSError("simulated full disk")
+
+        class FailedJournal:
             def record(self, *args, **kwargs):
                 raise OSError("simulated full disk")
 
@@ -448,8 +776,8 @@ class LiveFlashingTests(unittest.TestCase):
             self.preparation,
             interlocks=self.safety,
             policy=LiveLoaderPolicy(retry_delay=0),
-            audit=FailedDiagnostics(),
-            journal=FailedDiagnostics(),
+            audit=FailedAuditAfterProgrammingStarts(),
+            journal=FailedJournal(),
             progress=broken_progress,
         )
         self.assertTrue(result.successful)
@@ -459,10 +787,8 @@ class LiveFlashingTests(unittest.TestCase):
         )
 
     def test_non_9600_loader_transport_is_blocked_before_transmission(self):
-        class WrongBaudTransport(SimulatedLoaderTransport):
-            settings = SimpleNamespace(baudrate=19200)
-
-        transport = WrongBaudTransport()
+        transport = SimulatedLoaderTransport()
+        transport.settings = SimpleNamespace(baudrate=19200)
         with self.assertRaises(SafetyInterlockError):
             execute_live_loader_plan(
                 transport,
@@ -474,15 +800,9 @@ class LiveFlashingTests(unittest.TestCase):
         self.assertEqual(LOADER_BAUDRATE, 9600)
 
     def test_entry_uses_timeout_shorter_than_loader_boot_window(self):
-        class TimedTransport(SimulatedLoaderTransport):
-            def __init__(self):
-                super().__init__()
-                self.timeouts = []
-
-            def set_timeout(self, timeout):
-                self.timeouts.append(timeout)
-
-        transport = TimedTransport()
+        transport = SimulatedLoaderTransport()
+        timeouts = []
+        transport.set_timeout = timeouts.append
         result = execute_live_loader_plan(
             transport,
             self.preparation,
@@ -490,42 +810,50 @@ class LiveFlashingTests(unittest.TestCase):
             policy=LiveLoaderPolicy(retry_delay=0),
         )
         self.assertTrue(result.successful)
-        self.assertEqual(transport.timeouts, [0.020, 0.50])
-        self.assertLess(transport.timeouts[0], LOADER_BOOT_WINDOW_ESTIMATE_SECONDS)
+        self.assertEqual(timeouts, [0.020, 0.50])
+        self.assertLess(timeouts[0], LOADER_BOOT_WINDOW_ESTIMATE_SECONDS)
 
     def test_late_buffered_identify_response_is_not_discarded(self):
-        class LateIdentifyTransport(SimulatedLoaderTransport):
-            def __init__(self):
-                super().__init__()
-                self.late_response_pending = False
+        transport = SimulatedLoaderTransport()
+        original_write = transport.write
+        original_read = transport.read
+        late_response_pending = False
 
-            def write(self, data):
-                if data == b"\xEA" and not self.identified:
-                    self.writes.append(bytes(data))
-                    self.identified = True
-                    self.late_response_pending = True
-                    return
-                super().write(data)
+        def schedule_late_identify(data):
+            nonlocal late_response_pending
+            if data == b"\xEA" and not transport.identified:
+                transport.writes.append(bytes(data))
+                transport.identified = True
+                late_response_pending = True
+                return
+            original_write(data)
 
-            def read(self, size=1):
-                if self.late_response_pending:
-                    self.late_response_pending = False
-                    self.incoming.extend(b"\xEB")
-                    return b""
-                return super().read(size)
+        def delay_identify(size=1):
+            nonlocal late_response_pending
+            if late_response_pending:
+                late_response_pending = False
+                transport.incoming.extend(b"\xEB")
+                return b""
+            return original_read(size)
 
-            def read_available(self):
-                data = bytes(self.incoming)
-                self.incoming.clear()
-                return data
+        def read_late_available():
+            data = bytes(transport.incoming)
+            transport.incoming.clear()
+            return data
 
-        transport = LateIdentifyTransport()
-        result = execute_live_loader_plan(
-            transport,
-            self.preparation,
-            interlocks=self.safety,
-            policy=LiveLoaderPolicy(retry_delay=0),
-        )
+        with mock.patch.object(
+            transport, "write", side_effect=schedule_late_identify
+        ), mock.patch.object(
+            transport, "read", side_effect=delay_identify
+        ), mock.patch.object(
+            transport, "read_available", side_effect=read_late_available
+        ):
+            result = execute_live_loader_plan(
+                transport,
+                self.preparation,
+                interlocks=self.safety,
+                policy=LiveLoaderPolicy(retry_delay=0),
+            )
         self.assertTrue(result.successful)
         self.assertEqual(transport.writes.count(b"\xEA"), 1)
 
@@ -588,6 +916,41 @@ class LiveFlashingTests(unittest.TestCase):
         recovered = recover_live_loader_completion(transport, result)
         self.assertTrue(recovered)
         self.assertTrue(transport.application_running)
+
+    def test_completion_recovery_rejects_physical_and_simulator_subclass(self):
+        transport = SimulatedLoaderTransport(
+            faults=SimulatedLoaderFaults(completion_failures=1)
+        )
+        result = execute_live_loader_plan(
+            transport,
+            self.preparation,
+            interlocks=self.safety,
+            policy=LiveLoaderPolicy(retry_delay=0),
+        )
+
+        class PhysicalTransport:
+            simulation_only = True
+
+            def __init__(self):
+                self.writes = []
+
+            def write(self, data):
+                self.writes.append(bytes(data))
+
+            def read(self, size=1):
+                return b""
+
+            def close(self):
+                return None
+
+        class SimulatorSubclass(SimulatedLoaderTransport):
+            pass
+
+        for candidate in (PhysicalTransport(), SimulatorSubclass()):
+            with self.subTest(candidate=type(candidate).__name__):
+                with self.assertRaises(SafetyInterlockError):
+                    recover_live_loader_completion(candidate, result)
+                self.assertEqual(candidate.writes, [])
 
     def test_postflash_requires_target_identity_and_unchanged_eeprom(self):
         raw = bytes(self.preparation.eeprom_before[address] for address in range(0x100))
@@ -829,10 +1192,20 @@ class FlashCliPlanTests(unittest.TestCase):
                 )
         self.assertEqual(result, 0)
         document = json.loads(output.getvalue())
+        self.assertEqual(document["schema"], "openmaxfire.live-flash-plan.v2")
         self.assertEqual(document["approved_firmware"]["loader_baudrate"], 9600)
         self.assertEqual(document["approved_firmware"]["application_baudrate"], 19200)
         self.assertTrue(document["data_format_migration_required"])
-        self.assertFalse(document["software_reset_used"])
+        self.assertFalse(document["physical_e3_enabled"])
+        self.assertEqual(document["execution_mode"], "offline_authenticated_plan")
+        self.assertNotIn("manual_power_cycle_required", document)
+        self.assertNotIn("software_reset_used", document)
+        loader_plan = document["loader_plan"]
+        self.assertEqual(loader_plan["schema"], "openmaxfire.loader-plan.v3")
+        self.assertTrue(loader_plan["authenticated_simulator_plan"])
+        self.assertFalse(loader_plan["physical_e3_enabled"])
+        self.assertNotIn("live_executable", loader_plan)
+        self.assertIn("hard-disabled", loader_plan["safety_boundary"])
 
     def test_postwrite_verification_continues_when_traffic_log_cannot_open(self):
         from openmaxfire.cli import _open_recorded_client
@@ -863,6 +1236,7 @@ class FlashCliPlanTests(unittest.TestCase):
         self.assertTrue(any("full disk" in item for item in errors))
         self.assertFalse(transport.closed)
 
+    @unittest.skip("retired: public CLI no longer exposes live E3 programming")
     def test_live_cli_runs_preflight_loader_and_postflash_as_separate_phases(self):
         from openmaxfire.cli import main
 
@@ -892,8 +1266,11 @@ class FlashCliPlanTests(unittest.TestCase):
                                         "flash", str(FW206),
                                         "--session-dir", str(session),
                                         "--retry-delay", "0",
+                                        "--loader-identify-retry-delay", "0.007",
+                                        "--loader-probe-timeout", "0.005",
                                         "--confirm-stove-cold-and-off",
                                         "--confirm-igniters-unplugged",
+                                        "--confirm-actuator-loads-unplugged",
                                         "--confirm-correct-5v-ttl-wiring",
                                         "--confirm-j3-pin3-disconnected",
                                         "--confirm-adapter-vcc-disconnected",
@@ -921,6 +1298,21 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertTrue((session / "offline-qualification.json").is_file())
             self.assertTrue((session / "rescue" / FW206.name).is_file())
             self.assertFalse((session / "RECOVERY_REQUIRED.txt").exists())
+            journal = [
+                json.loads(line)
+                for line in (session / "journal.jsonl").read_text().splitlines()
+            ]
+            loader_start = next(
+                event for event in journal if event.get("event") == "loader_start"
+            )
+            self.assertEqual(loader_start["probe_timeout"], 0.005)
+            self.assertEqual(loader_start["identify_retry_delay"], 0.007)
+            rehearsal_start = next(
+                event
+                for event in journal
+                if event.get("event") == "loader_rehearsal_start"
+            )
+            self.assertEqual(rehearsal_start["identify_retry_delay"], 0.007)
 
             rehearsal_events = [
                 json.loads(line)
@@ -942,6 +1334,260 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertIn(b"T0800\n", passive_bytes)
             self.assertEqual(rehearsal_events[first_tx]["data_hex"], "43 52 30 30")
 
+    @unittest.skip("retired: public CLI no longer exposes physical rehearsal")
+    def test_rehearsal_can_hold_tx_break_low_during_power_off(self):
+        from openmaxfire.cli import main
+
+        transport = SimulatedFlashSessionTransport(
+            "fw202-format04", "fw206-format05"
+        )
+
+        def open_transport(_settings):
+            transport.closed = False
+            transport.break_active = False
+            return transport
+
+        with tempfile.TemporaryDirectory() as directory:
+            session = Path(directory) / "break-rehearsal"
+            with mock.patch(
+                "openmaxfire.cli.SerialTransport", side_effect=open_transport
+            ):
+                with mock.patch(
+                    "builtins.input",
+                    side_effect=[
+                        "POWER OFF FOR REHEARSAL",
+                        "AC OFF USB OUT AFTER REHEARSAL",
+                        "APPLICATION BOOTED AFTER REHEARSAL",
+                        "USB CONNECTED AFTER REHEARSAL",
+                    ],
+                ):
+                    with mock.patch("openmaxfire.cli.time.sleep"):
+                        with contextlib.redirect_stdout(io.StringIO()):
+                            result = main(
+                                [
+                                    "--port", "SIM0",
+                                    "--baud", "9600",
+                                    "--request-delay", "0",
+                                    "flash", str(FW206),
+                                    "--session-dir", str(session),
+                                    "--rehearsal-only",
+                                    "--hold-tx-break-during-power-off",
+                                    "--retry-delay", "0",
+                                    "--confirm-stove-cold-and-off",
+                                    "--confirm-igniters-unplugged",
+                                    "--confirm-actuator-loads-unplugged",
+                                    "--confirm-correct-5v-ttl-wiring",
+                                    "--confirm-j3-pin3-disconnected",
+                                    "--confirm-adapter-vcc-disconnected",
+                                    "--confirm-pickit-recovery-tested-on-spare",
+                                    "--confirm-computer-power-stable",
+                                    "--confirm-stove-power-stable",
+                                    "--confirm-calibration-plan",
+                                ]
+                            )
+            self.assertEqual(result, 0)
+            self.assertEqual(
+                transport.break_states,
+                [True, False, True],
+            )
+            self.assertEqual(transport.loader_entries, 1)
+            final = json.loads((session / "result.json").read_text())
+            self.assertTrue(final["successful"])
+            self.assertFalse(final["programming_performed"])
+            journal = [
+                json.loads(line)
+                for line in (session / "journal.jsonl").read_text().splitlines()
+            ]
+            transitions = [
+                event["active"]
+                for event in journal
+                if event.get("event") == "tx_break_changed"
+            ]
+            self.assertEqual(transitions, [True, False, True, False])
+
+    @unittest.skip("retired: manual AC/BREAK entry cannot reach E3 from the CLI")
+    def test_full_flash_can_guard_every_power_off_with_tx_break(self):
+        from openmaxfire.cli import main
+
+        transport = SimulatedFlashSessionTransport(
+            "fw202-format04", "fw206-format05"
+        )
+
+        def open_transport(_settings):
+            transport.closed = False
+            transport.break_active = False
+            return transport
+
+        with tempfile.TemporaryDirectory() as directory:
+            session = Path(directory) / "guarded-full-flash"
+            with mock.patch(
+                "openmaxfire.cli.SerialTransport", side_effect=open_transport
+            ) as opened:
+                with mock.patch(
+                    "builtins.input",
+                    side_effect=[
+                        "POWER OFF FOR REHEARSAL",
+                        "AC OFF USB OUT AFTER REHEARSAL",
+                        "APPLICATION BOOTED AFTER REHEARSAL",
+                        "USB CONNECTED AFTER REHEARSAL",
+                        "POWER OFF FOR FLASH",
+                        "AC OFF USB OUT AFTER FLASH",
+                        "TARGET APPLICATION BOOTED",
+                        "USB CONNECTED AFTER FLASH",
+                    ],
+                ):
+                    with mock.patch("openmaxfire.cli.time.sleep"):
+                        with mock.patch(
+                            "openmaxfire.cli.SleepInhibitor", FakeSleepInhibitor
+                        ):
+                            with contextlib.redirect_stdout(io.StringIO()):
+                                result = main(
+                                    [
+                                        "--port", "SIM0",
+                                        "--baud", "9600",
+                                        "--request-delay", "0",
+                                        "flash", str(FW206),
+                                        "--session-dir", str(session),
+                                        "--hold-tx-break-during-power-off",
+                                        "--retry-delay", "0",
+                                        "--confirm-stove-cold-and-off",
+                                        "--confirm-igniters-unplugged",
+                                        "--confirm-actuator-loads-unplugged",
+                                        "--confirm-correct-5v-ttl-wiring",
+                                        "--confirm-j3-pin3-disconnected",
+                                        "--confirm-adapter-vcc-disconnected",
+                                        "--confirm-pickit-recovery-tested-on-spare",
+                                        "--confirm-computer-power-stable",
+                                        "--confirm-stove-power-stable",
+                                        "--confirm-calibration-plan",
+                                    ]
+                                )
+            self.assertEqual(result, 0)
+            self.assertEqual(
+                transport.break_states,
+                [True, False, True, True, False, True],
+            )
+            self.assertEqual(opened.call_count, 3)
+            self.assertEqual(transport.loader_entries, 2)
+            final = json.loads((session / "result.json").read_text())
+            self.assertTrue(final["successful"])
+            self.assertTrue(final["programming_performed"])
+            self.assertFalse(final["recovery_required"])
+            self.assertEqual(
+                final["post_flash"]["identity"]["firmware_version"],
+                "2.06",
+            )
+            self.assertFalse((session / "RECOVERY_REQUIRED.txt").exists())
+
+    @unittest.skip("retired: manual AC/BREAK entry cannot reach E3 from the CLI")
+    def test_post_flash_cold_boot_abort_releases_break_and_requires_recovery(self):
+        from openmaxfire.cli import main
+
+        transport = SimulatedFlashSessionTransport(
+            "fw202-format04", "fw206-format05"
+        )
+
+        def open_transport(_settings):
+            transport.closed = False
+            transport.break_active = False
+            return transport
+
+        with tempfile.TemporaryDirectory() as directory:
+            session = Path(directory) / "aborted-post-flash-cold-boot"
+            with mock.patch(
+                "openmaxfire.cli.SerialTransport", side_effect=open_transport
+            ):
+                with mock.patch(
+                    "builtins.input",
+                    side_effect=[
+                        "POWER OFF FOR REHEARSAL",
+                        "AC OFF USB OUT AFTER REHEARSAL",
+                        "APPLICATION BOOTED AFTER REHEARSAL",
+                        "USB CONNECTED AFTER REHEARSAL",
+                        "POWER OFF FOR FLASH",
+                        "ABORT",
+                    ],
+                ):
+                    with mock.patch("openmaxfire.cli.time.sleep"):
+                        with mock.patch(
+                            "openmaxfire.cli.SleepInhibitor", FakeSleepInhibitor
+                        ):
+                            with contextlib.redirect_stdout(io.StringIO()):
+                                with contextlib.redirect_stderr(io.StringIO()):
+                                    result = main(
+                                        [
+                                            "--port", "SIM0",
+                                            "--baud", "9600",
+                                            "--request-delay", "0",
+                                            "flash", str(FW206),
+                                            "--session-dir", str(session),
+                                            "--hold-tx-break-during-power-off",
+                                            "--retry-delay", "0",
+                                            "--confirm-stove-cold-and-off",
+                                            "--confirm-igniters-unplugged",
+                                            "--confirm-actuator-loads-unplugged",
+                                            "--confirm-correct-5v-ttl-wiring",
+                                            "--confirm-j3-pin3-disconnected",
+                                            "--confirm-adapter-vcc-disconnected",
+                                            "--confirm-pickit-recovery-tested-on-spare",
+                                            "--confirm-computer-power-stable",
+                                            "--confirm-stove-power-stable",
+                                            "--confirm-calibration-plan",
+                                        ]
+                                    )
+            self.assertEqual(result, 6)
+            self.assertEqual(
+                transport.break_states,
+                [True, False, True, True, False, True, False],
+            )
+            final = json.loads((session / "result.json").read_text())
+            self.assertTrue(final["programming_performed"])
+            self.assertTrue(final["recovery_required"])
+            self.assertTrue((session / "RECOVERY_REQUIRED.txt").is_file())
+
+    @unittest.skip("retired: public CLI no longer exposes physical rehearsal")
+    def test_rehearsal_abort_releases_tx_break_without_loader_traffic(self):
+        from openmaxfire.cli import main
+
+        transport = SimulatedFlashSessionTransport(
+            "fw202-format04", "fw206-format05"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            session = Path(directory) / "aborted-break-rehearsal"
+            with mock.patch("openmaxfire.cli.SerialTransport", return_value=transport):
+                with mock.patch("builtins.input", return_value="ABORT"):
+                    with mock.patch("openmaxfire.cli.time.sleep"):
+                        with contextlib.redirect_stdout(io.StringIO()):
+                            with contextlib.redirect_stderr(io.StringIO()):
+                                result = main(
+                                    [
+                                        "--port", "SIM0",
+                                        "--baud", "9600",
+                                        "--request-delay", "0",
+                                        "flash", str(FW206),
+                                        "--session-dir", str(session),
+                                        "--rehearsal-only",
+                                        "--hold-tx-break-during-power-off",
+                                        "--retry-delay", "0",
+                                        "--confirm-stove-cold-and-off",
+                                        "--confirm-igniters-unplugged",
+                                        "--confirm-actuator-loads-unplugged",
+                                        "--confirm-correct-5v-ttl-wiring",
+                                        "--confirm-j3-pin3-disconnected",
+                                        "--confirm-adapter-vcc-disconnected",
+                                        "--confirm-pickit-recovery-tested-on-spare",
+                                        "--confirm-computer-power-stable",
+                                        "--confirm-stove-power-stable",
+                                        "--confirm-calibration-plan",
+                                    ]
+                                )
+            self.assertEqual(result, 3)
+            self.assertEqual(transport.break_states, [True, False])
+            self.assertEqual(transport.loader_entries, 0)
+            final = json.loads((session / "result.json").read_text())
+            self.assertFalse(final["programming_performed"])
+
+    @unittest.skip("superseded by the early public CLI E3 safety-lock tests")
     def test_live_cli_checks_physical_gates_before_opening_serial(self):
         from openmaxfire.cli import main
 
@@ -960,6 +1606,7 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertEqual(result, 4)
             self.assertFalse(session.exists())
 
+    @unittest.skip("retired: public CLI no longer exposes physical rehearsal")
     def test_rehearsal_sends_nothing_after_handoff_until_passive_readiness(self):
         from openmaxfire.cli import main
 
@@ -1015,6 +1662,7 @@ class FlashCliPlanTests(unittest.TestCase):
                 )
             )
 
+    @unittest.skip("retired: public CLI J3 recovery is locked before bundle access")
     def test_recovery_gate_failure_still_reports_unresolved_recovery(self):
         from openmaxfire.cli import main
 
@@ -1038,6 +1686,7 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertFalse(session.exists())
             self.assertTrue((source / "RECOVERY_REQUIRED.txt").is_file())
 
+    @unittest.skip("retired: public CLI J3 recovery cannot reach E3")
     def test_recovery_cli_needs_no_external_hex_and_replays_from_block_zero(self):
         from openmaxfire.cli import main
 
@@ -1073,6 +1722,7 @@ class FlashCliPlanTests(unittest.TestCase):
                                         "--retry-delay", "0",
                                         "--confirm-stove-cold-and-off",
                                         "--confirm-igniters-unplugged",
+                                        "--confirm-actuator-loads-unplugged",
                                         "--confirm-correct-5v-ttl-wiring",
                                         "--confirm-j3-pin3-disconnected",
                                         "--confirm-adapter-vcc-disconnected",
@@ -1093,6 +1743,7 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertFalse((source / "RECOVERY_REQUIRED.txt").exists())
             self.assertTrue((source / "RECOVERY_DELEGATED_TO.json").is_file())
 
+    @unittest.skip("retired: public CLI cannot begin E3 programming")
     def test_cli_disconnect_after_programming_begins_leaves_recovery_marker(self):
         from openmaxfire.cli import main
 
@@ -1124,6 +1775,7 @@ class FlashCliPlanTests(unittest.TestCase):
                                             "--retry-delay", "0",
                                             "--confirm-stove-cold-and-off",
                                             "--confirm-igniters-unplugged",
+                                            "--confirm-actuator-loads-unplugged",
                                             "--confirm-correct-5v-ttl-wiring",
                                             "--confirm-j3-pin3-disconnected",
                                             "--confirm-adapter-vcc-disconnected",
@@ -1140,6 +1792,7 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertEqual(final["loader"]["blocks_completed"], 3)
             self.assertTrue((session / "RECOVERY_REQUIRED.txt").is_file())
 
+    @unittest.skip("retired: public CLI cannot enter the programming phase")
     def test_cli_identify_failure_before_e3_is_not_mislabeled_as_new_damage(self):
         from openmaxfire.cli import main
 
@@ -1172,6 +1825,7 @@ class FlashCliPlanTests(unittest.TestCase):
                                             "--retry-delay", "0",
                                             "--confirm-stove-cold-and-off",
                                             "--confirm-igniters-unplugged",
+                                            "--confirm-actuator-loads-unplugged",
                                             "--confirm-correct-5v-ttl-wiring",
                                             "--confirm-j3-pin3-disconnected",
                                             "--confirm-adapter-vcc-disconnected",
@@ -1187,6 +1841,7 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertFalse(final["recovery_required"])
             self.assertFalse((session / "RECOVERY_REQUIRED.txt").exists())
 
+    @unittest.skip("retired: public CLI cannot begin E3 programming")
     def test_cli_recovered_e5_finishes_but_blocks_operation_for_inspection(self):
         from openmaxfire.cli import main
 
@@ -1218,6 +1873,7 @@ class FlashCliPlanTests(unittest.TestCase):
                                             "--retry-delay", "0",
                                             "--confirm-stove-cold-and-off",
                                             "--confirm-igniters-unplugged",
+                                            "--confirm-actuator-loads-unplugged",
                                             "--confirm-correct-5v-ttl-wiring",
                                             "--confirm-j3-pin3-disconnected",
                                             "--confirm-adapter-vcc-disconnected",
@@ -1234,6 +1890,7 @@ class FlashCliPlanTests(unittest.TestCase):
             self.assertTrue(final["hardware_inspection_required"])
             self.assertEqual(final["loader"]["write_failure_events"], 1)
 
+    @unittest.skip("retired: public CLI cannot begin E3 programming")
     def test_postflash_verification_failure_is_persisted(self):
         from openmaxfire.cli import main
 
@@ -1270,6 +1927,7 @@ class FlashCliPlanTests(unittest.TestCase):
                                             "--retry-delay", "0",
                                             "--confirm-stove-cold-and-off",
                                             "--confirm-igniters-unplugged",
+                                            "--confirm-actuator-loads-unplugged",
                                             "--confirm-correct-5v-ttl-wiring",
                                             "--confirm-j3-pin3-disconnected",
                                             "--confirm-adapter-vcc-disconnected",

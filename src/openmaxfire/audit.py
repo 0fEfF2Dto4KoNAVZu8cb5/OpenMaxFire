@@ -72,7 +72,13 @@ class AuditSpan:
 
 
 class AuditTrail:
-    """In-memory audit trail with optional flush-on-event JSONL persistence."""
+    """In-memory audit trail with optional JSONL persistence.
+
+    By default, persistent events are flushed immediately and ``durable=True``
+    also calls :func:`os.fsync` for every event.  ``buffered=True`` retains
+    pending JSONL lines in memory until :meth:`sync_durable` or :meth:`close`;
+    it is intended for bounded, timing-sensitive, non-state-changing phases.
+    """
 
     SCHEMA = "openmaxfire.serial-audit.v1"
 
@@ -84,13 +90,20 @@ class AuditTrail:
         overwrite: bool = False,
         session_id: str | None = None,
         durable: bool = False,
+        buffered: bool = False,
     ):
+        if not isinstance(durable, bool):
+            raise TypeError("durable must be a boolean")
+        if not isinstance(buffered, bool):
+            raise TypeError("buffered must be a boolean")
         self.path = Path(path) if path is not None else None
         self.metadata = dict(metadata or {})
         self.session_id = session_id or str(uuid.uuid4())
         self.created_utc = datetime.now(timezone.utc).isoformat()
         self.durable = durable
+        self.buffered = buffered
         self._events: list[AuditEvent] = []
+        self._pending_lines: list[str] = []
         self._stream: TextIO | None = None
         self._closed = False
         if self.path is not None:
@@ -121,10 +134,35 @@ class AuditTrail:
 
     def _write(self, event: Mapping[str, object]) -> None:
         if self._stream is not None:
-            self._stream.write(json.dumps(dict(event), sort_keys=True) + "\n")
+            line = json.dumps(dict(event), sort_keys=True) + "\n"
+            if self.buffered:
+                self._pending_lines.append(line)
+                return
+            self._stream.write(line)
             self._stream.flush()
             if self.durable:
                 os.fsync(self._stream.fileno())
+
+    def _flush_buffered(self) -> None:
+        if self._stream is not None and self._pending_lines:
+            self._stream.write("".join(self._pending_lines))
+            self._pending_lines.clear()
+
+    def sync_durable(self) -> None:
+        """Flush buffered JSONL and force it to stable storage now.
+
+        This explicit barrier performs ``fsync`` even when the trail was
+        created with ``durable=False``.  It does not change ``buffered``;
+        callers that are leaving a timing-sensitive phase can set
+        ``buffered=False`` after the barrier to restore per-event persistence.
+        """
+
+        if self._closed:
+            raise RuntimeError("audit trail is closed")
+        if self._stream is not None:
+            self._flush_buffered()
+            self._stream.flush()
+            os.fsync(self._stream.fileno())
 
     def record(self, direction: str, data: bytes) -> None:
         if self._closed:
@@ -192,6 +230,10 @@ class AuditTrail:
     def close(self) -> None:
         if not self._closed:
             if self._stream is not None:
+                if self.buffered and self.durable:
+                    self.sync_durable()
+                else:
+                    self._flush_buffered()
                 self._stream.close()
             self._closed = True
 

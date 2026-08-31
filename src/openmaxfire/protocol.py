@@ -18,6 +18,10 @@ READ_OPCODE = "R"
 WRITE_OPCODE = "W"
 ADDRESSED_UNITS = frozenset("ACD")
 CONTROL_PREFIXES = frozenset((0x01, 0x02, 0x03))
+# Firmware 2.06 on serial 5215 produced one leading NUL before the first valid
+# addressed reply after the FTDI port opened. Treat it only as a line-leading
+# receive-resynchronization byte; embedded NULs remain invalid.
+RECEIVE_RESYNC_PREFIXES = CONTROL_PREFIXES | frozenset((0x00,))
 
 # Reconstructed from BixCheck 5.5.01 and live-validated on firmware 2.02:
 # remote front-panel actions are writes to controller register 0x0E.
@@ -82,7 +86,7 @@ class StatusResponse:
 
 @dataclass(frozen=True, slots=True)
 class OperatingState:
-    """Decoded BixCheck display meaning for telemetry byte T09."""
+    """Decoded controller state byte (T0C on format 04, T09 on later layouts)."""
 
     raw: int
     normalized: int
@@ -217,7 +221,7 @@ def parse_response_line(data: bytes | bytearray | memoryview | str) -> ResponseF
     else:
         raw = bytes(data)
     raw = raw.strip(b"\r\n")
-    while raw and raw[0] in CONTROL_PREFIXES:
+    while raw and raw[0] in RECEIVE_RESYNC_PREFIXES:
         raw = raw[1:]
     if not raw:
         raise ProtocolError("empty response")
@@ -283,12 +287,12 @@ def decode_igniter_state(raw: int) -> IgniterState:
 
 
 def decode_operating_state(raw: int) -> OperatingState:
-    """Decode the exact BixCheck 5.5 display rules for the T09 state byte.
+    """Decode the shared state-family byte used across preserved firmware.
 
-    ``family`` is the high nibble.  ``level`` retains the low-three-bit target
-    encoded by the controller even where BixCheck displays only ``Ramping``.
-    Values outside the six known families deliberately remain explicit rather
-    than being assigned invented controller semantics.
+    Later BixCheck software reads this layout at T09. The exact recovered 2.02
+    firmware produces it at T0C. ``family`` is the high nibble; ``level``
+    retains the low-three-bit target even where the display says ``Ramping``.
+    Values outside the six known families remain explicit.
     """
 
     raw = _byte(raw, "state")

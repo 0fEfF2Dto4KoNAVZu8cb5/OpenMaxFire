@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from openmaxfire.audit import AuditTrail
 from openmaxfire.session import ControllerSession
@@ -41,6 +42,29 @@ class AuditTrailTests(unittest.TestCase):
             trail.record("rx", b"CR0000\n")
         self.assertEqual(first.span().sha256, second.span().sha256)
         self.assertNotEqual(first.span(1).sha256, first.span().sha256)
+
+    def test_buffered_durable_trail_defers_fsync_until_explicit_barrier(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "audit.jsonl"
+            with mock.patch("openmaxfire.audit.os.fsync") as fsync:
+                audit = AuditTrail(path, durable=True, buffered=True)
+                audit.record("tx", b"\xEA")
+                audit.record("tx", b"\xEA")
+                fsync.assert_not_called()
+                self.assertEqual(path.read_text(), "")
+
+                audit.sync_durable()
+                fsync.assert_called_once_with(audit._stream.fileno())
+                audit.buffered = False
+                audit.record("tx", b"\xED")
+                self.assertEqual(fsync.call_count, 2)
+                audit.close()
+
+            rows = [json.loads(line) for line in path.read_text().splitlines()]
+            self.assertEqual(
+                [row.get("data_hex") for row in rows[1:]],
+                ["EA", "EA", "ED"],
+            )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,15 @@
+{
+  "message": "OpenMaxFire flash error: Could not configure port: (5, 'Input/output error')",
+  "metadata": {
+    "current_baudrate": 9600,
+    "image_sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+    "port": "/dev/ttyUSB0",
+    "recovery_source": null,
+    "target_baudrate": 9600
+  },
+  "recovery_required": false,
+  "schema": "openmaxfire.flash-session-state.v1",
+  "sequence": 4,
+  "status": "failed_before_programming",
+  "updated_utc": "2026-08-29T18:57:08.186015+00:00"
+}

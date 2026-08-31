@@ -1,0 +1,12 @@
+{
+  "created_utc": "2026-08-29T19:03:37.337564+00:00",
+  "current_profile": "fw202-format04",
+  "eeprom_backup_sha256": "4e90c2bd8aec0de5599ea178516a0adf15e2b05ad4010b1e084debc8371e12e6",
+  "firmware_filename": "Bixby_02060021_Downloader.hex",
+  "firmware_sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+  "firmware_size": 42831,
+  "preparation_sha256": "cd2ce4a9450d4778e9fc864176f4fa24ae55cb2c7c1ac70b49bc554336b1d591",
+  "replay_rule": "exact image from block zero; arbitrary checkpoint resume forbidden",
+  "schema": "openmaxfire.recovery-manifest.v1",
+  "target_profile": "fw206-format05"
+}

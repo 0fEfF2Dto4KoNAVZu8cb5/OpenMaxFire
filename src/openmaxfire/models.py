@@ -109,12 +109,16 @@ class TelemetryMeasurements:
     feed_cycle_calibration_seconds: float | None = None
     lean_burn_drop_limit: int | None = None
     format04_firebox_related_raw: int | None = None
+    format04_state_raw: int | None = None
+    format04_t09_raw: int | None = None
+    # Backward-compatible alias retained for callers that consumed the former
+    # provisional T09 state candidate before the exact 2.02 image was mapped.
     format04_state_unresolved_raw: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class Format04StateCandidate:
-    """Evidence-labeled composite observation, never a control verifier."""
+    """Format-04 state interpretation with its compatibility evidence."""
 
     code: str
     label: str
@@ -129,12 +133,13 @@ class Format04StateCandidate:
 def decode_format04_state_candidate(
     telemetry: Mapping[int, int],
 ) -> Format04StateCandidate | None:
-    """Classify only the two composite patterns present in live evidence.
+    """Decode the exact firmware-2.02 state source at T0C.
 
-    The 2026-08-23 capture proves that T09=07 is not state-discriminating: it
-    remained constant before ON, during physically observed UP/DOWN startup
-    activity, and after OFF.  T0C/T15 composites are therefore exposed as
-    provisional observations, not :class:`OperatingState` values.
+    The recovered image loads T0C from RAM 0x4C at program word 0x0E46, and
+    the main state dispatcher reads the same RAM byte and masks 0x70 at
+    0x191F. T09 instead comes from RAM 0x2D. T15 has no producer assignment
+    and repeats the preceding selected value in the real periodic sequence,
+    so neither T09 nor T15 participates in state decoding.
     """
 
     t09 = telemetry.get(0x09)
@@ -142,28 +147,21 @@ def decode_format04_state_candidate(
     t15 = telemetry.get(0x15)
     if t09 is None and t0c is None and t15 is None:
         return None
-    t09_discriminating = False if t09 == 0x07 else None
-    # T0C.3 is the independently validated thermostat-open bit. Ignore it for
-    # this composite so opening the thermostat cannot change the candidate.
-    t0c_without_thermostat = t0c & ~0x08 if t0c is not None else None
-    if t0c_without_thermostat == 0x20 and t15 == 0x0F:
-        code = "cold_off_candidate"
-        label = "Cold/off candidate"
+    t09_discriminating = False if t09 is not None else None
+    if t0c is not None:
+        state = decode_operating_state(t0c)
+        code = state.phase
+        label = state.label
+        eligible = state.family in range(1, 7)
         evidence = (
-            "T0C base 20 and T15=0F were observed in the cold/off baseline "
-            "and again after physical OFF on serial 5215"
-        )
-    elif t0c_without_thermostat == 0x30 and t15 == 0x08:
-        code = "startup_or_control_active_candidate"
-        label = "Startup/control-active candidate"
-        evidence = (
-            "T0C base 30 and T15=08 were observed after physically confirmed "
-            "UP/DOWN responses during startup on serial 5215"
+            "exact firmware 2.02: T0C reads state RAM 0x4C at 0x0E46; "
+            "dispatcher 0x191F masks its 0x70 family bits"
         )
     else:
         code = "unclassified"
         label = "Unclassified format-04 state"
-        evidence = "No live-correlated composite pattern matches these raw values"
+        eligible = False
+        evidence = "T0C has not been observed; T09 and T15 are not state sources"
     return Format04StateCandidate(
         code=code,
         label=label,
@@ -171,7 +169,7 @@ def decode_format04_state_candidate(
         t0c_raw=t0c,
         t15_raw=t15,
         t09_discriminating=t09_discriminating,
-        control_verification_eligible=False,
+        control_verification_eligible=eligible,
         evidence=evidence,
     )
 
@@ -383,6 +381,14 @@ def decode_stove_snapshot(
         evidence = profile.evidence
     elif data_format == 0x04:
         format04_state_candidate = decode_format04_state_candidate(telemetry)
+        if 0x0C in telemetry:
+            operating_state = decode_operating_state(telemetry[0x0C])
+            values["format04_state_raw"] = telemetry[0x0C]
+            if operating_state.phase == "operating":
+                current_level = operating_state.level
+                target_level = operating_state.level
+            elif operating_state.phase == "ramping":
+                target_level = operating_state.level
         if 0x03 in telemetry:
             values["fan_pot_raw"] = telemetry[0x03]
         if 0x04 in telemetry:
@@ -406,6 +412,7 @@ def decode_stove_snapshot(
             ash_warning = bool(indicator_active_mask & 0x10)
             feeder_warning = bool(indicator_active_mask & 0x80)
         if 0x09 in telemetry:
+            values["format04_t09_raw"] = telemetry[0x09]
             values["format04_state_unresolved_raw"] = telemetry[0x09]
         if 0x0C in telemetry:
             thermostat_open = bool(telemetry[0x0C] & 0x08)

@@ -307,7 +307,12 @@ def build_program_blocks(
     *,
     max_words: int = 16,
 ) -> tuple[ProgramBlock, ...]:
-    """Group consecutive program words into reconstructed E3 loader frames."""
+    """Group consecutive program words into reconstructed E3 loader frames.
+
+    BixCheck sends each PIC14 word most-significant byte first.  Intel HEX
+    stores those same words least-significant byte first, so the byte order
+    must be reversed while constructing the loader's wire payload.
+    """
 
     if not isinstance(max_words, int) or not 1 <= max_words <= 16:
         raise ValueError("max_words must be between 1 and 16")
@@ -328,7 +333,7 @@ def build_program_blocks(
         data = bytearray()
         for address in selected:
             word = image.program_words[address]
-            data.extend((word & 0xFF, (word >> 8) & 0xFF))
+            data.extend(((word >> 8) & 0xFF, word & 0xFF))
         blocks.append(ProgramBlock(first, bytes(data)))
     return tuple(blocks)
 

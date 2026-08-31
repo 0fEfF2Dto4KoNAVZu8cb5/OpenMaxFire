@@ -106,6 +106,23 @@ class CliTests(unittest.TestCase):
         self.assertIn("verified=yes", output.getvalue())
         self.assertTrue(client.closed)
 
+    def test_generic_cw0fc4_write_is_rejected_before_opening_port(self):
+        error = io.StringIO()
+        with mock.patch("openmaxfire.cli._connect", side_effect=AssertionError):
+            with contextlib.redirect_stderr(error):
+                result = main(
+                    [
+                        "--port", "COM7",
+                        "--baud", "9600",
+                        "write", "0x0F", "0xC4",
+                        "--unit", "C",
+                        "--i-understand-unverified-io",
+                        "--i-understand-this-can-change-stove-state",
+                    ]
+                )
+        self.assertEqual(result, 4)
+        self.assertIn("CW0FC4", error.getvalue())
+
     def test_raw_exchange_preserves_exact_bytes_and_marks_unverified(self):
         class FakeClient:
             closed = False
@@ -154,6 +171,65 @@ class CliTests(unittest.TestCase):
                 )
         self.assertEqual(result, 4)
         self.assertIn("firmware-loader traffic is isolated", error.getvalue())
+
+    def test_raw_hex_rejects_every_binary_loader_marker_before_opening_port(self):
+        # Include a complete-looking E3 prefix: checking ASCII b"E3" would miss
+        # the actual binary opcode 0xE3 used on the wire.
+        payloads = (
+            "EA",
+            "EB",
+            "E3 00 00 02 00 30 18",
+            "E4",
+            "E5",
+            "E7",
+            "E8",
+            "ED",
+        )
+        for payload in payloads:
+            with self.subTest(payload=payload):
+                error = io.StringIO()
+                with mock.patch("openmaxfire.cli._connect", side_effect=AssertionError):
+                    with contextlib.redirect_stderr(error):
+                        result = main(
+                            [
+                                "--port", "COM7",
+                                "--baud", "9600",
+                                "raw", "--hex", payload,
+                                "--i-understand-unverified-io",
+                                "--i-understand-this-can-change-stove-state",
+                            ]
+                        )
+                self.assertEqual(result, 4)
+                self.assertIn("firmware-loader traffic is isolated", error.getvalue())
+
+    def test_raw_ascii_rejects_reset_command_with_trailing_bytes(self):
+        with mock.patch("openmaxfire.cli._connect", side_effect=AssertionError):
+            result = main(
+                [
+                    "--port", "COM7",
+                    "--baud", "9600",
+                    "raw", "--ascii", "CW0FC4EXTRA",
+                    "--i-understand-unverified-io",
+                    "--i-understand-this-can-change-stove-state",
+                ]
+            )
+        self.assertEqual(result, 4)
+
+    def test_raw_fragment_is_rejected_before_opening_port(self):
+        error = io.StringIO()
+        with mock.patch("openmaxfire.cli._connect", side_effect=AssertionError):
+            with contextlib.redirect_stderr(error):
+                result = main(
+                    [
+                        "--port", "COM7",
+                        "--baud", "9600",
+                        "raw", "--ascii", "W0F",
+                        "--i-understand-unverified-io",
+                        "--i-understand-this-can-change-stove-state",
+                    ]
+                )
+        self.assertEqual(result, 4)
+        self.assertIn("complete A/C/D register request", error.getvalue())
 
     def test_transaction_dry_run_does_not_open_serial_port(self):
         plan = {

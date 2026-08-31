@@ -3,12 +3,12 @@
 Status: statically reconstructed from BixCheck 5.0.21, 5.5.00, and 5.5.01,
 the complete 2.06 PICkit firmware, and the recovered Downloader images. The
 `EA`/`EB` identify exchange is corroborated in the experimental PIC16F877A
-emulator and physical zero-write sessions have observed `EA/EB` plus `ED/E4`.
-Physical erase, programming, interruption, electrical reset behavior, and
-recovery have not yet been qualified on expendable hardware. Version 0.9.1
-implements a guarded physical host path behind spare-recovery and human safety
-interlocks; that implementation is not evidence that the destructive path is
-validated.
+emulator and historical physical zero-write rehearsals. Failed physical first-block
+attempts exposed the former byte-order defect, but the corrected programming,
+interruption, and recovery behavior has not been validated on expendable
+hardware. Version 0.10 permits only offline planning; rehearsal and the
+complete write state machine are exact-simulator-only, and application handoff
+waits for passive telemetry before transmitting a request.
 
 ## Two separate programming methods
 
@@ -33,13 +33,15 @@ bytes must never be sent by a read-only monitor or general register API.
 
 Before switching protocols, `GetStoveVersion()` reads `CR08`, `CR0B`, `CR0C`,
 `CR0D`, and `CR0E`, with approximately 100 ms between requests. BixCheck can
-then issue the normal write `CW0FC4` through `AttemptStoveReset()`.
-
-The application handles `CW0FC4` by delaying, disabling interrupts, clearing
-`PCLATH`, and jumping to the hardware reset vector at address `0x0000`. The
-resident reset vector redirects execution to the loader entry at `0x1E88`.
-The vendor workflow also power-cycles the stove while BixCheck repeatedly
-probes for the short reset-time loader window.
+then issue the normal write `CW0FC4` through `AttemptStoveReset()`. This reset
+command is not compatible with the exact original 2.02 image: its C-write
+computed table contains GOTOs only for `CW00` through `CW0E`, `CW0F` lands on
+three NOPs, and the program contains no `SUBLW 0xC4` keyed reset handler. In
+the exact 2.06 image, `CW0F` instead dispatches to `0x110B`; that handler tests
+for `0xC4`, delays, clears `PCLATH`, and jumps to the hardware reset vector at
+`0x0000`, which redirects execution to the loader entry at `0x1E88`. The
+vendor workflow also power-cycles the stove while BixCheck repeatedly probes
+for the short reset-time loader window.
 
 `CW0FC4` is state-changing and unsafe for ordinary use.
 
@@ -55,12 +57,14 @@ initialization sets asynchronous high-speed mode and `SPBRG=0x40`. With the
 photographed 10.000 MHz oscillator, the PIC16 baud equation gives approximately
 9,615 baud, the normal 9,600 setting.
 
-The first loader receive is also short. It permits three Timer1 overflow
-periods with `TMR1H=0x0B`, using the 10 MHz instruction clock. The resulting
-reset-time window is approximately 78 ms. A host that sends `EA` and then waits
-350 ms for each reply can repeatedly miss the entire window. The guarded
-OpenMaxFire executor uses a 20 ms probe read timeout plus 20 ms spacing during
-manual power-cycle entry, then switches to a longer block-response timeout.
+The first loader receive is also short. Its loop counter starts at three, but a
+pre-set Timer1 interrupt flag consumes the first decrement immediately. That
+leaves two real Timer1 overflows with `TMR1H=0x0B`, using the 10 MHz instruction
+clock, for an approximately 200 ms reset-time window. A host that sends `EA`
+and then waits 350 ms for each reply can repeatedly miss the entire window.
+OpenMaxFire uses a 20 ms probe read timeout with no default extra spacing
+between missed probes, then switches to a longer block-response timeout after
+identification.
 
 The Downloader dialog exposes Read delay, Write delay, Retry delay, and
 Interleave controls. Vendor screenshots and initialization use zero for all
@@ -99,8 +103,10 @@ complete frame and adds no default artificial interleave.
 the final `ED` request. The `E7`, `E5`, and `E8` meanings are established from
 the ordering and branches in the PIC loader, not merely from host-side names.
 
-Unknown command bytes are ignored while the loader remains active. Another
-`EA` produces another `EB`.
+After a successful `EA`/`EB` exchange, unknown command bytes are ignored while
+the loader remains active and another `EA` produces another `EB`. Before that
+exchange, any first byte other than `EA` hands off immediately to the
+application.
 
 ## Program-block frame
 
@@ -119,7 +125,11 @@ data[byte_count]
 - BixCheck divides the Intel HEX byte address by two.
 - BixCheck combines consecutive words into payloads of at most 32 bytes, or
   16 PIC words.
-- Each 14-bit PIC word is sent as its low byte followed by its high byte.
+- Each 14-bit PIC word is sent as its high byte followed by its low byte.
+  Intel HEX stores the same word low byte first, so BixCheck swaps the two
+  file bytes while building the wire payload. In the preserved 5.0.21
+  `LoadHex()` path, the first file byte is stored at object offset `e4b` and
+  the second at `e4a`; `DownLoad()` transmits `e4a` before `e4b`.
 - The checksum is the sum of the data bytes modulo 256.
 - The opcode, address, byte count, and checksum byte are not included in that
   sum.
@@ -147,6 +157,13 @@ is part of the PIC's row-write operation.
 
 This is local block verification only. BixCheck does not read the completed
 image back or calculate a final whole-image checksum.
+
+The byte-sum checksum cannot detect a swapped pair because addition is order
+independent. This matters operationally: a 2026-08-29 physical OpenMaxFire
+attempt using the opposite order received `E7`, then failed to receive `E4`.
+PICkit readback proved that only relocated reset words `0x1E84`-`0x1E86` had
+changed, from `3018 008A 2800` to `1830 0A00 0028`. That readback is direct
+physical evidence for the high-byte-first interpretation above.
 
 ## Address handling and loader protection
 
@@ -271,16 +288,23 @@ attempts plus its terminal unread transmission, treats `ED` as one-shot
 completion, and fails closed on simulated application reconnect. Exact attempt
 responses and audit bytes remain available in the result.
 
-Version 0.9 adds a separate guarded physical host. It accepts only exact
-allowlisted factory Downloader images, authenticates the complete block-frame
-sequence, requires a manual power cycle and proven external recovery, performs
-a zero-`E3` physical rehearsal, uses a short loader-entry probe timeout, applies
-the outcome-specific four-transmission ceiling above, and verifies target
-identity plus byte-identical EEPROM afterward. It keeps one exclusive serial
-handle across phases and does not reproduce BixCheck's terminal unread
-transmission. Recovery requires an unresolved durable marker and is delegated
-forward one session at a time so an old successful/recovered bundle cannot be
-reused as a same-version rewrite path.
+Version 0.9 accepts only exact allowlisted factory Downloader images and
+authenticates the complete block-frame sequence. The historical manual-power
+non-writing research implementation performed `EA/EB`, `ED/E4`, then target-
+identity and byte-identical EEPROM verification; it is now physically locked.
+The rehearsal and complete write/retry/recovery state machines remain available
+only to exact in-process simulator types. Every physical transport is rejected
+before the first loader byte; BixCheck's terminal unread transmission is never
+reproduced.
+
+The 2026-08-30 corpus review found that the manual bare-FTDI/BREAK entry was
+nondeterministic and that the corrected high-byte-first program frame has never
+been physically sent. Probe-only audit writes are now buffered and durably
+synchronized before any state-changing frame in simulation. Both public locks
+must remain until a target-power-safe deterministic reset fixture passes the
+spare-target gates and a separate fixture-specific implementation is reviewed.
+See the
+[physical-session forensic report](physical-flash-session-forensics.md).
 
 Version 0.9.1 adds a passive application-readiness boundary. After final
 `ED/E4`, the host keeps TX silent until it receives a valid unsolicited `T` or
@@ -295,12 +319,14 @@ The implementation keeps these boundaries explicit:
 - simulator memory comparison and reconnect are not physical evidence;
 - loader traffic is isolated from the normal/raw client and `CW0FC4` remains
   unexposed;
-- a verified external-programmer recovery path remains mandatory.
+- an independently qualified external-programmer recovery path remains a
+  production prerequisite; the current guide records only one observed restore.
 
 ## Remaining validation work
 
-- Complete independent repeat reads of the original firmware 2.02 PIC.
 - Prove a 2.02 clone and full PICkit recovery on a spare PIC.
+- Qualify target-power-safe UART gating and hardware-reset entry for 100/100
+  zero-write cycles on that spare.
 - Capture an actual BixCheck update of expendable hardware for comparison.
 - Confirm real loader timing, every response byte, interruption boundaries,
   post-transfer startup, and full-memory results.
@@ -312,9 +338,10 @@ The implementation keeps these boundaries explicit:
 ## Safety boundary
 
 OpenMaxFire does not expose `CW0FC4`, identify, program-block, or done
-operations through its normal or raw client. The dedicated physical executor
-is experimental and refuses to run until its image, controller, backup,
-wiring, cold/off state, disconnected igniters, and spare-recovery gates pass.
-Production use remains blocked by policy until the executor is validated on an
-externally recoverable spare PIC or bench controller that is not responsible
-for heating.
+operations through its normal or raw client. Its CLI and public executors
+hard-reject all physical loader traffic; the bare-FTDI/manual-AC path is
+retired. Restoring even a non-writing path requires a separate,
+fixture-specific qualification implementation after preliminary validation on
+an externally recoverable spare PIC or bench controller that is not
+responsible for heating. Production use remains locked until the complete
+multi-specimen, forced-interruption, and cross-host qualification plan passes.

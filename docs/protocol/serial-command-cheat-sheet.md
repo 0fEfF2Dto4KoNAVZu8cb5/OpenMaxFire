@@ -188,11 +188,13 @@ the later BixCheck detent predicate; the feed control's center read `0x79`.
 
 Every command in this section changes state or enters an actuator/service path.
 The examples document BixCheck; they are **not** a recommendation to transmit.
+The table describes 2.06/2.70/2.71. Original 2.02 has only `CW00`-`CW0E` table
+entries; `CW0F` falls into NOPs and does not implement `CW0FC4`.
 
 | Register | Recovered role | Value behavior / known example | Risk |
 | --- | --- | --- | --- |
 | `CW00yy` | Reset service/telemetry countdown | `yy` is ignored | **STATE WRITE** |
-| `CW01yy` | Recompute/persist configuration checksum | Programs EEPROM A00/A01; `yy` is ignored | **DO NOT SEND** |
+| `CW01yy` | Recompute/persist configuration checksum | Programs EEPROM A00/A01; `yy` is ignored; one backed-up `CW0100` repair is live-validated on 2.06 | **EEPROM WRITE / EXPERT WORKFLOW** |
 | `CW02yy` | Suppress periodic telemetry | Sets suppression flag/countdown; `yy` not used as countdown | **STATE WRITE** |
 | `CW03yy` | Resume periodic telemetry | Clears suppression/parser state | **STATE WRITE** |
 | `CW04yy` | Front-panel LEDs | `FF` on, `00` off | **STATE WRITE** |
@@ -222,7 +224,7 @@ The examples document BixCheck; they are **not** a recommendation to transmit.
 | Remote ON | `CW0E12` |
 | Remote UP | `CW0E14` |
 | Remote DOWN | `CW0E18` |
-| Enter firmware servicing | `CW0FC4` — **DO NOT SEND** |
+| Enter firmware servicing on 2.06+ | `CW0FC4` — **DO NOT SEND** |
 
 Most C writes are silent. `CW0D` is the only write in the safe synthetic
 emulator sweep that returned serial data (`I\n`). Silence is not proof that a
@@ -309,6 +311,11 @@ Example: a big-endian 16-bit value `0x1234` at T0A/T0B arrives as two physical
 lines, `T0a12\n` then `T0b34\n`. It does **not** arrive as `T0A1234` from the
 preserved firmware.
 
+The field table below is the later format-05/07 BixCheck layout. Firmware
+2.02/format 04 ends at T15 and is positionally different: its exact operating
+state source is T0C, not T09. See the
+[format-04 live report](../reverse-engineering/live-fw202-format04.md).
+
 | Slot(s) | Meaning | Conversion/notes |
 | --- | --- | --- |
 | `T00` | Control-board ambient temperature | Signed °C; °F = trunc(`C * 9 / 5`) + 32 |
@@ -341,7 +348,7 @@ Additional non-periodic/table-only slots:
 
 | Slot | Meaning/status |
 | --- | --- |
-| `T20` | 2.71 event-only path related to BixCheck `LED no-log`; not periodic; exact semantics unresolved |
+| `T20` | 2.06/2.70/2.71 event-only display path related to BixCheck `LED no-log`; live 2.06 `02`/`00` alternation matched flashing light 2 |
 | `TFD` | Vendor table name `Low temp count`; no recovered periodic producer |
 | `TFE` | Vendor table name `Sample maximum`; no recovered periodic producer |
 | `TFF` | Vendor table name `Recent sample`; no recovered periodic producer |
@@ -358,9 +365,10 @@ Decode `T08 & 0x07`:
 | `3`-`6` | Error |
 | `7` | Left and right good |
 
-### T09 operating state
+### Operating state family (later T09; firmware 2.02 T0C)
 
-First ignore bit 7: `state = T09 & 0x7F`.
+First ignore bit 7. Use `state = T09 & 0x7F` on later formats and
+`state = T0C & 0x7F` on firmware 2.02/format 04.
 
 | Pattern | Meaning |
 | --- | --- |
@@ -409,14 +417,14 @@ controller. It is included only so captures can be recognized.
 
 | Direction | Byte/frame | Reconstructed role |
 | --- | --- | --- |
-| Host to stove | `CW0FC4` | Leave normal application path and request firmware servicing |
+| Host to stove | `CW0FC4` | On 2.06+, leave the application and request firmware servicing; absent from original 2.02 |
 | Host to stove | raw `EA` | Loader identity probe |
 | Stove to host | raw `EB` | Loader identified |
 | Host to stove | raw `E3` | Begin program block |
 | Host to stove | address high, address low | PIC word address |
 | Host to stove | byte count | Payload size; up to 32 data bytes in BixCheck |
 | Host to stove | checksum | Sum of block data bytes modulo 256 |
-| Host to stove | raw data bytes | Low/high PIC program-word bytes |
+| Host to stove | raw data bytes | High/low PIC program-word bytes (opposite Intel HEX storage order) |
 | Stove to host | raw `E7`, then `E4` | Two-stage block acknowledgement |
 | Host to stove | raw `ED` | Download complete |
 | Stove to host | raw `E4` | Completion acknowledgement |

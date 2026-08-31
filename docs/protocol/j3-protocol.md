@@ -3,7 +3,12 @@
 Status: statically reconstructed from all three BixCheck executables and all
 three preserved application-firmware generations, then live-validated
 read-only on serial 5215's older firmware 2.02/data-format 04 controller on
-2026-08-22. No live write has been attempted.
+2026-08-22. Physical loader experiments on 2026-08-29/30 recorded 12
+incorrectly low-byte-first `E3` attempts before their underlying transport
+writes; three subsequent `E7` replies prove at least three complete frames
+reached the controller, and PICkit readback proved three changed reset-vector
+words. The corrected high-byte-first frame has never been attempted physically,
+and all physical loader traffic is now locked in the CLI and public executors.
 
 ## Physical interface
 
@@ -106,12 +111,13 @@ place a valid addressed response after more than 16 complete `T`/`DW` frames,
 so OpenMaxFire no longer copies that fixed limit by default; it matches until
 the configured serial timeout.
 
-The experimental emulator executes the real 2.06, 2.70, and 2.71 code from
-reset. All 45 CR reads reach their expected handler and shared formatter; all
-768 A-unit reads return the injected internal-EEPROM fixture byte; all 48 safe
-synthetic C-write probes reach their handler; and all 91 periodic slots reach
-the real telemetry sender. This confirms software paths offline; it does not
-establish electrical compatibility or make writes safe.
+The experimental emulator executes the real 2.02, 2.06, 2.70, and 2.71 code.
+All 58 real CR handlers reach their shared formatter; all 1,024 A-unit reads
+return the injected internal-EEPROM fixture byte; all 63 safe synthetic C-write
+probes reach their handler; and all 113 periodic slots reach the real telemetry
+sender. The 2.02 boot fixture has an explicit synthetic CCP1/startup boundary.
+This confirms software paths offline; it does not establish electrical
+compatibility or make writes safe.
 
 ## Remote front-panel actions
 
@@ -133,10 +139,13 @@ the excluded loader key, is in [controller-writes.md](controller-writes.md).
 
 ## Downloader is a different protocol
 
-Firmware servicing begins with the state-changing `CW0FC4` reset request, then
-uses raw binary control bytes and program blocks. It is not an extension of the
-ASCII register grammar and is intentionally excluded from normal OpenMaxFire
-APIs. See [the downloader analysis](../reverse-engineering/bixcheck-downloader-protocol.md).
+Firmware servicing uses raw binary control bytes and program blocks after a
+hardware or application-requested reset. Firmware 2.06/2.70/2.71 implement the
+state-changing `CW0FC4` reset request; the exact original 2.02 image does not
+have a `CW0F` table entry or keyed reset handler, so its first update requires a
+hardware reset. The binary protocol is not an extension of the ASCII register
+grammar and is intentionally excluded from normal OpenMaxFire APIs. See
+[the downloader analysis](../reverse-engineering/bixcheck-downloader-protocol.md).
 
 ## Completed first live read-only sequence
 

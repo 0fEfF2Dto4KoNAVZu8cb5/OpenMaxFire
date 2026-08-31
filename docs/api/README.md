@@ -37,8 +37,9 @@ raw controller bytes or knowing firmware-specific addresses. Each call must
 return structured data and a definite outcome; transmission alone is never
 reported as controller acceptance or physical success.
 
-Raw register and byte access remains available for research, but it is an
-escape hatch rather than the implementation of high-level parity.
+Low-level register access remains available for research. The former arbitrary
+byte transmitter is narrowed to one complete A/C/D request so it cannot become
+a fragmented loader-entry path.
 
 ## Current capability matrix
 
@@ -47,17 +48,17 @@ escape hatch rather than the implementation of high-level parity.
 | Serial transport | Foundation complete | Cross-platform port listing, bounded I/O, read-only probing, legacy JSONL capture, and API-native exact-byte `AuditTrail` sessions/spans | Live-validate automatic detection on additional host/controller combinations |
 | Protocol framing | Foundation complete | Strict A/C/D requests, addressed replies, telemetry/status parsing | Extend only when new valid frame families are established |
 | Register access | Foundation complete | Generic A/C/D read/write, exact response matching, optional fresh readback | Resolve D-space semantics and classify controller writes |
-| Raw exchange | Foundation complete | Exact-byte exchange with known loader markers blocked | Keep loader traffic outside this API |
+| Raw exchange | Safety-narrowed foundation | Exact complete A/C/D request with uninterpreted response; arbitrary/fragmented TX and loader markers blocked | Add a structured frame family only after its grammar is established |
 | Transactions | Foundation complete | Validated ordered read/write/delay plans, authorization, fail-fast readback, and transport-level audit evidence | Add cleanup only to domain workflows that require it; do not guess generic rollback semantics |
 | Identification | Offline foundation complete | Read-only port/baud probing, exact profile selection, capability negotiation, explicit no-response and unsupported results | Live-validate automatic detection on additional controllers |
 | Session facade | Foundation complete | Owned connection, identity/profile/capabilities, typed polling/iteration, configuration images, and backup documents | Add async subscriptions only when a client requires them |
 | EEPROM backup | Read path complete | Lossless A00-AFF read, identity metadata, checksum diagnostics, and shared import/validation model | Additional live fixtures from other formats/controllers |
-| Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, temporal format-04 fault indicators, non-control format-04 composite state candidates, raw later-format alarm status, format-05/07 conversions, and replay | Resolve format-04 phase/level verification, remaining flags, physical calibration, M/I payloads, and live-validate later formats |
-| Normal control | Low-level commands live-validated on 2.02; verified service execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, fresh-state verification, exact audit spans, interruption receipts, and preserved physical OFF/ON/UP/DOWN traffic | Resolve format-04 state/level verification and recovery timing before enabling the high-level physical executor |
-| Configuration | Simulator workflow complete; physical execution blocked | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, complete A00-AFF verification, audit spans, and interruption receipts | Live-validate write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
+| Monitor | Typed foundation complete | Profile-aware immutable snapshots, raw preservation, freshness, temporal format-04 fault indicators, exact 2.02 T0C state-family decoding, raw later-format alarm status, format-05/07 conversions, and replay | Resolve remaining format-04 level behavior, flags, physical calibration, M/I payloads, and live-validate later formats |
+| Normal control | Low-level commands and 2.02 Off/Prefill state readback live-validated; verified service execution blocked | Typed plans plus authorization, idempotence, rate/door/drawer/profile/stale interlocks, simulated state transitions, exact audit spans, interruption receipts, preserved physical traffic, and retry-until-safe validation cleanup | Live-qualify format-04 level changes and bound startup UART recovery before enabling the high-level physical executor |
+| Configuration | Simulator workflow complete; general physical execution blocked. A checksum-only `CW0100` repair is live-validated on 2.06 | Schemas/plans plus fresh pre-write comparison, backup hash, authorized apply, firmware checksum persistence, complete A00-AFF verification, audit spans, and interruption receipts | Live-validate arbitrary A-unit write order/readback on recoverable hardware; reconstruct format-04 fields and expert formatting |
 | Checkout | Read-only runner and simulated cleanup complete | All 45 tests as data; automated tests 1-8, 11-14, 16, 33-34, and 36-37; bounded polling; audit spans; reports; simulator-only actuator executor with unconditional cleanup | Add remaining evidence-backed predicates and physically validate each actuator/cleanup pair |
-| Firmware images | Complete first 2.02 read preserved; offline validation toolkit complete | Strict Intel HEX/PIC14 parsing, five-image hash-pinned corpus, delivery-layout classification, compatibility/migration reports, E3 block construction, and read-export/clone section hashes with CP/CPD fail-closed checks | Add/authenticate remaining independent 2.02 exports; add calibration-preservation policy for any future physical programming |
-| Firmware loader | Guarded experimental host implemented; physical behavior unvalidated | Exact file/wire allowlist and rescue bundle; repeated preflight; zero-`E3` rehearsal; one exclusive handle; host sleep/termination protection; fixed 9,600-baud loader; rapid ~78 ms entry probes; phase-matched delayed replies and classified bounded `E8`/timeouts/`E5`; one-way recovery delegation; durable marker; no unread terminal send; conservative `ED` recovery; repeated target identity and unchanged EEPROM | Prove PICkit recovery and pass the published multi-host forced-interruption matrix on sacrificial hardware before production use |
+| Firmware images | Sole pre-write 2.02 read preserved; offline validation toolkit complete | Strict Intel HEX/PIC14 parsing, five-image hash-pinned corpus, delivery-layout classification, compatibility/migration reports, E3 block construction, and read-export/clone section hashes with CP/CPD fail-closed checks; later reads cannot retroactively become independent pre-write captures after the original's emergency restore | Add a complete post-program readback and spare-clone proof; add calibration-preservation policy for any future physical programming |
+| Firmware loader | Offline planning and simulator rehearsal/write implemented; all physical loader traffic hard-disabled | Exact file/wire allowlist; historical physical evidence; fixed 9,600-baud loader; dense-probe analysis across the ~200 ms entry window; complete exact-simulator-only rehearsal/write/retry/recovery executors; CLI plan-only lock and public gates that reject physical transports before loader traffic | Build and qualify the target-power-safe hardware-reset fixture, pass 100/100 zero-write entries and one spare-target flash with PICkit readback, then add separately reviewed fixture-specific executors |
 | Error/result model | Foundation complete | Stable exceptions plus typed detection, control, Checkout, transaction, configuration, firmware, audit, and loader results; interrupted simulator workflows fail indeterminate/failed | Use the common taxonomy in future physically validated executors |
 | Simulation | Broad offline workflow complete | Register and isolated loader transports, writes-disabled default, telemetry/state transitions, checksum behavior, retries, corruption, disconnects, and cleanup faults | Add only evidence-backed timing/peripheral behavior |
 
@@ -215,24 +216,29 @@ improvements without weakening the physical-write gates:
 2. `MonitorState` retains format-04 indicator bits across the lamp's dark phase
    using observed telemetry time, with a configurable eight-second default.
 3. All factory-documented light combinations have stable machine codes and
-   evidence labels. Lights 4, 5, and 8 are live-confirmed; other bit positions
-   remain explicitly inferred.
+   evidence labels. Lights 1, 4, 5, and 8 are live-confirmed; other bit
+   positions remain explicitly inferred. Light 1's physical position is live,
+   while its named fault meaning remains factory-documented.
 4. Exact physical OFF/ON/UP/DOWN and feeder-wheel-fault captures are preserved
-   as replay fixtures. Low-level control is live-proven, but the high-level
-   service remains blocked until format-04 state verification is reliable.
+   as replay fixtures.
+5. Exact recovered 2.02 code identifies T0C as the state-family byte; bounded
+   live evidence confirms Off and Prefill. T09/T15 remain raw non-state data.
+6. A post-ON UART-silent interval can discard cleanup OFF requests, and global
+   snapshot freshness can retain a stale state byte. The validation harness
+   now retries OFF until two distinct post-command T09/T0C samples prove Off
+   or Cooldown.
 
 See the [fault-state API contract](fault-model.md).
 
 ## Remaining implementation order
 
-1. Decode and live-validate format-04 operating state/target level so the
-   already live-proven OFF/ON/UP/DOWN bytes can receive machine verification
-   before the high-level executor operates on a physical session.
+1. Live-validate format-04 UP/DOWN level changes and characterize the post-ON
+   UART-silent interval before the high-level executor operates physically.
 2. Validate the simulator-proven configuration workflow first on recoverable
    hardware before allowing physical apply/restore.
 3. Live-validate each Checkout actuator/cleanup pair before physical execution.
-4. Authenticate the preserved first 2.02 read against the remaining independent
-   exports, prove a spare clone and external recovery, then validate physical
+4. Preserve the sole pre-write 2.02 read, prove a spare clone and external
+   recovery with complete readback, then validate physical
    loader timing and interruption recovery on sacrificial hardware before
    creating a live loader transport.
 5. Fill remaining telemetry/configuration semantics only as new evidence lands.

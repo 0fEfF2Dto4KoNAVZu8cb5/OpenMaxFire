@@ -1,4 +1,12 @@
 version,image,state_ram,dispatch_pc,family,firmware_working_meaning,handler_pc,encoding_note
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x00,initial/reset,0x1942,high-nibble family; low bits retain substate/level flags
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x10,cooldown,0x1988,high-nibble family; low bits retain substate/level flags
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x20,off,0x19C3,high-nibble family; low bits retain substate/level flags
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x30,startup,0x1A86,high-nibble family; low bits retain substate/level flags
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x40,operating,0x1C2C,high-nibble family; low bits retain substate/level flags
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x50,ramping,0x1C2C,high-nibble family; low bits retain substate/level flags
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x60,ash dump,0x1D87,high-nibble family; low bits retain substate/level flags
+2.02,Bixby_0202_260827_PICkit.hex,0x04C,0x191F,0x70,fallback/undefined,0x1D9E,high-nibble family; low bits retain substate/level flags
 2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x00,initial/reset,0x18F5,high-nibble family; low bits retain substate/level flags
 2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x10,cooldown,0x192B,high-nibble family; low bits retain substate/level flags
 2.06,Bixby_02060021_Downloader.hex,0x04C,0x18DB,0x20,off,0x1976,high-nibble family; low bits retain substate/level flags

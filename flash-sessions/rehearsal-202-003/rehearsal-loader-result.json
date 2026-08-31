@@ -1,0 +1,12 @@
+{
+  "completion_acknowledged": true,
+  "completion_sent": true,
+  "flash_write_commands_sent": 0,
+  "identify_attempts": 108,
+  "loader_identified": true,
+  "message": "non-writing EA/EB and ED/E4 rehearsal completed",
+  "program_blocks_sent": 0,
+  "protocol": "EA/EB then ED/E4; no E3 frame",
+  "schema": "openmaxfire.loader-rehearsal-result.v1",
+  "successful": true
+}

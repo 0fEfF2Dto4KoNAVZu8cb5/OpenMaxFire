@@ -1,16 +1,16 @@
-"""Guarded physical J3 firmware-flashing workflow.
+"""Authenticated J3 firmware planning, rehearsal, and simulation workflow.
 
 The resident MaxFire loader is a separate binary protocol from the normal
 ASCII service protocol.  This module is deliberately narrow: it accepts only
 the exact authenticated factory Downloader images in :mod:`firmware_catalog`,
-never sends the application's ``CW0FC4`` reset command, and requires a manual
-power cycle plus structured safety interlocks.
+never sends the application's ``CW0FC4`` reset command. Rehearsal, programming,
+and recovery executors accept only exact in-process simulator transports.
 
-Physical execution is experimental until it is exercised on an externally
-recoverable spare PIC/controller.  The code nevertheless fails closed at every
-boundary that can be checked by software: current identity, image SHA-256,
-image delivery layout, fixed 9,600-baud loader transport, per-block replies,
-target application identity, and unchanged data EEPROM.
+All physical loader execution is hard-disabled. The complete write executor is
+retained for the in-process loader simulator so the authenticated image,
+framing, retry, and recovery state machine can be tested without hardware.
+Re-enabling any physical loader traffic requires a separate reviewed implementation tied
+to an electrically qualified loader-entry fixture and expendable-target proof.
 """
 
 from __future__ import annotations
@@ -62,10 +62,13 @@ from .transport import Transport
 
 
 LOADER_BAUDRATE = 9600
-# Loader receive() seeds TMR1H with 0x0B and permits three Fosc/4 overflows.
-# At the photographed 10.000 MHz oscillator this is about 78 ms.  Host probes
-# therefore need a much shorter read timeout than normal register traffic.
-LOADER_BOOT_WINDOW_ESTIMATE_SECONDS = 0.078
+# Loader receive() starts with a count of three, but a pre-set TMR1IF consumes
+# the first count immediately.  T1CON=0x21 clocks Timer1 from Fosc/4 with a
+# 1:4 prescaler, leaving two real overflows from TMR1H=0x0B: about 200 ms at
+# the photographed 10.000 MHz oscillator.  Host probes still need a much
+# shorter read timeout than normal register traffic so several EA bytes land
+# inside that window.
+LOADER_BOOT_WINDOW_ESTIMATE_SECONDS = 0.200
 RECOVERY_MARKER_FILENAME = "RECOVERY_REQUIRED.txt"
 FLASH_STATE_FILENAME = "state.json"
 RECOVERY_MANIFEST_FILENAME = "recovery-manifest.json"
@@ -121,9 +124,9 @@ _ALLOWED_FORWARD_TRANSITIONS = {
 }
 
 _WIRE_AUTHENTICATION_BY_VERSION = {
-    "2.06": (476, "2f0dbb4a61f8a290e081336845ba91faea76fe2602630a75092f90697baccc1e"),
-    "2.70": (481, "aefae97af8eab83c4f7587fe1bdce3d601a66a6ea9c8d528dd37bd520f4a36c1"),
-    "2.71": (486, "cf117ab66472e6ed13e455164e6708fa93a6a45889a7afe2cad654cd7c4ce759"),
+    "2.06": (476, "2a88353ae8b916589c9a2e14c5e1e20e829dd8ce18c0adf1f7a136a478104d52"),
+    "2.70": (481, "b8a80f01b099cd7371ebda7b103babc315ebef3e01fb4b1b2d5245786117b381"),
+    "2.71": (486, "214d9c93864b9b27df7f45d299fc12bdc1ca4865ed9ea67aa23efc2c223a5b7d"),
 }
 
 APPROVED_FIRMWARE: Mapping[str, ApprovedFirmware] = {
@@ -193,6 +196,7 @@ class FlashSafetyInterlocks:
 
     stove_cold_and_off: bool = False
     igniters_physically_unplugged: bool = False
+    actuator_loads_physically_unplugged: bool = False
     correct_5v_ttl_wiring: bool = False
     j3_pin3_disconnected: bool = False
     adapter_vcc_disconnected: bool = False
@@ -213,6 +217,9 @@ class FlashSafetyInterlocks:
         requirements = {
             "stove is cold and OFF": self.stove_cold_and_off,
             "both igniters are physically unplugged": self.igniters_physically_unplugged,
+            "hazardous actuator loads are physically unplugged": (
+                self.actuator_loads_physically_unplugged
+            ),
             "J3 uses the verified 5 V TTL ground/TX/RX wiring": self.correct_5v_ttl_wiring,
             "J3 pin 3 is disconnected": self.j3_pin3_disconnected,
             "adapter VCC is disconnected": self.adapter_vcc_disconnected,
@@ -222,7 +229,7 @@ class FlashSafetyInterlocks:
             "computer power is stable and the lid will remain open": (
                 self.computer_power_stable
             ),
-            "stove AC power will remain stable during programming": (
+            "stove AC is under deliberate operator control for the rehearsal": (
                 self.stove_power_stable
             ),
         }
@@ -254,13 +261,17 @@ class FlashSafetyInterlocks:
         )
         if missing:
             raise SafetyInterlockError(
-                "live flashing prerequisites are not satisfied: " + "; ".join(missing)
+                "J3 workflow safety prerequisites are not satisfied: "
+                + "; ".join(missing)
             )
 
     def to_dict(self) -> dict[str, bool]:
         return {
             "stove_cold_and_off": self.stove_cold_and_off,
             "igniters_physically_unplugged": self.igniters_physically_unplugged,
+            "actuator_loads_physically_unplugged": (
+                self.actuator_loads_physically_unplugged
+            ),
             "correct_5v_ttl_wiring": self.correct_5v_ttl_wiring,
             "j3_pin3_disconnected": self.j3_pin3_disconnected,
             "adapter_vcc_disconnected": self.adapter_vcc_disconnected,
@@ -280,8 +291,10 @@ def _version_key(version: str) -> tuple[int, int]:
 
 @dataclass(frozen=True, slots=True)
 class LiveLoaderPolicy:
-    """Outcome-specific retry limits for the physical loader.
+    """Outcome-specific retry limits for loader simulation and rehearsal.
 
+    ``identify_retry_delay`` paces the non-writing ``EA`` loop independently;
+    ``retry_delay`` applies only before a repeated program-block transmission.
     Checksum rejection proves no write began. A timeout before ``E7`` is still
     ambiguous because a reply can be lost, so only the identical row is ever
     replayed. A timeout after an observed ``E7`` receives one cautious replay.
@@ -299,7 +312,9 @@ class LiveLoaderPolicy:
     max_block_transmissions: int = 4
     retry_delay: float = 0.020
     probe_timeout: float = 0.020
+    post_identify_settle_delay: float = 0.0
     response_timeout: float = 0.50
+    identify_retry_delay: float = 0.0
 
     def __post_init__(self) -> None:
         if (
@@ -335,11 +350,30 @@ class LiveLoaderPolicy:
         ):
             raise ValueError("retry_delay must be between 0 and 5 seconds")
         if (
+            isinstance(self.identify_retry_delay, bool)
+            or not isinstance(self.identify_retry_delay, (int, float))
+            or not math.isfinite(self.identify_retry_delay)
+            or self.identify_retry_delay < 0
+            or self.identify_retry_delay > 0.050
+        ):
+            raise ValueError(
+                "identify_retry_delay must be between 0 and 0.050 seconds"
+            )
+        if (
             not isinstance(self.probe_timeout, (int, float))
             or not math.isfinite(self.probe_timeout)
             or not 0.001 <= self.probe_timeout <= 0.050
         ):
             raise ValueError("probe_timeout must be between 0.001 and 0.050 seconds")
+        if (
+            not isinstance(self.post_identify_settle_delay, (int, float))
+            or not math.isfinite(self.post_identify_settle_delay)
+            or self.post_identify_settle_delay < 0
+            or self.post_identify_settle_delay > 5
+        ):
+            raise ValueError(
+                "post_identify_settle_delay must be between 0 and 5 seconds"
+            )
         if (
             not isinstance(self.response_timeout, (int, float))
             or not math.isfinite(self.response_timeout)
@@ -511,10 +545,12 @@ class FlashSessionState:
             marker = (
                 "OPENMAXFIRE RECOVERY REQUIRED\n\n"
                 "Do not operate the stove or reconnect the igniters. Do not delete or "
-                "edit this directory. Start a new flash session with "
-                f"--recover-from-session {self.directory} so the exact preserved image "
-                "is replayed from block zero. J3 pin 3 and adapter VCC must remain "
-                "disconnected.\n"
+                "edit this directory. Physical J3 recovery is currently disabled. Use "
+                "the documented conservative external-programmer/PICkit recovery "
+                "procedure, or a future separately reviewed fixture-specific recovery "
+                "tool that replays the preserved exact image from block zero; do not "
+                "retry the bare-FTDI/manual-AC path. J3 pin 3 and adapter VCC must "
+                "remain disconnected.\n"
             ).encode("utf-8")
             _atomic_write_bytes(self.marker_path, marker)
         _atomic_write_json(self.path, document)
@@ -778,7 +814,7 @@ class FlashPreparation:
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "schema": "openmaxfire.flash-preparation.v1",
+            "schema": "openmaxfire.flash-preparation.v2",
             "approved_firmware": self.approved.to_dict(),
             "current_identity": self.current_identity.to_dict(),
             "current_profile": self.current_profile.to_dict(),
@@ -790,8 +826,10 @@ class FlashPreparation:
             "eeprom_confirmation_reads": self.eeprom_confirmation_reads,
             "recovery_mode": self.recovery_mode,
             "eeprom_before_sha256": _eeprom_sha256(self.eeprom_before),
+            "physical_e3_enabled": False,
             "safety_boundary": (
-                "manual AC power cycle only; no CW0FC4 software reset is sent"
+                "preflight and authenticated simulator qualification only; physical "
+                "loader traffic is hard-disabled"
             ),
         }
 
@@ -805,7 +843,8 @@ def _confirm_identity(
     if not 2 <= confirmations <= 5:
         raise ValueError("identity confirmations must be between 2 and 5")
     identities = tuple(
-        client.identify(request_delay=request_delay) for _ in range(confirmations)
+        client.identify(request_delay=request_delay, read_attempts=3)
+        for _ in range(confirmations)
     )
     if any(item != identities[0] for item in identities[1:]):
         raise VerificationError(
@@ -824,12 +863,12 @@ def _confirm_eeprom(
     if not 2 <= reads <= 3:
         raise ValueError("EEPROM confirmation reads must be between 2 and 3")
     first = (
-        client.read_eeprom(request_delay=request_delay)
+        client.read_eeprom(request_delay=request_delay, read_attempts=3)
         if baseline is None
         else baseline
     )
     snapshots = (first,) + tuple(
-        client.read_eeprom(request_delay=request_delay)
+        client.read_eeprom(request_delay=request_delay, read_attempts=3)
         for _ in range(reads - 1)
     )
     for index, snapshot in enumerate(snapshots[1:], start=2):
@@ -878,7 +917,7 @@ def prepare_live_flash(
             f"controller {profile.key} is cataloged at {profile.baudrates}, not "
             f"{current_baudrate} baud"
         )
-    eeprom = client.read_eeprom(request_delay=request_delay)
+    eeprom = client.read_eeprom(request_delay=request_delay, read_attempts=3)
     backup = build_eeprom_backup(
         identity,
         eeprom,
@@ -908,7 +947,7 @@ def prepare_live_flash(
         raise VerificationError(
             "controller and EEPROM data formats do not match before flashing"
         )
-    plan = build_loader_plan(image, profile, live_executable=True)
+    plan = build_loader_plan(image, profile, authenticated_simulator_plan=True)
     if not plan.simulator_executable:
         raise VerificationError(
             "; ".join(plan.compatibility.blockers) or "firmware plan is not executable"
@@ -1033,7 +1072,7 @@ def prepare_recovery_flash(
         raise VerificationError(
             "recovery backup controller and EEPROM data formats do not match"
         )
-    plan = build_loader_plan(image, profile, live_executable=True)
+    plan = build_loader_plan(image, profile, authenticated_simulator_plan=True)
     migration = approved.target_profile.data_format != profile.data_format
     calibration = approved.firmware_version != profile.firmware_version
     downgrade = _version_key(approved.firmware_version) < _version_key(
@@ -1135,7 +1174,9 @@ def execute_loader_rehearsal(
     audit: AuditTrail | None = None,
     journal: FlashJournal | None = None,
 ) -> LoaderRehearsalResult:
-    """Enter and leave the loader without transmitting a program block."""
+    """Exercise the non-writing loader exchange in the exact simulator only."""
+
+    _require_simulated_programming_transport(transport)
 
     if preparation.recovery_mode:
         raise SafetyInterlockError(
@@ -1156,6 +1197,9 @@ def execute_loader_rehearsal(
         journal.record(
             "loader_rehearsal_start",
             loader_baudrate=LOADER_BAUDRATE,
+            identify_attempts=selected.identify_attempts,
+            identify_retry_delay=selected.identify_retry_delay,
+            probe_timeout=selected.probe_timeout,
             program_blocks_allowed=False,
         )
     _set_transport_timeout(transport, selected.probe_timeout)
@@ -1167,12 +1211,13 @@ def execute_loader_rehearsal(
         if _contains_only_identify_responses(buffered):
             identified = True
             break
-        _record_write(transport, LOADER_IDENTIFY_REQUEST, audit)
+        _record_probe_write(transport, LOADER_IDENTIFY_REQUEST, audit)
         if _record_read(transport, audit) == LOADER_IDENTIFY_RESPONSE:
             identified = True
             break
-        if selected.retry_delay:
-            time.sleep(selected.retry_delay)
+        if selected.identify_retry_delay:
+            time.sleep(selected.identify_retry_delay)
+    _finish_probe_audit(audit)
     _set_transport_timeout(transport, selected.response_timeout)
     if not identified:
         result = LoaderRehearsalResult(
@@ -1474,11 +1519,133 @@ def _record_write(
     if audit is not None:
         try:
             audit.record("tx", data)
-        except (OSError, RuntimeError, ValueError) as exc:
+        except Exception as exc:
             if diagnostic_errors is None:
                 raise
             _remember_diagnostic_error(diagnostic_errors, "traffic audit write", exc)
     transport.write(data)
+
+
+def _record_probe_write(
+    transport: Transport,
+    data: bytes,
+    audit: AuditTrail | None,
+    diagnostic_errors: list[str] | None = None,
+) -> None:
+    """Transmit a non-state-changing probe, then timestamp its completion.
+
+    The loader identify byte is safe to repeat and does not write Flash.  Its
+    audit timestamp is more useful immediately after the transport's serial
+    flush than before JSON serialization.  State-changing E3 frames instead
+    use :func:`_record_program_intent`, which persists intent before transport.
+    """
+
+    transport.write(data)
+    if audit is not None:
+        try:
+            audit.record("tx", data)
+        except Exception as exc:
+            if diagnostic_errors is None:
+                raise
+            _remember_diagnostic_error(diagnostic_errors, "traffic audit write", exc)
+
+
+def _finish_probe_audit(
+    audit: AuditTrail | None,
+    diagnostic_errors: list[str] | None = None,
+) -> bool:
+    """Make buffered probe evidence durable and resume per-event persistence."""
+
+    if audit is None:
+        return True
+    sync = getattr(audit, "sync_durable", None)
+    if not callable(sync):
+        # Lightweight sinks remain useful for non-writing rehearsals. The
+        # simulator's separate first-E3 intent gate still rejects this sink.
+        return True
+    try:
+        sync()
+        audit.buffered = False
+    except Exception as exc:
+        if diagnostic_errors is None:
+            raise
+        _remember_diagnostic_error(
+            diagnostic_errors, "loader probe audit durability barrier", exc
+        )
+        return False
+    return True
+
+
+def _require_simulated_programming_transport(transport: Transport) -> None:
+    """Hard-disable loader traffic except in the exact in-process simulator."""
+
+    # Import locally to keep the production flashing module independent of the
+    # simulator at import time.  The class check prevents a physical transport
+    # from opting itself in merely by adding a mutable marker attribute.
+    from .simulator import SimulatedFlashSessionTransport, SimulatedLoaderTransport
+
+    simulator_types = (SimulatedLoaderTransport, SimulatedFlashSessionTransport)
+    if (
+        type(transport) in simulator_types
+        and getattr(transport, "simulation_only", False) is True
+    ):
+        return
+    raise SafetyInterlockError(
+        "physical loader traffic is disabled until a fixture-specific path has "
+        "been electrically qualified on safely powered spare hardware; attributes "
+        "and simulator subclasses cannot bypass this lock"
+    )
+
+
+def _record_program_intent(
+    audit: AuditTrail | None,
+    data: bytes,
+    diagnostic_errors: list[str],
+    *,
+    fail_closed: bool,
+) -> bool:
+    """Persist one E3 intent, failing closed only before programming begins.
+
+    The first E3 must have a successfully recorded and explicitly fsynced
+    intent before it can reach the wire.  After one E3 has been transmitted,
+    abandoning the remaining authenticated image solely because diagnostics
+    failed is the more dangerous choice, so later evidence errors are retained
+    in the result while transmission continues.
+    """
+
+    if audit is None:
+        # This is reachable only for explicitly marked simulator transports;
+        # physical transports are rejected before the loader exchange.
+        return True
+
+    intent_recorded = True
+    try:
+        audit.record("tx", data)
+    except Exception as exc:
+        intent_recorded = False
+        _remember_diagnostic_error(
+            diagnostic_errors, "program-block audit intent", exc
+        )
+
+    intent_durable = True
+    sync = getattr(audit, "sync_durable", None)
+    if not callable(sync):
+        intent_durable = False
+        _remember_diagnostic_error(
+            diagnostic_errors,
+            "program-block audit durability barrier",
+            RuntimeError("audit sink has no sync_durable()"),
+        )
+    else:
+        try:
+            sync()
+        except Exception as exc:
+            intent_durable = False
+            _remember_diagnostic_error(
+                diagnostic_errors, "program-block audit durability barrier", exc
+            )
+
+    return (intent_recorded and intent_durable) or not fail_closed
 
 
 def _record_read(
@@ -1490,7 +1657,7 @@ def _record_read(
     if audit is not None:
         try:
             audit.record("rx", data)
-        except (OSError, RuntimeError, ValueError) as exc:
+        except Exception as exc:
             if diagnostic_errors is None:
                 raise
             _remember_diagnostic_error(diagnostic_errors, "traffic audit read", exc)
@@ -1509,7 +1676,7 @@ def _drain_available(
     if data and audit is not None:
         try:
             audit.record("rx", data)
-        except (OSError, RuntimeError, ValueError) as exc:
+        except Exception as exc:
             if diagnostic_errors is None:
                 raise
             _remember_diagnostic_error(diagnostic_errors, "traffic audit drain", exc)
@@ -1532,7 +1699,7 @@ def _journal_record(
         return
     try:
         journal.record(event, **fields)
-    except (OSError, RuntimeError, ValueError) as exc:
+    except Exception as exc:
         _remember_diagnostic_error(diagnostic_errors, "flash journal", exc)
 
 
@@ -1664,10 +1831,10 @@ def execute_live_loader_plan(
     progress: ProgressCallback | None = None,
     attempt_callback: AttemptCallback | None = None,
 ) -> LiveLoaderResult:
-    """Execute the authenticated plan on an already-open 9,600-baud port.
+    """Execute an authenticated plan only on the in-process loader simulator.
 
-    The caller must arm this by manually removing and restoring AC power.  No
-    normal-protocol reset or bootloader-entry write exists in this function.
+    Physical transports fail before any loader byte.  No attribute or caller
+    confirmation can bypass that boundary.
     """
 
     selected = policy or LiveLoaderPolicy()
@@ -1680,7 +1847,11 @@ def execute_live_loader_plan(
         raise VerificationError("loader plan image hash changed after preflight")
     if plan.firmware_version != approved.firmware_version:
         raise VerificationError("loader plan target version changed after preflight")
-    if not plan.live_executable or not plan.simulator_executable or not plan.blocks:
+    if (
+        not plan.authenticated_simulator_plan
+        or not plan.simulator_executable
+        or not plan.blocks
+    ):
         raise VerificationError("loader plan has no executable authenticated blocks")
     if (
         len(plan.blocks) != approved.block_count
@@ -1699,6 +1870,7 @@ def execute_live_loader_plan(
         downgrade=preparation.downgrade,
         recovery_mode=preparation.recovery_mode,
     )
+    _require_simulated_programming_transport(transport)
     _require_loader_baud(transport)
 
     diagnostic_errors: list[str] = []
@@ -1712,6 +1884,8 @@ def execute_live_loader_plan(
         loader_baudrate=LOADER_BAUDRATE,
         boot_window_estimate_seconds=LOADER_BOOT_WINDOW_ESTIMATE_SECONDS,
         probe_timeout=selected.probe_timeout,
+        identify_retry_delay=selected.identify_retry_delay,
+        post_identify_settle_delay=selected.post_identify_settle_delay,
         response_timeout=selected.response_timeout,
         retry_policy={
             "checksum_retries": selected.checksum_retries,
@@ -1719,6 +1893,7 @@ def execute_live_loader_plan(
             "post_accept_timeout_retries": selected.post_accept_timeout_retries,
             "write_failure_retries": selected.write_failure_retries,
             "max_block_transmissions": selected.max_block_transmissions,
+            "block_retry_delay": selected.retry_delay,
             "second_e5_aborts_session": True,
         },
     )
@@ -1726,6 +1901,8 @@ def execute_live_loader_plan(
     loader_identified = False
     identify_attempts_used = 0
     identify_transport_failed = False
+    probe_miss_count = 0
+    probe_miss_samples: list[dict[str, object]] = []
     _set_transport_timeout(transport, selected.probe_timeout)
     for attempt in range(1, selected.identify_attempts + 1):
         identify_attempts_used = attempt
@@ -1747,7 +1924,7 @@ def execute_live_loader_plan(
             )
             break
         try:
-            _record_write(
+            _record_probe_write(
                 transport, LOADER_IDENTIFY_REQUEST, audit, diagnostic_errors
             )
             response = _record_read(transport, audit, diagnostic_errors)
@@ -1766,17 +1943,57 @@ def execute_live_loader_plan(
             )
             break
         if response or discarded:
-            _journal_record(
-                journal,
-                diagnostic_errors,
-                "loader_probe_miss",
-                attempt=attempt,
-                response_hex=response.hex(" ").upper(),
-                discarded_hex=discarded.hex(" ").upper(),
-            )
-        if selected.retry_delay:
-            time.sleep(selected.retry_delay)
+            probe_miss_count += 1
+            if len(probe_miss_samples) < 8:
+                probe_miss_samples.append(
+                    {
+                        "attempt": attempt,
+                        "response_hex": response.hex(" ").upper(),
+                        "discarded_hex": discarded.hex(" ").upper(),
+                    }
+                )
+        if selected.identify_retry_delay:
+            time.sleep(selected.identify_retry_delay)
+    probe_audit_ready = _finish_probe_audit(audit, diagnostic_errors)
+    if any(error.startswith("traffic audit ") for error in diagnostic_errors):
+        probe_audit_ready = False
     _set_transport_timeout(transport, selected.response_timeout)
+    if probe_miss_count:
+        _journal_record(
+            journal,
+            diagnostic_errors,
+            "loader_probe_misses",
+            count=probe_miss_count,
+            samples=probe_miss_samples,
+            samples_truncated=probe_miss_count > len(probe_miss_samples),
+        )
+    if not probe_audit_ready:
+        _journal_record(
+            journal,
+            diagnostic_errors,
+            "loader_probe_audit_sync_failed",
+            attempts=identify_attempts_used,
+            loader_identified=loader_identified,
+        )
+        return LiveLoaderResult(
+            state=LoaderState.FAILED,
+            image_sha256=plan.image_sha256,
+            blocks_total=len(plan.blocks),
+            blocks_completed=0,
+            retries=max(0, identify_attempts_used - 1),
+            block_receipts=(),
+            loader_identified=loader_identified,
+            pic_side_blocks_verified=False,
+            completion_sent=False,
+            completion_acknowledged=False,
+            message=(
+                "loader probe evidence could not be made durable; "
+                "no program block was sent"
+            ),
+            diagnostic_errors=tuple(diagnostic_errors),
+            failure_outcome=LoaderAttemptOutcome.TRANSPORT_ERROR,
+            recovery_required=preparation.recovery_mode,
+        )
     if loader_identified:
         try:
             identify_tail = _drain_available(transport, audit, diagnostic_errors)
@@ -1831,10 +2048,80 @@ def execute_live_loader_plan(
             recovery_required=preparation.recovery_mode,
         )
 
+    if selected.post_identify_settle_delay:
+        _journal_record(
+            journal,
+            diagnostic_errors,
+            "loader_post_identify_settle_started",
+            seconds=selected.post_identify_settle_delay,
+        )
+        time.sleep(selected.post_identify_settle_delay)
+        try:
+            settle_tail = _drain_available(transport, audit, diagnostic_errors)
+        except (OSError, TimeoutError, ValueError) as exc:
+            _remember_diagnostic_error(
+                diagnostic_errors, "loader settle tail transport", exc
+            )
+            return LiveLoaderResult(
+                state=LoaderState.FAILED,
+                image_sha256=plan.image_sha256,
+                blocks_total=len(plan.blocks),
+                blocks_completed=0,
+                retries=max(0, identify_attempts_used - 1),
+                block_receipts=(),
+                loader_identified=True,
+                pic_side_blocks_verified=False,
+                completion_sent=False,
+                completion_acknowledged=False,
+                message=(
+                    "transport failed during the post-identify settle; "
+                    "no program block was sent"
+                ),
+                diagnostic_errors=tuple(diagnostic_errors),
+                failure_outcome=LoaderAttemptOutcome.TRANSPORT_ERROR,
+                recovery_required=preparation.recovery_mode,
+            )
+        clean_settle_tail = not settle_tail or _contains_only_identify_responses(
+            settle_tail
+        )
+        _journal_record(
+            journal,
+            diagnostic_errors,
+            "loader_post_identify_settle_finished",
+            seconds=selected.post_identify_settle_delay,
+            data_hex=settle_tail.hex(" ").upper(),
+            accepted=clean_settle_tail,
+        )
+        if not clean_settle_tail:
+            return LiveLoaderResult(
+                state=LoaderState.FAILED,
+                image_sha256=plan.image_sha256,
+                blocks_total=len(plan.blocks),
+                blocks_completed=0,
+                retries=max(0, identify_attempts_used - 1),
+                block_receipts=(),
+                loader_identified=True,
+                pic_side_blocks_verified=False,
+                completion_sent=False,
+                completion_acknowledged=False,
+                message=(
+                    "unexpected serial bytes arrived during the post-identify "
+                    "settle; no program block was sent"
+                ),
+                anomalies=(
+                    "unexpected post-identify bytes: "
+                    + settle_tail.hex(" ").upper(),
+                ),
+                diagnostic_errors=tuple(diagnostic_errors),
+                failure_outcome=LoaderAttemptOutcome.UNEXPECTED_RESPONSE,
+                recovery_required=preparation.recovery_mode,
+            )
+
     receipts: list[LoaderBlockReceipt] = []
     completed = 0
     retries = 0
     write_failure_events = 0
+    program_frame_transmitted = False
     for block_index, block in enumerate(plan.blocks):
         attempts: list[LoaderAttemptReceipt] = []
         acknowledged = False
@@ -1915,8 +2202,44 @@ def execute_live_loader_plan(
                     )
                     final_outcome = LoaderAttemptOutcome.UNEXPECTED_RESPONSE
                     break
+            first_program_intent_ready = _record_program_intent(
+                audit,
+                block.frame,
+                diagnostic_errors,
+                fail_closed=not program_frame_transmitted,
+            )
+            if not first_program_intent_ready:
+                _journal_record(
+                    journal,
+                    diagnostic_errors,
+                    "first_program_intent_audit_failed",
+                    block_index=block_index,
+                    word_address=f"0x{block.word_address:04X}",
+                    attempt=attempt,
+                    program_frames_transmitted=0,
+                )
+                return LiveLoaderResult(
+                    state=LoaderState.FAILED,
+                    image_sha256=plan.image_sha256,
+                    blocks_total=len(plan.blocks),
+                    blocks_completed=0,
+                    retries=0,
+                    block_receipts=(),
+                    loader_identified=True,
+                    pic_side_blocks_verified=False,
+                    completion_sent=False,
+                    completion_acknowledged=False,
+                    message=(
+                        "first program-block intent could not be recorded and "
+                        "made durable; no E3 frame was sent"
+                    ),
+                    diagnostic_errors=tuple(diagnostic_errors),
+                    failure_outcome=LoaderAttemptOutcome.TRANSPORT_ERROR,
+                    recovery_required=preparation.recovery_mode,
+                )
             try:
-                _record_write(transport, block.frame, audit, diagnostic_errors)
+                transport.write(block.frame)
+                program_frame_transmitted = True
                 outcome, responses = _classify_block_attempt(
                     transport, audit, diagnostic_errors
                 )
@@ -2009,7 +2332,9 @@ def execute_live_loader_plan(
                 message=(
                     f"block 0x{block.word_address:04X} failed after "
                     f"{len(attempts)} bounded attempts ({final_outcome.value}); "
-                    "do not operate the stove; replay the session's exact image from block zero"
+                    "do not operate the stove and preserve the session; physical J3 "
+                    "recovery is disabled, so use the documented conservative external-programmer "
+                    "procedure or a future qualified fixture-specific recovery tool"
                 ),
                 write_failure_events=write_failure_events,
                 anomalies=tuple(anomalies),
@@ -2088,13 +2413,15 @@ def recover_live_loader_completion(
     identify_attempts: int = 3,
     probe_timeout: float = 0.020,
 ) -> bool:
-    """Retry only the final handoff after application reconnect already failed.
+    """Retry final handoff on the exact built-in simulator transport only.
 
     This is legal only when every block previously received its PIC-side E4.
     If the target application is already running, it will not answer ``EA`` and
-    no second ``ED`` is sent.
+    no second ``ED`` is sent. Physical completion recovery is hard-disabled
+    until a fixture-specific recovery implementation is separately qualified.
     """
 
+    _require_simulated_programming_transport(transport)
     if not result.pic_side_blocks_verified or result.blocks_completed != result.blocks_total:
         raise SafetyInterlockError(
             "completion recovery requires E4 verification for every program block"
@@ -2254,9 +2581,9 @@ def verify_post_flash(
 
 
 def live_flashing_supported() -> bool:
-    """Return whether the guarded experimental executor is present."""
+    """Return whether physical E3 programming is currently qualified."""
 
-    return True
+    return False
 
 
 __all__ = [

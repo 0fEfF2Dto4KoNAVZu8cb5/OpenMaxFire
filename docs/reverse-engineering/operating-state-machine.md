@@ -1,15 +1,17 @@
 # Firmware operating-state machine
 
 Status: state storage, family dispatch, BixCheck display decoding, and the
-structural transition sites are statically confirmed in firmware 2.06, 2.70,
-and 2.71. Conditions are named only where the surrounding data flow makes the
-meaning clear; no transition has been exercised on a stove.
+structural transition sites are statically confirmed across firmware 2.02,
+2.06, 2.70, and 2.71. Conditions are named only where the surrounding data
+flow makes the meaning clear. A bounded 2.02 session live-confirmed Off and
+Prefill; other transitions remain unexercised.
 
 ## Encoding
 
-The controller stores the operating byte in bank-0 RAM `0x4C` and publishes it
-as T09. Both sides deliberately ignore bit 7: firmware masks the dispatcher
-input with `0x70`, while BixCheck first masks the display value with `0x7F`.
+The controller stores the operating byte in bank-0 RAM `0x4C`. Firmware 2.02
+publishes it as T0C; later versions publish it as T09. Both sides deliberately
+ignore bit 7: firmware masks the dispatcher input with `0x70`, while BixCheck
+first masks the later display value with `0x7F`.
 
 | Bits | Role |
 | --- | --- |
@@ -51,21 +53,45 @@ call-condition proof. The family-7 fallback has no recovered normal-state role.
 Each dispatcher uses the high nibble of RAM `0x4C` as an eight-way computed
 jump. The low bits remain available to the selected handler.
 
-| Family | Meaning | 2.06 handler | 2.70 handler | 2.71 handler |
-| ---: | --- | ---: | ---: | ---: |
-| `0x00` | initial/reset | `18F5` | `18EE` | `1913` |
-| `0x10` | cooldown | `192B` | `192B` | `1950` |
-| `0x20` | off | `1976` | `1982` | `19A7` |
-| `0x30` | startup | `19E8` | `1A02` | `1A27` |
-| `0x40` | operating | `1BBA` | `1BDB` | `1C00` |
-| `0x50` | ramping | `1BBA` | `1BDB` | `1C00` |
-| `0x60` | ash dump | `1CE0` | `1D19` | `1D3E` |
-| `0x70` | fallback/undefined | `1E25` | `1E3D` | `1E5D` |
+| Family | Meaning | 2.02 handler | 2.06 handler | 2.70 handler | 2.71 handler |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| `0x00` | initial/reset | `1942` | `18F5` | `18EE` | `1913` |
+| `0x10` | cooldown | `1988` | `192B` | `192B` | `1950` |
+| `0x20` | off | `19C3` | `1976` | `1982` | `19A7` |
+| `0x30` | startup | `1A86` | `19E8` | `1A02` | `1A27` |
+| `0x40` | operating | `1C2C` | `1BBA` | `1BDB` | `1C00` |
+| `0x50` | ramping | `1C2C` | `1BBA` | `1BDB` | `1C00` |
+| `0x60` | ash dump | `1D87` | `1CE0` | `1D19` | `1D3E` |
+| `0x70` | fallback/undefined | `1D9E` | `1E25` | `1E3D` | `1E5D` |
 
-Dispatcher PCs are `18DB`, `18D4`, and `18F9`, respectively. These anchors and
-all 24 destinations are regenerated into
+Dispatcher PCs are `191F`, `18DB`, `18D4`, and `18F9`, respectively. These
+anchors and all 32 destinations are regenerated into
 `reverse-engineering/firmware/comparison/state-family-dispatch.csv` and checked
 by `tests/test_firmware_pipeline.py`.
+
+## Exact 2.06 power-up cooldown
+
+The 2.06 timer setup at `0x0236` loads CCPR1=`0xC674`, CCP1CON=`0x0B`
+(Timer1 special-event compare), and T1CON=`0x31` (Fosc/4 with 1:8 prescale).
+The CCP1 event path at `0x08AF` increments RAM `0x4B:0x4A`. At the controller's
+photographed 10 MHz oscillator, each event is:
+
+```text
+0xC674 / (10,000,000 / 4 / 8) = 0.1625728 seconds
+```
+
+The cooldown handler compares the counter with `0x1517` at `0x194B`-`0x1954`
+and installs Off (`0x20`) after it reaches `0x1518`, subject to the adjacent
+thermocouple/input predicates. That is 5,400 events, or 877.893 seconds
+(approximately 14 minutes 38 seconds). A read-only 2026-08-30 physical capture
+observed the command/target values drop to zero and T09 change from Cooldown to
+Off at the predicted boundary; the owner observed the fan stop. A second
+capture after EEPROM checksum repair observed Cooldown at
+`23:26:58.294226Z`, retained nonzero command evidence through
+`23:41:34.543018Z`, and first received Off after a serial gap at
+`23:41:54.722898Z`. The predicted `23:41:36.187Z` transition lies inside that
+bracket, after which feedback coasted to zero. This exact 2.06 behavior is
+shorter than the owner manual's general "approximately 30 minutes" wording.
 
 ## 2.71 structural transitions
 
@@ -120,8 +146,8 @@ The MaxFire Model 115 owner manual, document 2020866 Rev. A, says an unpowered
 on/off 24 V thermostat does not start the stove. When an already-running stove
 receives a heat call it uses the selected heat level; without a call it falls
 back to level 1 and slowly flashes the panel indicators together. That behavior
-agrees with the T09 operating-family thermostat flag but does not prove every
-later transition predicate.
+agrees with the operating-family thermostat flag (T0C in 2.02, T09 later) but
+does not prove every transition predicate.
 
 Format-07 BixCheck data adds thermostat heat-level and disable-auto-restart
 configuration bits. OpenMaxFire therefore records the Rev. A statement as a

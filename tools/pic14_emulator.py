@@ -32,6 +32,7 @@ try:
         CW_HANDLER_MATRIX,
         CW_SEMANTICS,
         CR_HANDLER_MATRIX,
+        STATE_DISPATCH_PC,
         IHexImage,
         TELEMETRY_PATHS,
         decode_pic14,
@@ -44,6 +45,7 @@ except ModuleNotFoundError:
         CW_HANDLER_MATRIX,
         CW_SEMANTICS,
         CR_HANDLER_MATRIX,
+        STATE_DISPATCH_PC,
         IHexImage,
         TELEMETRY_PATHS,
         decode_pic14,
@@ -842,6 +844,11 @@ PROBE_SPECS = (
 
 APPLICATION_SPECS = (
     (
+        "2.02",
+        "2.02/extracted/Bixby_0202_260827_PICkit.hex",
+        4,
+    ),
+    (
         "2.06",
         "2.06/extracted/Bixby_02060021_Downloader.hex",
         5,
@@ -859,6 +866,7 @@ APPLICATION_SPECS = (
 )
 
 RESPONSE_FORMATTERS = {
+    "2.02": 0x12B7,
     "2.06": 0x1265,
     "2.70": 0x1352,
     "2.71": 0x132F,
@@ -1181,7 +1189,11 @@ def execute_telemetry_slot(
                 sender_seen = True
             cpu.step()
             emitted = bytes(cpu.tx_bytes[tx_before:])
-            if any(line.startswith(b"T") for line in emitted.split(b"\n")[:-1]):
+            requested_prefix = f"T{index:02x}".encode("ascii")
+            if any(
+                line.lower().startswith(requested_prefix.lower())
+                for line in emitted.split(b"\n")[:-1]
+            ):
                 break
         else:
             executed = step_limit
@@ -1248,6 +1260,20 @@ def write_csv_rows(
 
 def ascii_preview(data: bytes | bytearray) -> str:
     return "".join(chr(value) if 0x20 <= value <= 0x7E else f"\\x{value:02X}" for value in data)
+
+
+def requested_telemetry_line(response: bytes, index: int) -> bytes:
+    """Select the requested T slot when a producer emits other T lines first."""
+
+    prefix = f"T{index:02x}".encode("ascii").lower()
+    return next(
+        (
+            line
+            for line in response.splitlines()
+            if line.lower().startswith(prefix)
+        ),
+        b"",
+    )
 
 
 def probe_image(
@@ -1432,7 +1458,25 @@ def run_deep_project(
             image,
             data_eeprom=fixtures[data_format],
         )
-        cpu.run(boot_steps)
+        if version == "2.02":
+            # The older startup path enters a synchronous CCP1-timed actuator
+            # initialization loop that the lightweight peripheral model does
+            # not yet advance.  Stop immediately before its first state-family
+            # dispatch and seed the same 0x20 cold/off family observed on the
+            # live controller.  Commands queued at this boundary pass through
+            # the real UART ISR, parser, dispatchers, and response formatter.
+            for _ in range(boot_steps):
+                if cpu.pc == STATE_DISPATCH_PC[version]:
+                    cpu.ram[0x04C] = 0x20
+                    break
+                cpu.step()
+            else:
+                raise EmulationError(
+                    "2.02 did not reach its first state dispatch within "
+                    f"{boot_steps} modeled instructions"
+                )
+        else:
+            cpu.run(boot_steps)
         cpu.events.clear()
         cpu.recent.clear()
         cpu.pc_hits.clear()
@@ -1830,7 +1874,7 @@ def run_deep_project(
                 booted[version].clone(), version, index, step_limit=write_step_limit
             )
             lines = [line for line in result.response.splitlines() if line]
-            t_line = next((line for line in lines if line.startswith(b"T")), b"")
+            t_line = requested_telemetry_line(result.response, index)
             dw_line = next((line for line in lines if line.startswith(b"DW")), b"")
             t_index: int | None = None
             t_value: int | None = None
@@ -1942,10 +1986,17 @@ def run_deep_project(
     eeprom_read_rows: list[dict[str, object]] = []
     for version, _relative, data_format in APPLICATION_SPECS:
         fixture = fixtures[data_format]
-        cpu = booted[version].clone()
         for address in range(0x100):
             request = f"AR{address:02X}".encode("ascii")
-            result = execute_request(cpu, request, step_limit=probe_steps)
+            # A response is complete when its final LF enters TXREG, one
+            # instruction before the parser returns to idle. Reusing that
+            # exact CPU boundary for the next request can eventually fill the
+            # older 2.02 receive ring and create a harness-only timeout. Each
+            # EEPROM address is an independent probe, so start it from the
+            # same settled boot fixture just as the CR matrix does.
+            result = execute_request(
+                booted[version].clone(), request, step_limit=probe_steps
+            )
             actual = response_value(result.response)
             eeprom_events = [item for item in result.events if item.kind == "eeprom_read"]
             eeprom_read_rows.append(
@@ -2359,13 +2410,17 @@ def run_deep_project(
             "or stove calibration data.",
             "C-unit writes execute only in disposable CPU clones with synthetic "
             "RAM/EEPROM; no source image or physical controller is modified.",
-            "CW0F is probed only with value 0x00. The state-changing 0xC4 "
-            "reset/loader key is explicitly excluded.",
+            "CW0F is absent from the 2.02/format-04 dispatcher. In later "
+            "firmware it is probed only with value 0x00; the state-changing "
+            "0xC4 reset/loader key is explicitly excluded.",
             "CW05 and CW0A enter long actuator/timer paths that do not return in "
             "the bounded peripheral model; this is a model limitation, not a "
             "firmware failure.",
             "Telemetry slots are entered directly after synthetic boot. Producer "
             "and UART code are real firmware, but periodic cadence/gating is not modeled.",
+            "The 2.02 fixture stops at its first state dispatch and seeds the "
+            "live-observed 0x20 cold/off family because the emulator does not "
+            "yet advance the firmware's synchronous CCP1 actuator-init wait.",
             "TMR0 is advanced synthetically per modeled instruction; no timing or "
             "sensor-rate conclusion should be drawn from emulator step counts.",
         ],

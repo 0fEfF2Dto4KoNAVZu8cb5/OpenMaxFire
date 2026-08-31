@@ -1,0 +1,7 @@
+{
+  "message": "OpenMaxFire flash error: no matching AR22 response before serial timeout after 214 frame(s)",
+  "ready_for_operation": false,
+  "recovery_required": false,
+  "schema": "openmaxfire.flash-result.v2",
+  "successful": false
+}

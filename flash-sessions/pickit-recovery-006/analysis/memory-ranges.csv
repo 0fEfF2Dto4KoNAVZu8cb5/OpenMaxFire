@@ -1,0 +1,5 @@
+region,start_word,end_word,word_count
+program,0x0000,0x1FFF,8192
+user_id,0x2000,0x2003,4
+configuration,0x2007,0x2007,1
+eeprom,0x2100,0x21FF,256

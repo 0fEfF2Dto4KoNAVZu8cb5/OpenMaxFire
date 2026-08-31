@@ -36,11 +36,11 @@ a thin client of the same APIs rather than a second protocol implementation.
 Standalone Windows, Linux, and macOS releases should eventually let stove
 owners use the tool without installing Python.
 
-Fault decoding follows the same boundary. Firmware-2.02/data-format-04 uses a
-temporal `T08` flashing-indicator bitmap, while later BixCheck layouts expose
-raw `T13` alarm state plus `T09` operating state. These meanings belong in the
-profile-aware API; CLI, GUI, and Home Assistant clients must consume that model
-instead of maintaining separate fault tables.
+Fault and state decoding follow the same boundary. Firmware-2.02/data-format-04
+uses a temporal `T08` flashing-indicator bitmap and T0C operating state, while
+later BixCheck layouts expose raw `T13` alarm state plus T09 operating state.
+These meanings belong in the profile-aware API; CLI, GUI, and Home Assistant
+clients must consume that model instead of maintaining separate tables.
 
 ## Permanent ESP32/ESPHome controller
 

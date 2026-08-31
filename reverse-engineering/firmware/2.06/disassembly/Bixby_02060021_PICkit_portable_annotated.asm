@@ -2181,6 +2181,8 @@
 0867: 08C2  movf    0x42, F
 0868: 1903  btfsc   0x03, 2
 0869: 2875  goto    0x075 ; low-11 target; resolve page through PCLATH
+
+; RE: Non-periodic T20 display-LED event path; live 2.06 traffic alternates values with a flashing panel light.
 086A: 3020  movlw   0x20
 086B: 00D6  movwf   0x56
 086C: 1283  bcf     0x03, 5

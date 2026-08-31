@@ -1,0 +1,23 @@
+{
+  "schema": "openmaxfire.checksum-provenance.v1",
+  "data_format": "05",
+  "checksum_algorithm": "add each byte A02-A9A to a 16-bit accumulator, then rotate the accumulator left one bit",
+  "vendor_identity": {
+    "serial_number": "5015",
+    "production_date": "04162007"
+  },
+  "captured_identity": {
+    "serial_number": "Unknown",
+    "production_date": "08282026"
+  },
+  "calculated_variants": {
+    "vendor_record": "7068",
+    "vendor_record_with_captured_serial_only": "D168",
+    "vendor_record_with_captured_date_only": "F66A",
+    "vendor_record_with_captured_serial_and_date": "576B"
+  },
+  "captured_stored_checksum": "D168",
+  "captured_calculated_checksum": "576B",
+  "conclusion": "The captured checksum is exactly valid for the intermediate record after the serial changed to Unknown but before the date changed. The date was subsequently changed without checksum persistence.",
+  "evidence_boundary": "The byte/checksum ordering is mathematically established. The software or operator workflow that performed the identity edits is not identified by these bytes alone."
+}

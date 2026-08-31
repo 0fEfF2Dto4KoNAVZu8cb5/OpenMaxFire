@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -171,6 +172,97 @@ class LiveValidationToolTests(unittest.TestCase):
         self.assertEqual(
             observations["post_command_snapshot_error"], "snapshot unavailable"
         )
+
+    def test_off_recovery_retries_until_state_is_verified(self):
+        class FakeClient:
+            def __init__(self):
+                self.requests = []
+
+            def remote_button(self, button):
+                self.requests.append(button)
+                return SimpleNamespace(request=b"CW0E11")
+
+        class FakeSnapshot:
+            fresh = True
+
+            def __init__(self, phase):
+                self.operating_state = SimpleNamespace(phase=phase)
+
+            def to_dict(self):
+                return {"operating_state": {"phase": self.operating_state.phase}}
+
+        class FakeSession:
+            def __init__(self):
+                self.client = FakeClient()
+                self.polls = 0
+                self.identity = SimpleNamespace(data_format=0x04)
+                self.monitor = SimpleNamespace(
+                    telemetry_observed_monotonic_ns=lambda index: self.state_sample_ns
+                )
+                self.state_sample_ns = None
+
+            def poll_snapshot(self, *, request_delay):
+                self.polls += 1
+                if self.polls == 1:
+                    raise TimeoutError("firmware temporarily deaf")
+                if self.polls == 2:
+                    self.state_sample_ns = live_validation.time.monotonic_ns()
+                    return FakeSnapshot("prefill")
+                self.state_sample_ns = live_validation.time.monotonic_ns()
+                return FakeSnapshot("off")
+
+        session = FakeSession()
+        result = live_validation._recover_remote_off(
+            session,
+            timeout_seconds=1.0,
+            retry_interval=0,
+        )
+        self.assertTrue(result["verified"])
+        self.assertEqual(result["safe_state_phase"], "off")
+        self.assertEqual(result["attempts"], 4)
+        self.assertEqual(result["requests_hex"], ["43 57 30 45 31 31"] * 4)
+        self.assertIn("temporarily deaf", result["errors"][0])
+        self.assertEqual(result["state_telemetry_index"], "T0C")
+        self.assertEqual(len(result["fresh_state_samples"]), 3)
+
+    def test_off_recovery_rejects_retained_precommand_off_state(self):
+        class FakeClient:
+            def remote_button(self, button):
+                return SimpleNamespace(request=b"CW0E11")
+
+        class FakeSnapshot:
+            fresh = True
+            operating_state = SimpleNamespace(phase="off")
+
+            @staticmethod
+            def to_dict():
+                return {"operating_state": {"phase": "off"}}
+
+        class FakeSession:
+            def __init__(self):
+                self.client = FakeClient()
+                self.identity = SimpleNamespace(data_format=0x04)
+                self.polls = 0
+                self.state_sample_ns = 1
+                self.monitor = SimpleNamespace(
+                    telemetry_observed_monotonic_ns=lambda index: self.state_sample_ns
+                )
+
+            def poll_snapshot(self, *, request_delay):
+                self.polls += 1
+                if self.polls > 1:
+                    self.state_sample_ns = live_validation.time.monotonic_ns()
+                return FakeSnapshot()
+
+        result = live_validation._recover_remote_off(
+            FakeSession(),
+            timeout_seconds=1.0,
+            retry_interval=0,
+            required_fresh_state_samples=1,
+        )
+        self.assertTrue(result["verified"])
+        self.assertEqual(result["attempts"], 2)
+        self.assertEqual(len(result["fresh_state_samples"]), 1)
 
     def test_nonempty_destination_is_refused(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -9,22 +9,94 @@ fresh readback explicitly.
 from __future__ import annotations
 
 import math
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable
 
+from .errors import SafetyInterlockError
 from .profiles import ControllerProfile, select_profile
 from .protocol import (
     AddressedResponse,
+    ProtocolError,
     READ_OPCODE,
     ResponseFrame,
     RemoteButton,
+    decode_register_request,
     encode_read_register,
     encode_remote_button,
     encode_write_register,
     parse_response_line,
 )
 from .transport import Transport
+
+
+_BINARY_LOADER_MARKERS = frozenset(
+    (0xE3, 0xE4, 0xE5, 0xE7, 0xE8, 0xEA, 0xEB, 0xED)
+)
+_SOFTWARE_LOADER_ENTRY = b"CW0FC4"
+_SOFTWARE_LOADER_REGISTER_STEM = b"CW0F"
+_SOFTWARE_LOADER_SPLIT_SUFFIXES = (b"W0FC4", b"0FC4", b"FC4")
+
+
+class _RawGuardState:
+    """Per-transport fail-closed state for generic outgoing byte streams."""
+
+    def __init__(self) -> None:
+        self.tail = b""
+        self.indeterminate_after_write_error = False
+        self.lock = threading.Lock()
+
+
+def contains_loader_traffic(
+    payload: bytes | bytearray | memoryview,
+    *,
+    stream_prefix: bytes = b"",
+) -> bool:
+    """Return whether bytes can participate in the known loader protocol.
+
+    The loader opcodes are binary single bytes, not the ASCII strings ``EA``
+    or ``E3``.  ``stream_prefix`` lets a caller reject the keyed ASCII reset
+    even when it is split across multiple raw writes.
+    """
+
+    value = bytes(payload)
+    return (
+        any(byte in _BINARY_LOADER_MARKERS for byte in value)
+        or _SOFTWARE_LOADER_REGISTER_STEM in value
+        or value.startswith(_SOFTWARE_LOADER_SPLIT_SUFFIXES)
+        or _SOFTWARE_LOADER_ENTRY in stream_prefix + value
+    )
+
+
+def validate_generic_raw_payload(
+    payload: bytes | bytearray | memoryview,
+    *,
+    stream_prefix: bytes = b"",
+) -> bytes:
+    """Validate one complete non-loader A/C/D request for generic transmission.
+
+    Constraining each call to the recovered fixed-length request grammar keeps
+    separate clients or CLI processes from assembling an unterminated loader
+    entry request across transport reopen boundaries.
+    """
+
+    value = bytes(payload)
+    if not value:
+        raise ValueError("raw command must contain at least one byte")
+    if contains_loader_traffic(value, stream_prefix=stream_prefix):
+        raise SafetyInterlockError(
+            "known firmware-loader traffic is isolated and forbidden through generic "
+            "raw/register I/O"
+        )
+    try:
+        decode_register_request(value)
+    except ProtocolError as exc:
+        raise SafetyInterlockError(
+            "generic raw transmission accepts exactly one complete A/C/D register "
+            "request; arbitrary or fragmented byte streams are disabled"
+        ) from exc
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,20 +151,48 @@ class StoveIdentity:
 class MaxFireClient:
     def __init__(self, transport: Transport):
         self.transport = transport
+        state = getattr(transport, "_openmaxfire_raw_guard_state", None)
+        if not isinstance(state, _RawGuardState):
+            state = _RawGuardState()
+            try:
+                setattr(transport, "_openmaxfire_raw_guard_state", state)
+            except (AttributeError, TypeError):
+                # Built-in transports permit the shared marker. A minimal
+                # slots-only research transport still receives a per-client
+                # fail-closed guard.
+                pass
+        self._raw_guard_state = state
 
     def send_raw(self, command: bytes | bytearray | memoryview) -> CommandReceipt:
         """Transmit exact bytes without appending a line terminator.
 
-        This is a transport primitive, not a success claim.  In particular,
-        arbitrary bytes can invoke undocumented controller behavior or enter
-        the firmware loader.  The CLI places an additional acknowledgement in
-        front of this method.
+        This is a send-only request primitive, not a success claim. It accepts
+        exactly one recovered A/C/D register request; arbitrary and fragmented
+        byte streams are disabled. Known binary loader markers, the entire
+        ``CW0F`` reset-register family, boundary fragments, and the keyed
+        ``CW0FC4`` reset are isolated from this generic API. Dedicated rehearsal
+        code accepts only exact simulator transports. Direct Transport access
+        is outside this API safety boundary.
         """
 
         payload = bytes(command)
-        if not payload:
-            raise ValueError("raw command must contain at least one byte")
-        self.transport.write(payload)
+        state = self._raw_guard_state
+        with state.lock:
+            if state.indeterminate_after_write_error:
+                raise SafetyInterlockError(
+                    "generic raw output is locked after an indeterminate transport write; "
+                    "close this transport rather than continuing a byte stream"
+                )
+            validate_generic_raw_payload(payload, stream_prefix=state.tail)
+            combined = state.tail + payload
+            # Advance before the I/O. If write/flush fails after putting bytes
+            # on the wire, a caller cannot discard the dangerous prefix state.
+            state.tail = combined[-(len(_SOFTWARE_LOADER_ENTRY) - 1):]
+            try:
+                self.transport.write(payload)
+            except BaseException:
+                state.indeterminate_after_write_error = True
+                raise
         return CommandReceipt(request=payload)
 
     def exchange_raw(
@@ -101,11 +201,11 @@ class MaxFireClient:
         *,
         receive_duration: float = 1.0,
     ) -> CommandReceipt:
-        """Transmit exact bytes and retain all bytes received for a duration.
+        """Transmit one exact A/C/D request and retain an uninterpreted reply window.
 
         No response grammar, acknowledgement, or success semantics are
-        inferred.  This makes the primitive useful for preservation work while
-        keeping register and loader state machines separate.
+        inferred. The outgoing bytes must pass the complete-request guard;
+        this keeps register and loader state machines separate.
         """
 
         if not math.isfinite(receive_duration) or receive_duration < 0:
@@ -172,7 +272,31 @@ class MaxFireClient:
             f"no matching {unit}R{address:02X} response within {max_frames} frames"
         )
 
-    def identify(self, *, request_delay: float = 0.0) -> StoveIdentity:
+    def _query_read_only_with_retries(
+        self,
+        address: int,
+        *,
+        unit: str = "C",
+        attempts: int = 1,
+    ) -> AddressedResponse:
+        if isinstance(attempts, bool) or not isinstance(attempts, int):
+            raise TypeError("attempts must be an integer")
+        if not 1 <= attempts <= 5:
+            raise ValueError("attempts must be between 1 and 5")
+        for attempt in range(1, attempts + 1):
+            try:
+                return self.query_register(address, unit=unit)
+            except TimeoutError:
+                if attempt == attempts:
+                    raise
+        raise AssertionError("read-only retry loop did not return or raise")
+
+    def identify(
+        self,
+        *,
+        request_delay: float = 0.0,
+        read_attempts: int = 1,
+    ) -> StoveIdentity:
         """Run BixCheck's read-only controller identity sequence."""
 
         if not math.isfinite(request_delay) or request_delay < 0:
@@ -180,7 +304,10 @@ class MaxFireClient:
         addresses = (0x00, 0x08, 0x0B, 0x0C, 0x0D, 0x0E)
         values: dict[int, int] = {}
         for index, address in enumerate(addresses):
-            values[address] = self.query_register(address).value
+            values[address] = self._query_read_only_with_retries(
+                address,
+                attempts=read_attempts,
+            ).value
             if request_delay and index + 1 < len(addresses):
                 time.sleep(request_delay)
         return StoveIdentity(
@@ -196,10 +323,14 @@ class MaxFireClient:
         self,
         *,
         request_delay: float = 0.0,
+        read_attempts: int = 1,
     ) -> tuple[StoveIdentity, ControllerProfile | None]:
         """Read identity and return its exact known profile, if any."""
 
-        identity = self.identify(request_delay=request_delay)
+        identity = self.identify(
+            request_delay=request_delay,
+            read_attempts=read_attempts,
+        )
         return identity, select_profile(identity)
 
     def read_eeprom(
@@ -208,6 +339,7 @@ class MaxFireClient:
         first: int = 0x00,
         last: int = 0xFF,
         request_delay: float = 0.0,
+        read_attempts: int = 1,
     ) -> dict[int, int]:
         """Read a contiguous A-space range without issuing any write."""
 
@@ -217,7 +349,11 @@ class MaxFireClient:
             raise ValueError("request_delay must be finite and nonnegative")
         values: dict[int, int] = {}
         for address in range(first, last + 1):
-            values[address] = self.query_register(address, unit="A").value
+            values[address] = self._query_read_only_with_retries(
+                address,
+                unit="A",
+                attempts=read_attempts,
+            ).value
             if request_delay and address < last:
                 time.sleep(request_delay)
         return values

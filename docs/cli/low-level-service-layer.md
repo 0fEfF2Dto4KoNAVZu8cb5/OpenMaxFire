@@ -20,7 +20,7 @@ operation has been validated on the physical production controller.
 | Send-only A/C/D read | `read_register()` | — | Offline-tested transport primitive |
 | Send-only A/C/D write | `write_register()` | `write --unit A/C/D` | Offline-tested; transmission is never reported as success |
 | Write plus fresh readback | `write_register_verified()` | `write --verify` | Offline-tested; verifies only the addressed byte |
-| Exact-byte exchange | `exchange_raw()` | `raw` | Response is uninterpreted; known loader traffic is blocked |
+| Exact-request exchange | `exchange_raw()` | `raw` | Outgoing bytes must be one complete A/C/D request; response is uninterpreted |
 | Ordered register plan | `execute_transaction()` | `transaction` | Validated, fail-fast, optional per-write readback |
 | Controller/EEPROM backup | `identify()` / `read_eeprom()` | `backup` | Live-validated read-only workflow |
 | Firmware-loader state machine | Separate `flashing` API | `flash` | Authenticated and safety-gated; never exposed through generic raw traffic |
@@ -71,9 +71,11 @@ Matching readback proves only that one byte reads as requested. It does not
 prove that a motor moved, an igniter energized, a calibration is safe, or a
 command-style C register produced the intended physical action.
 
-## Exact-byte raw exchange
+## Exact-request exchange
 
-Raw mode appends no terminator and assigns no meaning to received bytes:
+Raw mode appends no terminator and assigns no meaning to received bytes, but
+the outgoing payload must decode as exactly one complete A/C/D register
+request. Arbitrary and fragmented byte streams are disabled:
 
 ```bash
 maxfirectl \
@@ -86,11 +88,17 @@ maxfirectl \
   --i-understand-this-can-change-stove-state
 ```
 
-`--ascii CR00` produces the same four transmitted bytes. Known loader markers
-(`CW0FC4`, `EA`, `E3`, and `ED`) are refused before the serial port is opened.
-They belong only in the dedicated loader implementation with exact image/wire
-authentication, expected acknowledgements, bounded retries, recovery, and
-post-flash verification.
+`--ascii CR00` produces the same four transmitted bytes. The keyed `CW0FC4`
+entry request and every known binary loader marker (`E3`, `E4`, `E5`, `E7`,
+`E8`, `EA`, `EB`, and `ED`) are refused before the serial port is opened. The
+guard reserves the complete `CW0F` reset-register family and known boundary
+fragments as well as catching same-stream splits, blocking complete and common
+split attempts through ordinary calls. They belong only in the dedicated loader
+implementation with exact image/wire authentication, expected
+acknowledgements, bounded retries, recovery, and post-flash verification.
+These public API/CLI checks close the generic command path across separate
+client/CLI invocations. Arbitrary Python code that deliberately calls
+`Transport.write()` directly is outside the public API safety boundary.
 
 ## Transaction plans
 

@@ -128,8 +128,10 @@ tests. A ninth automatic record, `Plate motor cycle test`, exists in data but is
 excluded by both the UI setup loop and action dispatcher.
 
 The Downloader code is also semantically unchanged across all three builds.
-It reads CR08 and CR0B-CR0E for identity, uses `CW0FC4` to request reset, then
-switches to a separate raw-binary bootloader protocol. See
+It reads CR08 and CR0B-CR0E for identity, can use `CW0FC4` to request reset,
+then switches to a separate raw-binary bootloader protocol. The reset request
+works in the paired 2.06/2.70/2.71 applications but is absent from the exact
+original 2.02 image, which therefore needs hardware reset for its first update. See
 [bixcheck-downloader-protocol.md](bixcheck-downloader-protocol.md). Downloader
 traffic must never be exposed through ordinary monitoring APIs.
 
@@ -150,5 +152,7 @@ The per-build directory contains:
   monitoring workflow excerpts.
 
 Build-specific addresses are evidence locators, not stable protocol constants.
-All conclusions remain static or emulated until J3 electrical levels and a live
-read-only exchange are safely verified.
+J3 signal direction and non-inverted 5 V TTL traffic were later live-validated,
+and physical loader sessions supplied adverse first-block evidence. Conclusions
+about corrected programming, interruption, and recovery remain unvalidated on
+expendable hardware.

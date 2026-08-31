@@ -1,0 +1,7 @@
+{
+  "message": "operator interrupted before the protected critical section",
+  "ready_for_operation": false,
+  "recovery_required": false,
+  "schema": "openmaxfire.flash-result.v2",
+  "successful": false
+}

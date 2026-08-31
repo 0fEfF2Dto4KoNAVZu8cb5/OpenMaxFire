@@ -37,12 +37,13 @@ mean timing and hardware-state conclusions are invalid.
 
 | Image | Injected bytes | Actual firmware TX | Result |
 | --- | --- | --- | --- |
+| 2.02 PICkit/application | ASCII `CR00` | `43 52 30 30 30 30 0A` (`CR0000` + LF) | Completed from the bounded cold/off fixture |
 | 2.06 Downloader | ASCII `CR00` | `43 52 30 30 30 30 0A` (`CR0000` + LF) | Completed |
 | 2.70 embedded | ASCII `CR00` | `43 52 30 30 30 30 0A` | Completed |
 | 2.71 embedded | ASCII `CR00` | `43 52 30 30 30 30 0A` | Completed |
 | 2.06 PICkit/service | raw `EA` at reset | `EB` | Completed in 43 modeled instructions |
 
-For all three application generations, the emulator:
+For all four application generations, the emulator:
 
 1. follows the real reset vector and startup code;
 2. executes the firmware's UART interrupt path to consume each request byte;
@@ -55,11 +56,12 @@ CR00 constant, and LF termination. It also confirms the bootloader's `EA`/`EB`
 identify pair. These remain emulated findings until reproduced through a
 protected, read-only J3 connection.
 
-The exhaustive pass now reaches all 45 `CR00`-`CR0E` handlers and all 45 shared
-response-formatter paths. It also completes every `AR00`-`ARFF` read on every
-application generation: all 768 results match the injected, checksum-valid
-synthetic internal-EEPROM fixture. The firmware formatter emits lowercase
-hexadecimal letters (`CR0A`→`CR0a00`), which the host parser accepts.
+The exhaustive pass now reaches all 58 real CR handlers and all 58 shared
+response-formatter paths: CR00-CR0C in 2.02 and CR00-CR0E in each later
+application. It also completes every `AR00`-`ARFF` read on every generation:
+all 1,024 results match the injected, checksum-valid synthetic internal-EEPROM
+fixture. The firmware formatter emits lowercase hexadecimal letters
+(`CR0A`→`CR0a00`), which the host parser accepts.
 
 Synthetic GPIO/ADC differentials plus BixCheck's Checkout masks identify RD1
 as the firebox-door input (`CR02.5`), RD4 as ash drawer (`CR02.6`), RB4 as
@@ -96,6 +98,9 @@ python tools/pic14_emulator.py probe path/to/image.hex --bytes 43523030
   RD3 multiplexer, switches, fans, motors, igniters, flame dynamics, and safety
   behavior are not modeled.
 - Timer and I²C behavior is synthetic and not cycle-accurate.
+- The 2.02 fixture stops at its first state dispatch and seeds the
+  live-observed `0x20` Off state because the lightweight model does not yet
+  advance its synchronous CCP1 actuator-initialization wait.
 - The bootloader program/erase path has not been emulated or exercised.
 - A passing trace is evidence about software control flow, not permission to
   send writes to a stove.

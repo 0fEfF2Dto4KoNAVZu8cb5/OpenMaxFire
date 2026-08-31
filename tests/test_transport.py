@@ -19,12 +19,16 @@ class FakeTransport:
         self.writes = []
         self.reads = [b"CR", b"0000\n"]
         self.closed = False
+        self.break_states = []
 
     def write(self, data):
         self.writes.append(data)
 
     def read(self, _size=1):
         return self.reads.pop(0) if self.reads else b""
+
+    def set_break(self, active):
+        self.break_states.append(active)
 
     def close(self):
         self.closed = True
@@ -96,6 +100,10 @@ class TransportTests(unittest.TestCase):
         with mock.patch.dict("sys.modules", {"serial": serial_module}):
             transport = SerialTransport(SerialSettings("COM7", 19200, 0.35))
             transport.write(b"CR00")
+            transport.set_break(True)
+            self.assertTrue(device.break_condition)
+            transport.set_break(False)
+            self.assertFalse(device.break_condition)
             transport.close()
         serial_module.Serial.assert_called_once_with(
             port="COM7",
@@ -121,6 +129,8 @@ class TransportTests(unittest.TestCase):
             recorder = JsonlTrafficRecorder(path, metadata={"port": "COM3"})
             transport = RecordingTransport(base, recorder)
             transport.write(b"CR00")
+            transport.set_break(True)
+            transport.set_break(False)
             self.assertEqual(transport.read(2), b"CR")
             self.assertEqual(transport.read(5), b"0000\n")
             transport.close()
@@ -133,6 +143,7 @@ class TransportTests(unittest.TestCase):
                 [("tx", "43 52 30 30"), ("rx", "43 52"), ("rx", "30 30 30 30 0A")],
             )
             self.assertTrue(base.closed)
+            self.assertEqual(base.break_states, [True, False])
 
 
 if __name__ == "__main__":

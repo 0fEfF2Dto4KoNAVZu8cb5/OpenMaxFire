@@ -32,7 +32,7 @@ This page is a plain-language reference for the eight numbered lights on the Bix
 
 Light 6 does not necessarily mean that the fan motor is completely stopped. The controller also expects feedback pulses from the exhaust-fan speed sensor.
 
-OpenMaxFire has confirmed in firmware **2.06, 2.70, and 2.71** that the controller counts the exhaust sensor pulses arriving through **J10**. If the count remains too low, the firmware can report an exhaust-fan failure even while the impeller appears to turn.
+OpenMaxFire has confirmed in firmware **2.02, 2.06, 2.70, and 2.71** that the controller counts exhaust-sensor pulses associated with **J10**. If the count remains too low, the firmware can report an exhaust-fan failure even while the impeller appears to turn.
 
 With the stove cool and unplugged, check:
 
@@ -45,11 +45,11 @@ With the stove cool and unplugged, check:
 
 Possible causes include the fan itself, the speed sensor, its target or alignment, a connector, damaged wiring, or the board's sensor-input circuit. There is no known BixCheck setting that safely disables or adjusts this protection. A software change is not the normal fix for a missing feedback signal.
 
-The exact J10 path has not yet been verified in the unrecovered 2.02 program image, although the factory wiring diagram and later firmware support the same diagnosis.
+The exact J10 firmware path is now statically verified in 2.02, but physical J10 pulse testing on the installed controller remains outstanding.
 
 ## Light 8 when the feeder wheel is visibly moving
 
-The controller also watches feeder-wheel feedback. The factory wiring identifies the feeder sensor at **J9**, and OpenMaxFire has traced that input in firmware 2.06, 2.70, and 2.71.
+The controller also watches feeder-wheel feedback. The factory wiring identifies the feeder sensor at **J9**, and OpenMaxFire has traced that input in firmware 2.02, 2.06, 2.70, and 2.71. Firmware 2.02 scales its raw interval differently, but the diagnostic role is the same.
 
 If the wheel moves but light 8 appears, check for intermittent movement, debris, a loose or damaged sensor connection, sensor alignment, motor-mount movement, and wiring back to J9. Never put a hand or tool into the feeder mechanism while the stove is connected to power.
 
@@ -63,7 +63,10 @@ If the wheel moves but light 8 appears, check for intermittent movement, debris,
 
 On the Rev. A MaxFire thermostat arrangement, the heat-level lights blink when the thermostat is not calling for heat and the stove drops to level 1. That is normal thermostat behavior, not automatically a fault. A useful forum report should identify exactly which numbered lights flash and when they begin flashing.
 
-It is also normal for the convection blower and exhaust fan to continue running for roughly 30 minutes during cooldown.
+It is also normal for the convection blower and exhaust fan to continue running
+during cooldown. The manual gives a general figure of roughly 30 minutes; exact
+firmware 2.06 code and a matching live capture establish about 14 minutes 38
+seconds for its power-up cooldown.
 
 ## What to include when asking for help
 
@@ -78,7 +81,7 @@ It is also normal for the convection blower and exhaust fan to continue running 
 
 ## Sources and confidence
 
-The fault meanings and basic remedies above are **factory documented** in the preserved [MaxFire Model 115 owner manual](../../preservation/original/manuals/7346103.pdf). The J9/J10 signal explanations are **project supported** by the factory wiring diagram and static analysis of firmware 2.06, 2.70, and 2.71. Physical J9/J10 testing on the project's firmware-2.02 stove remains outstanding.
+The fault meanings and basic remedies above are **factory documented** in the preserved [MaxFire Model 115 owner manual](../../preservation/original/manuals/7346103.pdf). The J9/J10 signal explanations are **project supported** by the factory wiring diagram and static analysis of firmware 2.02, 2.06, 2.70, and 2.71. A bounded firmware-2.02 start physically correlated the running blower with J10's CR05 path and produced partial J9 changes; J9 polarity, timing units, and a complete wheel-cycle test remain outstanding.
 
 For the detailed technical evidence, see:
 

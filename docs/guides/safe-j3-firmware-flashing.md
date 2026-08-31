@@ -1,18 +1,38 @@
 # Guarded J3 firmware flashing
 
-Status: release-candidate host implementation, exhaustively fault-injected
-offline. Physical zero-write sessions have now observed `EA/EB` and `ED/E4`,
-but loader-entry electrical/reset behavior, Flash programming, and recovery are
-**not qualified on sacrificial hardware**. Do not use a production controller
-until the qualification matrix has passed and complete PICkit recovery has been
-programmed, read back, authenticated, and exercised on a spare PIC/controller.
-The command refuses to proceed without an explicit confirmation of that
-recovery test.
+Status: **physical J3 programming is not qualified**. The first `E3` attempt on
+2026-08-29 exposed a host/simulator word-byte-order defect: the loader accepted
+the order-insensitive checksum (`E7`), but PICkit readback showed three
+byte-swapped relocated reset-vector words. The adverse readback physically
+anchors the diagnosis of the old encoding; BixCheck assembly and the strict
+simulator anchor the corrected encoding. The corrected frame itself has not
+been physically tested. After an operator-reported external restore from the
+sole pre-write 2.02 image, the controller showed a normal 2.02 boot and matching
+J3 identity/EEPROM; no post-program whole-chip readback was retained.
 
-This is the dedicated replacement for BixCheck Downloader. Loader traffic is
-not exposed through generic raw mode, and this workflow never sends the
-application's `CW0FC4` software-reset command. Loader entry uses a manual stove
-AC power cycle only.
+The offline host is exhaustively fault-injected, and historical physical
+zero-write sessions observed `EA/EB` and `ED/E4`. Neither result qualifies the
+loader-entry electrical/reset boundary, Flash programming, or recovery on
+sacrificial hardware.
+
+The corrected `E3` frame has never been transmitted physically. Later runs
+missed loader entry, and corpus-wide analysis found a 255 ms gap between saved
+host probe timestamps plus a nondeterministic bare-FTDI power boundary. The gap
+is not wire-time or causal proof because AC-on was not timestamped. **Do not use the manual-AC/
+BREAK workflow for another write.** First qualify a target-power-safe UART and
+deterministic hardware-reset fixture on the spare target. See the
+[physical-session forensic report](../reverse-engineering/physical-flash-session-forensics.md)
+and [fixture requirements](../hardware/j3-loader-entry-fixture.md).
+
+This is the offline design and evidence base for a future dedicated BixCheck
+Downloader replacement. Loader traffic is not exposed through generic raw
+mode. The manual stove-AC/BREAK implementation is retained in source only as
+historical research code and is not reachable for physical traffic. The CLI
+permits only `--plan-only`; every rehearsal, programming, or recovery run is
+rejected before image/bundle access, session creation, serial open, or an
+operator power-cycle prompt. The rehearsal and complete write executors accept
+only the package's exact in-process simulator types and reject physical
+transports and simulator subclasses before the first loader byte.
 
 ## The unavoidable boundary
 
@@ -35,44 +55,37 @@ The recoverable design boundary is stronger and narrower:
 
 J3 cannot recover a physically failing PIC, unstable controller supply,
 damaged socket, or loader/reset region erased by external programming. Those
-conditions require the proven external-programmer path.
+conditions require the conservative external-programmer procedure, which is
+not yet a qualified repeatable process.
 
 The vendor interruption warning and retry statement are on page 24 of the
 [preserved BixCheck service manual](../../preservation/original/manuals/1394047.pdf).
 
-## What the tool proves
+## What the reachable tool proves
 
-Before a write, OpenMaxFire requires all of the following:
+The offline plan authenticates an exact preserved J3 image by SHA-256,
+filename, delivery variant, program-word count, configuration word, block
+count, and the SHA-256 of the complete on-wire frame sequence. It constructs
+and validates a strict-simulator-executable frame plan; `--plan-only` does not
+execute that simulator or claim a memory result.
 
-- three identical controller-identity reads selecting an exact preserved
-  profile;
-- two byte-identical complete `A00`-`AFF` reads;
-- a valid stored EEPROM checksum and matching controller/EEPROM data format;
-- one of three exact authenticated J3 images, matched by SHA-256, filename,
-  delivery variant, program-word count, configuration word, block count, and
-  the SHA-256 of the complete on-wire frame sequence;
-- a successful whole-image run through the strict loader simulator;
-- a self-contained recovery bundle containing the exact HEX, preparation, and
-  EEPROM backup with a hash manifest;
-- a non-writing physical rehearsal: `EA/EB`, then `ED/E4`, with **zero `E3`
-  frames**;
-- after `ED/E4`, a transmit-silent wait for unsolicited `T` or periodic `DW`
-  application telemetry before the first `CR00`;
-- three unchanged application identities and two unchanged EEPROM reads.
+The exact-type simulation-only rehearsal tests `EA/EB`, then `ED/E4`, with zero
+`E3` frames. The simulation-only write executor tests fixed 9,600-baud loader
+transport, per-block `E7`/`E4` handling, bounded retries, application identity,
+and unchanged EEPROM verification. Those software checks are not evidence that
+the present physical reset/power boundary is safe or deterministic.
+After `ED/E4`, the retained handoff gate waits transmit-silent for unsolicited
+`T` or periodic `DW` application telemetry before the first `CR00`; timeout
+cannot be treated as permission to transmit.
 
-During and after a write, it requires:
-
-- fixed 9,600-baud loader transport;
-- an `E7` payload acceptance followed by `E4` PIC-side write/readback evidence
-  for every block;
-- bounded outcome-specific retry decisions;
-- target application identity repeated three times at the target baud;
-- two identical complete post-flash EEPROM reads;
-- byte-for-byte equality with the pre-flash EEPROM.
-
-`E4` is the resident loader's local readback result. J3 has no independent
+`E4` is the resident loader's local readback result; J3 has no independent
 whole-program-memory read command. A PICkit readback on expendable hardware is
 the independent whole-chip verification method.
+
+The physical failure also proves that `E7` alone authenticates only the sum of
+payload bytes, not their order. BixCheck sends each PIC word high byte first;
+Intel HEX stores it low byte first. OpenMaxFire now performs that conversion
+explicitly, and the strict simulator independently decodes the wire order.
 
 ## Firmware and MCU evidence
 
@@ -80,19 +93,29 @@ The byte-identical 2.02/2.06 resident loader sets `SPBRG=0x40` with the board's
 10.000 MHz oscillator. That is the 9,600-baud setting. Firmware 2.70 and 2.71
 use 19,200 only after application handoff.
 
-At reset, the loader permits approximately three Timer1 overflow periods for
-its first byte. The recovered instructions and 10 MHz oscillator put this
-window near 78 ms. OpenMaxFire uses a 20 ms read timeout for rapid `EA` probes,
-then changes to a 500 ms block-response timeout.
+At reset, the loader initializes a three-count timeout loop, but a pre-set
+Timer1 flag consumes its first decrement immediately. The two remaining real
+overflows and the 10 MHz oscillator put the first-byte window near 200 ms.
+OpenMaxFire defaults to a 20 ms read timeout and no extra delay between missed
+`EA` probes; `--loader-identify-retry-delay` can add a bounded 0-50 ms pacing
+delay independently of program-block retries. After loader identification,
+the tool changes to a 500 ms block-response timeout.
 
 The recovered PIC machine code has also been emulated with `EA ED` queued at
 reset. It consumes both bytes, returns exactly `EB E4`, and enters the original
-application path without an `E3` transfer. Physical zero-write sessions 003,
-004, and 006 reproduced those identify and completion acknowledgements on
-serial 5215. Those sessions did not qualify Flash programming or the electrical
-loader-entry path.
+application path without an `E3` transfer.
 
-Those same sessions exposed an application-handoff defect in host version 0.9:
+Ten physical rehearsals on the original firmware-2.02 controller confirmed
+`EA/EB` and `ED/E4` with zero `E3` frames. Other otherwise equivalent entries
+failed. With the direct `TTL-232R-5V-WE`, UART BREAK holding orange/TX low during
+power removal improved entry but did not make it deterministic. Application J3
+traffic also sometimes required a cold boot with both stove AC and FTDI USB
+power removed. All 24 saved EEPROM images are byte-identical. These results
+prove functional loader-protocol and UART logic-level behavior when entry
+occurs; they do not establish a safe electrical reference, partial-power
+compatibility, firmware programming, or the power-transition method.
+
+The sessions also exposed an application-handoff defect in host version 0.9:
 the first `CR00` was sent about 0.76-0.78 seconds after final `E4`, while
 firmware 2.02 could have its USART receiver enabled before its receive interrupt
 was ready. Four request bytes can overrun the PIC16F877A's two-byte receive
@@ -108,47 +131,14 @@ interrupted by reset. See the official [PIC16F87XA data
 sheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/DataSheets/39582C.pdf),
 sections 3.1 and 3.6.
 
-## Mandatory physical prerequisites
+## Physical loader boundary
 
-Every live or recovery command requires confirmation that:
-
-1. The stove is cold and OFF.
-2. Both igniters are physically unplugged.
-3. The exact traced 9067-0604 5 V TTL wiring is used: adapter TX/orange to
-   J3-1, adapter RX/yellow to J3-2, and ground/black to J3-4.
-4. J3 pin 3 is disconnected.
-5. Adapter VCC is disconnected. Do not inject USB 5 V into J3.
-6. Complete PICkit recovery has been proven on a spare PIC/controller, not
-   merely planned or assumed.
-7. The computer is on stable power and its lid will remain open.
-8. Stove AC will remain stable for the complete programming window.
-9. The target-version calibration procedure is ready.
-
-The flasher also acquires a host sleep inhibitor during the destructive window:
-Windows `SetThreadExecutionState`, macOS `caffeinate`, or Linux
-`systemd-inhibit`. It fails before programming if that inhibitor cannot be
-established. These mechanisms cannot prevent mains loss, forced shutdown,
-SIGKILL, or every lid-close policy. See the platform documentation for
-[Windows execution state](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate),
-[Apple power assertions](https://developer.apple.com/documentation/iokit/1557134-iopmassertioncreatewithname),
-and [systemd inhibitor locks](https://www.freedesktop.org/software/systemd/man/latest/systemd-inhibit.html).
-
-The helper is checked again after the operator's power-off phrase, immediately
-before any possible `E3`, and at progress checkpoints. If it disappears before
-programming, the tool stops. If it disappears after a block may be partial, the
-tool records the failure and finishes the exact image rather than deliberately
-abandoning it.
-
-The tool opens one serial handle and retains it across preflight, rehearsal,
-programming, and post-verification. On POSIX it requests pySerial exclusive
-mode; Windows serial handles are natively exclusive. Baud and timeout are
-changed on that open handle. This removes the phase-to-phase port race and
-avoids additional DTR/RTS transitions. pySerial's [native-port
-API](https://pyserial.readthedocs.io/en/latest/pyserial_api.html) documents
-exclusive mode and warns that opening a port can glitch DTR/RTS.
-
-Do not connect RS-232 voltage levels to J3. Do not reconnect the igniters just
-because programming completed.
+There is no current physical rehearsal path. Zero-write does not resolve the
+unclassified shared electrical reference, cross-power possibility, or reset-
+time nondeterminism, so the manual AC/BREAK workflow and its operator prompts
+are retired. Do not copy a historical command from a saved session. Future
+zero-write work starts only with the reviewed fixture on a safely powered spare
+described in the qualification plan.
 
 ## Authenticate the plan offline
 
@@ -163,7 +153,8 @@ maxfirectl flash \
 
 This opens no serial port. The report should name target
 `fw270-format07`, loader baud 9,600, application baud 19,200, 481
-authenticated blocks, a data-format migration, and no software reset.
+authenticated blocks, a data-format migration, and
+`physical_e3_enabled: false`.
 
 Unknown, modified, renamed, PICkit, and firmware 2.73 images are blocked.
 For 2.73, contact [contact@openmaxfire.com](mailto:contact@openmaxfire.com) and
@@ -171,180 +162,64 @@ provide the original image to the
 [OpenMaxFire project](https://github.com/OpenMaxFire/OpenMaxFire) for
 preservation and analysis.
 
-Same-version rewrites and J3 downgrades are also blocked. Sparse downgrades can
-leave stale newer program words. Session-bound recovery is the only exact-image
-replay path.
+Same-version rewrites and J3 downgrades are also rejected by the offline plan.
+Sparse downgrades can leave stale newer program words. The dormant
+session-bound replay design is retained for simulation, but physical recovery
+currently requires the conservative, not-yet-qualified PICkit procedure.
 
-## Run only the non-writing rehearsal
+## All physical loader traffic is locked
 
-This exercises the real adapter, wiring, reset window, resident loader, handoff,
-original application, and EEPROM without transmitting an `E3` block:
+There is currently no supported physical rehearsal, live-update, or J3 recovery
+command. A `flash` invocation without `--plan-only` exits before loading the
+image or recovery bundle, creating a session, opening the serial port, or
+showing any power-cycle prompt. Adding `--rehearsal-only`,
+`--hold-tx-break-during-power-off`, confirmation flags, or
+`--recover-from-session` does not bypass this lock.
 
-```bash
-maxfirectl \
-  --port /dev/ttyUSB0 \
-  --baud 9600 \
-  --timeout 0.50 \
-  flash reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex \
-  --rehearsal-only \
-  --session-dir flash-sessions/rehearsal-001 \
-  --confirm-stove-cold-and-off \
-  --confirm-igniters-unplugged \
-  --confirm-correct-5v-ttl-wiring \
-  --confirm-j3-pin3-disconnected \
-  --confirm-adapter-vcc-disconnected \
-  --confirm-pickit-recovery-tested-on-spare \
-  --confirm-computer-power-stable \
-  --confirm-stove-power-stable \
-  --confirm-calibration-plan
-```
+The implementation below that lock is retained so the complete plan, retry,
+recovery, and post-write verification behavior can be called directly by the
+simulation/qualification tests. There is no command-line override, including
+for a simulated transport. Adding a fixture-specific physical executor for
+qualification requires all of the following in a separate reviewed change:
 
-The tool requires the exact phrase `POWER OFF FOR REHEARSAL` after AC is
-physically disconnected. A successful rehearsal result explicitly reports
-`program_blocks_sent=0` and `flash_write_commands_sent=0`. After `ED/E4`, it
-waits up to 30 seconds for unsolicited `T` or `DW` telemetry while transmitting
-nothing. If telemetry never arrives, it fails without sending `CR00`. The
-timeout can be changed with `--application-ready-timeout`, but increasing it
-does not repair an electrical reset or backfeed problem.
+1. A target-power-safe UART interface and deterministic hardware-reset entry.
+2. The spare-target electrical and 100/100 zero-write qualification gates in
+   the [fixture requirements](../hardware/j3-loader-entry-fixture.md).
+3. One complete spare-target flash with independent PICkit whole-chip
+   readback.
+4. A new CLI path tied specifically to that qualified fixture, with tests that
+   prove the retired AC/BREAK entry still cannot reach `E3`.
 
-## Live update
+The historical tool required an exact power-off phrase and, after `ED/E4`,
+waited up to 30 seconds for unsolicited `T` or `DW` telemetry while
+transmitting nothing. If telemetry never arrived, it failed without sending
+`CR00`. Increasing that timeout does not repair an electrical reset or
+backfeed problem.
 
-Use the controller's **current application baud** in the global `--baud`
-option. The tool switches the retained handle to 9,600 for each loader entry
-and to the known target application baud after handoff.
+That development path must remain unavailable for a production controller
+until the complete multi-specimen, forced-interruption, and cross-platform
+[release qualification plan](j3-flasher-qualification.md) passes and produces
+a signed release record.
 
-```bash
-maxfirectl \
-  --port /dev/ttyUSB0 \
-  --baud 9600 \
-  --timeout 0.50 \
-  flash reverse-engineering/firmware/2.06/extracted/Bixby_02060021_Downloader.hex \
-  --session-dir flash-sessions/fw202-to-fw206-001 \
-  --confirm-stove-cold-and-off \
-  --confirm-igniters-unplugged \
-  --confirm-correct-5v-ttl-wiring \
-  --confirm-j3-pin3-disconnected \
-  --confirm-adapter-vcc-disconnected \
-  --confirm-pickit-recovery-tested-on-spare \
-  --confirm-computer-power-stable \
-  --confirm-stove-power-stable \
-  --confirm-calibration-plan
-```
+If an older session contains `RECOVERY_REQUIRED.txt`, preserve the directory,
+keep the stove out of operation, and follow the
+[external-programmer recovery procedure](pickit3-emergency-recovery.md). The
+2026-08-30 original-controller restore booted normally and retained the
+expected J3 EEPROM, but no saved post-program whole-chip readback or spare-
+controller proof exists; do not call that process fully qualified. The dormant
+`--recover-from-session` J3 replay path is also blocked by both public physical
+gates; do not treat it as an available recovery command.
+Any preserved 2026-08-29/30 marker text that instructs
+`--recover-from-session` is historical evidence and is superseded by this
+boundary; do not edit the saved marker.
 
-The session directory must not exist. The command performs the complete
-preflight and first prompts for `POWER OFF FOR REHEARSAL`. After that cycle
-returns to the unchanged original application, it acquires the sleep inhibitor
-and prompts for the separate phrase `POWER OFF FOR FLASH`.
+## Historical session artifacts and current exit behavior
 
-Before the tool asks the operator to restore AC for programming, it writes
-`RECOVERY_REQUIRED.txt` and a durable `state.json`. Keep AC, USB, J3, and the
-computer stable until the final result appears.
-
-Ordinary Ctrl+C, SIGTERM, and Windows SIGBREAK are deferred from the moment
-programming is armed until the critical loader call ends. The request is
-recorded by a minimal signal handler, then reported and journaled after the
-critical exchange; it does not intentionally abandon a partial image.
-Power loss, forced process kill, kernel failure, or unplugged hardware cannot be
-deferred.
-
-## Retry policy
-
-Every retry sends the same authenticated block. No arbitrary resume address is
-accepted, and the BixCheck terminal transmission whose response is never read
-is not reproduced.
-
-| Outcome | Host action |
-| --- | --- |
-| `E8` before programming | Up to two retries; `E8` proves the payload was rejected before a write. |
-| Timeout before `E7` | Up to two cautious retries. The missing reply is ambiguous; it does not prove the PIC failed to write. |
-| Timeout after `E7` | One identical retry because the prior write may have completed. |
-| First `E5` in the session | One identical retry. The PIC has already exhausted its two internal row-write attempts. |
-| Second `E5`, on the same or a later block | Immediate abort and exact-image recovery requirement. |
-| Unexpected byte sequence | Immediate abort; framing may be lost. |
-| Serial write/read error | Immediate abort; reconnecting blindly cannot establish what reached the PIC. |
-
-No block can be transmitted more than four times even if different failure
-classes occur. A delayed `E4` is accepted only after that same attempt already
-consumed `E7`; a delayed `E7 E4` pair is accepted only after neither byte was
-seen. Other late byte sequences abort, so a stray `E4` after `E5` or `E8`
-cannot forge success.
-
-If one `E5` retries successfully, the transfer continues because finishing the
-application is safer than intentionally leaving a mixed image. The final result
-records the anomaly and requires qualified socket/contact and controller-VDD
-inspection before operation. A second `E5` is treated as systemic.
-
-Progress is printed every 25 blocks and at the first/final block. Every failed
-attempt is printed immediately with its address, attempt number, classified
-outcome, retry/abort decision, and reason. Journal, byte-traffic, and console
-failures are recorded when possible but are not allowed to interrupt an image
-once programming may be partial. If a post-write traffic recorder cannot open
-or fails mid-read, repeated target identity and EEPROM verification continue on
-the already-open handle; the final result reports incomplete diagnostics.
-
-## Automatic exact-image recovery
-
-If `RECOVERY_REQUIRED.txt` remains, do not operate the stove, reconnect the
-igniters, edit the failed session, choose another image, or guess a checkpoint.
-Start a new output directory and point at the failed session:
-
-```bash
-maxfirectl \
-  --port /dev/ttyUSB0 \
-  --baud 9600 \
-  --timeout 0.50 \
-  flash \
-  --session-dir flash-sessions/fw202-to-fw206-recovery-002 \
-  --recover-from-session flash-sessions/fw202-to-fw206-001 \
-  --confirm-stove-cold-and-off \
-  --confirm-igniters-unplugged \
-  --confirm-correct-5v-ttl-wiring \
-  --confirm-j3-pin3-disconnected \
-  --confirm-adapter-vcc-disconnected \
-  --confirm-pickit-recovery-tested-on-spare \
-  --confirm-computer-power-stable \
-  --confirm-stove-power-stable \
-  --confirm-calibration-plan \
-  --confirm-recovery-target-matches-backup
-```
-
-No image argument is needed. The source must still contain both a durable state
-with `recovery_required=true` and `RECOVERY_REQUIRED.txt`; a completed session
-cannot be reused to bypass the same-version/no-downgrade rules. Recovery loads
-the exact HEX from the failed session's `rescue/` directory, verifies its
-allowlist hash, file size, manifest, preparation, profile, identity, and EEPROM
-cross-links, reparses all 256 raw/addressed EEPROM bytes, rebuilds the canonical
-wire sequence, reruns whole-image simulation, and replays from block zero.
-
-Before the power-cycle prompt, the new session creates its own marker and exact
-rescue bundle, then atomically takes recovery responsibility from the old
-session. The old session receives `RECOVERY_DELEGATED_TO.json` and loses its
-active marker. If this recovery fails or is aborted, continue from the **new**
-session named in that delegation record. This prevents accidental replay of an
-old recovery bundle after a later attempt has changed the PIC again.
-
-Recovery skips the non-writing rehearsal because the old application may
-already be incomplete. Loader mode cannot report application identity, so the
-operator must confirm that the physical target is the controller represented
-by the backup.
-
-| Evidence at failure | Meaning and next action |
-| --- | --- |
-| No `EB`, no `E3` in a normal session | This attempt did not start programming. Fix the loader-entry condition and rerun normally. |
-| Any `E3` may have been sent without final `E4` | `RECOVERY_REQUIRED`; replay the exact session image from block zero. |
-| Every block has `E4`, final `ED/E4` missing | The tool first tries the target application. If that fails, it probes the still-open handle at 9,600 and sends one more `ED` only after `EB`. |
-| Target identity and unchanged EEPROM verify | The recovery marker is removed; calibration or E5 inspection can still block operation. |
-| Neither target application nor resident loader answers | Remove stove AC and use the proven PICkit/spare recovery path. |
-
-## Session artifacts and states
-
-Every live session attempts to preserve:
+`--plan-only` writes no session and opens no serial port. Historical physical
+`--rehearsal-only` sessions attempted to preserve:
 
 - `state.json`, atomically replaced for each major state;
-- `RECOVERY_REQUIRED.txt` whenever exact replay is required;
-- `RECOVERY_DELEGATED_TO.json` in a recovery source after a newer self-contained
-  session assumes responsibility;
-- `preflight-traffic.jsonl` for a normal session;
+- `preflight-traffic.jsonl`;
 - `eeprom-before.json` and `preparation.json`;
 - `offline-qualification.json`;
 - `rescue/<exact-vendor-filename>.hex` and
@@ -353,30 +228,29 @@ Every live session attempts to preserve:
   `rehearsal-app-traffic.jsonl`, `rehearsal-application-readiness.json`,
   `rehearsal-verification.json`, and `rehearsal-eeprom.json` for a normal
   session;
-- `journal.jsonl`, flushed and `fsync`'d after each state event while the
-  diagnostic sink remains healthy;
+- `journal.jsonl`, normally flushed and `fsync`'d after each state event;
+  identify probe misses are bounded and aggregated until the timing window
+  ends;
 - `loader-traffic.jsonl`, flushed and `fsync`'d for every non-empty TX/RX
   event while the diagnostic sink remains healthy;
 - `loader-result.json`;
 - `postflash-readiness-<attempt>.json`, post-flash traffic,
   `eeprom-after.json`, and `result.json`.
 
-The high-level states distinguish `failed_before_programming` from
-`recovery_required`, `programming_verified_calibration_required`, and
-`complete_verified`. A failed session directory is evidence and the recovery
-source. Do not edit it.
+Older programming-session directories remain evidence. Do not edit or delete
+them even though their physical J3 recovery command is now locked.
 
 CLI exit codes relevant to flashing are:
 
 | Code | Meaning |
 | --- | --- |
-| `0` | Requested rehearsal or programming verification completed. Check `ready_for_operation`. |
+| `0` | Offline plan completed. |
 | `2` | Invalid command arguments. |
-| `3` | Operator phrase/gate abort before this session's program traffic. |
-| `4` | Pre-programming validation, file, serial-open, or sleep-inhibitor error. |
-| `5` | Loader/rehearsal failure with no new partial image from this normal session. |
-| `6` | Recovery is required or remains required, including a failed or aborted recovery command. |
-| `130` | Interrupt occurred before the protected programming section. |
+| `3` | Historical/dead-code operator abort state; not reachable from the current physical CLI. |
+| `4` | Validation failure or any physical loader workflow blocked by the early CLI safety lock. |
+| `5` | Historical/dead-code loader failure state; not reachable from the current physical CLI. |
+| `6` | Historical unresolved recovery state; current physical J3 replay is locked. |
+| `130` | The process was interrupted. |
 
 ## Calibration after an update
 
@@ -385,16 +259,13 @@ calibration bytes in place. The 2.06 release notes require Monitor model
 selection, **Individualize**, **Calculate Fuel A/B**, and **Format** after the
 firmware/data-format update. BixCheck 5.5.01 also emphasizes calibration.
 
-Every supported normal transition changes firmware version, so OpenMaxFire
-reports `ready_for_operation=false` after programming. Keep both igniters
-disconnected and do not operate the stove until the target-version procedure is
-complete. A recovered `E5` adds a qualified hardware-inspection requirement.
-Back up the newly calibrated EEPROM separately.
+This procedure remains a requirement for any future physical updater. The
+current CLI cannot perform that update.
 
 ## Release qualification
 
 Passing software tests does not convert emulator evidence into physical
 evidence. The stable-release gate and forced-interruption matrix are in the
 [J3 flasher qualification plan](j3-flasher-qualification.md). Until that matrix
-passes, treat the live executor as a recoverable bench instrument, not a
-consumer updater.
+and the replacement fixture gates pass, every physical loader byte remains
+unreachable from both the CLI and the public executors.

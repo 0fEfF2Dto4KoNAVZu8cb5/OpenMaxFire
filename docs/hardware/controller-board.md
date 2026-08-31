@@ -13,19 +13,23 @@ Startup TRIS configuration makes these pins inputs:
 
 RB1 and RB5 are outputs even though CR03 reports their states.
 
-The common input scanners in 2.06, 2.70, and 2.71 also establish two RD3
-multiplexer banks. RD2 selects the active-low four-button bank, while RD7
-selects an active-high three-input external-switch bank; RD6:RD5 select the
-individual input in each bank. The results are exposed as CR01 and CR02 bits
-0-2. See the [multiplexer cross-reference](maxfire-motherboard-pinout.md).
+All four recovered applications establish two RD3 multiplexer banks. RD2
+selects the active-low four-button bank, while RD7 selects an active-high
+three-input external-switch bank; RD6:RD5 select the individual input in each
+bank. The results are exposed as CR01 and CR02 bits 0-2. Firmware 2.02 uses
+bank-0 RAM staging (`0x51`→`0x52` for buttons and `0x50` for external
+inputs); later versions use bank-1 `0x52`→`0x53` and `0x51`. See the
+[multiplexer cross-reference](maxfire-motherboard-pinout.md).
 
-Two additional sensor paths are identical in 2.06, 2.70, and 2.71:
+Two additional sensor paths occur in all four applications:
 
 - RA4/T0CKI counts J10 exhaust-sensor falling edges in TMR0. The firmware
   latches that count to RAM `0x34`, which is returned as `CR05`.
 - RD0 detects a high-then-low J9 feeder-wheel sensor cycle while RB1 is active.
-  The elapsed RB0-interrupt count is latched and scaled into `CR07`; the
-  instantaneous RD0 state is also exposed as `CR02.4`.
+  The elapsed RB0-interrupt count is latched and scaled into `CR07`; 2.02
+  shifts once during the latch before the common four-bit protocol scaling,
+  while later versions copy the count directly. The instantaneous RD0 state
+  is also exposed as `CR02.4`.
 
 The exact instruction PCs and transforms are in the
 [register map](../protocol/register-map.md). The RB0 interrupt is the

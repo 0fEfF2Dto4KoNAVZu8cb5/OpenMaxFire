@@ -13,8 +13,11 @@ files remain under `preservation/original/`; raw live evidence remains under
 | [Project roadmap](ROADMAP.md) | Preservation, bench validation, software, firmware, and permanent-controller work |
 | [Research log](RESEARCH_LOG.md) | Chronological record of findings and implementation milestones |
 | [Safety policy](../SAFETY.md) | Non-negotiable electrical, combustion, actuator, and firmware boundaries |
-| [Guarded J3 flashing](guides/safe-j3-firmware-flashing.md) | Authenticated experimental flasher, mandatory recovery gate, evidence, and failure procedure |
+| [Guarded J3 flashing](guides/safe-j3-firmware-flashing.md) | Offline authenticated planning, all-physical-loader lock, historical evidence, and future qualification gates |
 | [J3 flasher qualification](guides/j3-flasher-qualification.md) | Sacrificial-hardware fault matrix and consumer-release gate |
+| [Physical flash-session forensics](reverse-engineering/physical-flash-session-forensics.md) | Corpus-wide traffic results, root causes, electrical hypothesis, and next qualification gates |
+| [Loader-entry fixture](hardware/j3-loader-entry-fixture.md) | Target-power, UART, MCLR, instrumentation, and acceptance requirements |
+| [PICkit emergency recovery](guides/pickit3-emergency-recovery.md) | Evidence-first external-programmer boundary for an already uncertain controller |
 
 ## Owner and forum troubleshooting guides
 
@@ -70,6 +73,7 @@ layers. Controller semantics and safety rules belong in the API.
 | Operating states | [Operating-state machine](reverse-engineering/operating-state-machine.md) |
 | Bare controller | [Bare-controller photographs](hardware/bare-controller-photographs.md) |
 | Historical J3 cable | [Bioburner forum photograph](hardware/historical-j3-cable-photograph.md) |
+| Deterministic loader entry | [Loader-entry fixture requirements](hardware/j3-loader-entry-fixture.md) |
 | Permanent interface | [Candidate hardware](hardware/permanent-controller-candidate.md) and [daughterboard design](hardware/daughterboard-preliminary-design.md) |
 | Owner manual | [Model 115 manual analysis](manuals/maxfire-owner-manual-2020866-rev-a.md) |
 

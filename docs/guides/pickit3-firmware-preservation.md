@@ -1,13 +1,16 @@
 # PICkit 3 read-only firmware preservation
 
-Status: prepared for the removed original PIC16F877A, its socket, and spare
-chips. No original-chip read has happened yet. This procedure deliberately
-separates preservation from cloning and contains a hard stop for code
+Status: one complete, sole pre-write read of the original PIC16F877A is
+preserved. The original was subsequently programmed once during the
+2026-08-30 emergency restore, so the planned three independent pre-write reads
+can no longer be obtained from this specimen. Later reads can verify the
+restored state, but cannot retroactively authenticate the factory state. This
+procedure records the preservation boundary and retains a hard stop for code
 protection.
 
-## Non-negotiable rule
+## Non-negotiable rule for an untouched original
 
-The first session with the original chip is **read/export only**. Never click
+The first session with any untouched original chip is **read/export only**. Never click
 Program, Erase, Blank Check, or any action described as erase before read. Do
 not load a factory HEX file while the original chip is in the socket. If the
 tool reports code protection, stop and preserve the output/log; do not clear
@@ -15,9 +18,11 @@ protection. Microchip states that protected PIC16F87XA program/data reads return
 zeros and the only supported removal path is a chip erase, which destroys the
 program, EEPROM, configuration, and ID contents.
 
-The original chip is already removed from the stove board, which is the best
-boundary for this work: no stove mains power, controller power, J3 cable, or
-other board connection belongs in the read setup.
+Before every programmer session, remove the PIC from a completely unpowered
+controller and place it in the verified socket adapter. The serial-5215
+original is currently reinstalled, so removal and power isolation are a fresh
+precondition, not a historical fact. No stove mains power, controller power,
+J3 cable, or other board connection belongs in the programmer setup.
 
 ## Software
 
@@ -114,11 +119,15 @@ not a read-only backup operation.
 
 ## Spare-chip clone sequence
 
-Cloning starts only after the original has three matching reads and the
-original is labeled, removed from the programmer, and stored safely.
+The original project gate required three matching pre-write reads. That gate
+cannot be completed retroactively for serial 5215's reprogrammed original.
+Any clone derived from its sole pre-write capture must therefore be labeled as
+recovery/qualification hardware, not as a three-read-authenticated factory
+clone. Keep the original labeled and stored whenever it is not required for an
+explicit recovery.
 
 1. Insert a verified spare PIC16F877A into the socket.
-2. Import the authenticated original HEX into IPE.
+2. Import the sole hash-pinned pre-write original HEX into IPE.
 3. Confirm the selected device and memory regions again, then Program and
    Verify the **spare only**.
 4. Power-cycle the programmer and read the spare back to a new HEX file.
@@ -139,13 +148,15 @@ authenticates program, EEPROM, User IDs, and configuration instead.
 
 ## Files to retain
 
-- every untouched original-chip HEX read;
+- every untouched original-chip HEX read, especially serial 5215's sole
+  pre-write capture;
 - every PICkit/IPE output log;
 - the repeated-read JSON manifest;
 - clear connection/orientation photographs;
 - the exact MPLAB X/IPE version and PICkit 3 serial/firmware details;
 - every spare-chip program log, verify log, readback HEX, and comparison report.
 
-Do not reinstall or power the original chip merely to “see if it works” before
-the dump set has been copied and authenticated. The original is the only known
-source for firmware 2.02 and its resident loader.
+For any future untouched specimen, do not reinstall or power it merely to “see
+if it works” before the complete planned read set is copied and authenticated.
+Serial 5215's original has already undergone one emergency restore; preserve
+its sole pre-write export separately from all restored-state readbacks.

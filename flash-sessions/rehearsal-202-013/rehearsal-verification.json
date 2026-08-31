@@ -1,0 +1,24 @@
+{
+  "eeprom_confirmation_reads": 2,
+  "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+  "eeprom_unchanged": true,
+  "identity": {
+    "data_format": "04",
+    "firmware_version": "2.02",
+    "probe_ok": true,
+    "profile_key": "fw202-format04",
+    "recognized_static_pairing": true,
+    "registers": {
+      "CR00": "00",
+      "CR08": "04",
+      "CR0B": "02",
+      "CR0C": "02",
+      "CR0D": "00",
+      "CR0E": "00"
+    }
+  },
+  "identity_confirmations": 3,
+  "identity_unchanged": true,
+  "schema": "openmaxfire.application-unchanged-verification.v1",
+  "successful": true
+}

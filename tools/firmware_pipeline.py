@@ -128,6 +128,18 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
     "2.02": {
         0x0000: "Reset vector; redirects through the resident serial loader at 0x1E88.",
         0x0004: "Application interrupt vector; saves context before source dispatch.",
+        0x00FA: "UART receive interrupt routine.",
+        0x0EDA: "Read next byte from the command receive buffer.",
+        0x0F13: "Decode one uppercase ASCII hexadecimal nibble.",
+        0x0F2F: "Decode two ASCII hexadecimal characters into one byte.",
+        0x1073: "Controller parser checks first command byte for ASCII 'C'.",
+        0x107F: "Controller parser checks second command byte for ASCII 'W'.",
+        0x115F: "Controller parser compares second command byte with ASCII 'R'.",
+        0x12B7: "Format a controller response as ASCII hexadecimal.",
+        0x12E5: "CW00-CW0E computed write-dispatch table; format 04 has no CW0F entry.",
+        0x12FB: "CR00-CR0C computed read-dispatch table; CR0D/CR0E use the generic zero response.",
+        0x1800: "Application startup and peripheral initialization.",
+        0x1809: "UART initialization; SPBRG is loaded with 0x40.",
         0x1E80: "Resident-loader protected reset-trampoline region begins.",
         0x1E84: "Relocated application reset vector written by the serial loader.",
         0x1E88: "Resident serial-loader entry; byte-identical to the preserved 2.06 PICkit loader.",
@@ -139,6 +151,7 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
         0x0134: "Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.",
         0x03FF: "Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.",
         0x079C: "Second 2.06 fuel-table read path; a clear CR02.2 adds the same 0x30 Fuel-B offset.",
+        0x086A: "Non-periodic T20 display-LED event path; live 2.06 traffic alternates values with a flashing panel light.",
         0x0F03: "External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.",
         0x0E71: "Read next byte from the command receive buffer.",
         0x0EA4: "Decode one uppercase ASCII hexadecimal nibble.",
@@ -165,6 +178,7 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
         0x00AE: "UART receive interrupt routine.",
         0x0118: "Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.",
         0x03D0: "Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.",
+        0x07E2: "Non-periodic T20 display-LED event path.",
         0x1004: "External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.",
         0x0F63: "Read next byte from the command receive buffer.",
         0x0F95: "Decode one uppercase ASCII hexadecimal nibble.",
@@ -189,6 +203,7 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
         0x00AE: "UART receive interrupt routine.",
         0x0118: "Front-panel button multiplexer scan: RD2 selects the active-low button bank, RD6:RD5 address OFF/ON/UP/DOWN, and RD3 is the shared return.",
         0x03D0: "Fuel-select input chooses the EEPROM calibration bank; a clear CR02.2 adds 0x30 to select Fuel B.",
+        0x07E2: "Non-periodic T20 display-LED event path.",
         0x0FBF: "External sensor multiplexer scan: RD7 selects the bank, RD6:RD5 address three active-high RD3 inputs, and results become CR02 bits 0-2.",
         0x0F2E: "Read next byte from the command receive buffer.",
         0x0F60: "Decode one uppercase ASCII hexadecimal nibble.",
@@ -211,23 +226,56 @@ KNOWN_ANNOTATIONS: dict[str, dict[int, str]] = {
 
 
 ANCHORS = (
-    ("reset_vector", {"2.06": 0x0000, "2.70": 0x0000, "2.71": 0x0000}),
-    ("interrupt_vector", {"2.06": 0x0004, "2.70": 0x0004, "2.71": 0x0004}),
-    ("uart_rx_isr", {"2.06": 0x00C6, "2.70": 0x00AE, "2.71": 0x00AE}),
-    ("command_buffer_get_char", {"2.06": 0x0E71, "2.70": 0x0F63, "2.71": 0x0F2E}),
-    ("ascii_hex_nibble", {"2.06": 0x0EA4, "2.70": 0x0F95, "2.71": 0x0F60}),
-    ("ascii_hex_byte", {"2.06": 0x0EC0, "2.70": 0x0FB1, "2.71": 0x0F7C}),
-    ("command_C_check", {"2.06": 0x1008, "2.70": 0x1112, "2.71": 0x10E8}),
-    ("command_W_check", {"2.06": 0x1014, "2.70": 0x111E, "2.71": 0x10F4}),
-    ("command_R_check", {"2.06": 0x113F, "2.70": 0x1234, "2.71": 0x120E}),
-    ("CR_dispatch", {"2.06": 0x12A7, "2.70": 0x1391, "2.71": 0x136E}),
-    ("response_formatter", {"2.06": 0x1265, "2.70": 0x1352, "2.71": 0x132F}),
-    ("application_startup", {"2.06": 0x1800, "2.70": 0x1800, "2.71": 0x1825}),
-    ("uart_initialization", {"2.06": 0x1804, "2.70": 0x1804, "2.71": 0x1829}),
+    ("reset_vector", {"2.02": 0x0000, "2.06": 0x0000, "2.70": 0x0000, "2.71": 0x0000}),
+    ("interrupt_vector", {"2.02": 0x0004, "2.06": 0x0004, "2.70": 0x0004, "2.71": 0x0004}),
+    ("uart_rx_isr", {"2.02": 0x00FA, "2.06": 0x00C6, "2.70": 0x00AE, "2.71": 0x00AE}),
+    ("command_buffer_get_char", {"2.02": 0x0EDA, "2.06": 0x0E71, "2.70": 0x0F63, "2.71": 0x0F2E}),
+    ("ascii_hex_nibble", {"2.02": 0x0F13, "2.06": 0x0EA4, "2.70": 0x0F95, "2.71": 0x0F60}),
+    ("ascii_hex_byte", {"2.02": 0x0F2F, "2.06": 0x0EC0, "2.70": 0x0FB1, "2.71": 0x0F7C}),
+    ("command_C_check", {"2.02": 0x1073, "2.06": 0x1008, "2.70": 0x1112, "2.71": 0x10E8}),
+    ("command_W_check", {"2.02": 0x107F, "2.06": 0x1014, "2.70": 0x111E, "2.71": 0x10F4}),
+    ("command_R_check", {"2.02": 0x115F, "2.06": 0x113F, "2.70": 0x1234, "2.71": 0x120E}),
+    ("CR_dispatch", {"2.02": 0x12FB, "2.06": 0x12A7, "2.70": 0x1391, "2.71": 0x136E}),
+    ("response_formatter", {"2.02": 0x12B7, "2.06": 0x1265, "2.70": 0x1352, "2.71": 0x132F}),
+    ("application_startup", {"2.02": 0x1800, "2.06": 0x1800, "2.70": 0x1800, "2.71": 0x1825}),
+    ("uart_initialization", {"2.02": 0x1809, "2.06": 0x1804, "2.70": 0x1804, "2.71": 0x1829}),
 )
 
 
+EVENT_T20_PATHS = {
+    "2.06": {
+        "entry": 0x086A,
+        "sender": 0x0783,
+        "sequence": (
+            0x3020, 0x00D6, 0x1283, 0x0848, 0x1683,
+            0x00D7, 0x118A, 0x1283, 0x2783,
+        ),
+    },
+    "2.70": {
+        "entry": 0x07E2,
+        "sender": 0x0771,
+        "sequence": (
+            0x3020, 0x00D4, 0x1283, 0x0848,
+            0x1683, 0x00D5, 0x1283, 0x2771,
+        ),
+    },
+    "2.71": {
+        "entry": 0x07E2,
+        "sender": 0x0771,
+        "sequence": (
+            0x3020, 0x00D4, 0x1283, 0x0848,
+            0x1683, 0x00D5, 0x1283, 0x2771,
+        ),
+    },
+}
+
+
 CR_HANDLER_MATRIX: dict[str, tuple[int, ...]] = {
+    # Format 04 exposes real handlers only for CR00-CR0C.  CR0D and CR0E
+    # still produce the parser's generic 0x00 response, but do not have table
+    # entries and therefore must not be presented as implemented registers.
+    "2.02": (0x1173, 0x1176, 0x117A, 0x11AC, 0x11C5, 0x11C9, 0x11CD,
+             0x11E1, 0x11EF, 0x11F3, 0x11F7, 0x11FB, 0x11FF),
     "2.06": (0x1153, 0x1156, 0x115A, 0x118C, 0x11A5, 0x11A9, 0x11AD, 0x11C1,
              0x11CF, 0x11D3, 0x11D7, 0x11DB, 0x11DF, 0x11E3, 0x11E6),
     "2.70": (0x1248, 0x124B, 0x124F, 0x127D, 0x1296, 0x129A, 0x129E, 0x12B2,
@@ -243,6 +291,10 @@ CR_HANDLER_MATRIX: dict[str, tuple[int, ...]] = {
 # pipeline runs; keeping them here also gives the emulator bounded handler
 # entry points for otherwise-silent write requests.
 CW_HANDLER_MATRIX: dict[str, tuple[int, ...]] = {
+    # Format 04 rejects register 0x0F before dispatch.  In particular, the
+    # later-generation CW0FC4 reset/loader request is absent from firmware 2.02.
+    "2.02": (0x109B, 0x10A1, 0x10EC, 0x10EF, 0x10F2, 0x10FB, 0x1102, 0x1107,
+             0x110E, 0x1114, 0x111D, 0x1125, 0x1133, 0x1142, 0x1155),
     "2.06": (0x1030, 0x1036, 0x107B, 0x1080, 0x1085, 0x108E, 0x1095, 0x109A,
              0x10A1, 0x10A7, 0x10C5, 0x10D1, 0x10DF, 0x10ED, 0x1104, 0x110B),
     "2.70": (0x113A, 0x1140, 0x1185, 0x118A, 0x118F, 0x1198, 0x119B, 0x11A0,
@@ -253,6 +305,7 @@ CW_HANDLER_MATRIX: dict[str, tuple[int, ...]] = {
 
 
 CW_DISPATCH_PC = {
+    "2.02": 0x12E5,
     "2.06": 0x1293,
     "2.70": 0x137D,
     "2.71": 0x135A,
@@ -263,6 +316,7 @@ CW_DISPATCH_PC = {
 # CW0A enter longer actuator-control routines and need not reach this point in
 # the deliberately incomplete synthetic peripheral model.
 CW_EXIT_PC = {
+    "2.02": 0x115D,
     "2.06": 0x113D,
     "2.70": 0x1232,
     "2.71": 0x120C,
@@ -290,6 +344,15 @@ CW_SEMANTICS: tuple[tuple[str, str, str], ...] = (
 
 
 TELEMETRY_PATHS = {
+    "2.02": {
+        "block_entry": 0x0DA3,
+        "index_ram": 0x0A0,
+        "value_ram": 0x0CA,
+        "aux_value_ram": 0x0CB,
+        "t_sender": 0x0D8A,
+        "t_call": 0x0ECC,
+        "last_index": 0x15,
+    },
     "2.06": {
         "block_entry": 0x0CF2,
         "index_ram": 0x0A1,
@@ -320,9 +383,11 @@ TELEMETRY_PATHS = {
 }
 
 
-# T09 is sourced from bank-0 RAM 0x4C.  The main loop masks its high three
-# bits and routes the eight 0x00..0x70 families through the destinations below.
+# The state byte is bank-0 RAM 0x4C. Firmware 2.02 emits it at T0C; later
+# versions emit it at T09. The main loop masks its high three bits and routes
+# the eight 0x00..0x70 families through the destinations below.
 STATE_DISPATCH_PC = {
+    "2.02": 0x191F,
     "2.06": 0x18DB,
     "2.70": 0x18D4,
     "2.71": 0x18F9,
@@ -330,6 +395,7 @@ STATE_DISPATCH_PC = {
 
 
 STATE_FAMILY_HANDLERS: dict[str, tuple[int, ...]] = {
+    "2.02": (0x1942, 0x1988, 0x19C3, 0x1A86, 0x1C2C, 0x1C2C, 0x1D87, 0x1D9E),
     "2.06": (0x18F5, 0x192B, 0x1976, 0x19E8, 0x1BBA, 0x1BBA, 0x1CE0, 0x1E25),
     "2.70": (0x18EE, 0x192B, 0x1982, 0x1A02, 0x1BDB, 0x1BDB, 0x1D19, 0x1E3D),
     "2.71": (0x1913, 0x1950, 0x19A7, 0x1A27, 0x1C00, 0x1C00, 0x1D3E, 0x1E5D),
@@ -348,7 +414,18 @@ STATE_FAMILY_NAMES = (
 )
 
 
+STATE_BRANCH_OFFSETS = {
+    # 2.02 uses an explicit compare chain; later builds use a denser branch
+    # sequence.  Both resolve the same eight high-nibble state families.
+    "2.02": (5, 9, 13, 17, 21, 25, 29, 33),
+    "2.06": (3, 6, 9, 12, 15, 18, 21, 24),
+    "2.70": (3, 6, 9, 12, 15, 18, 21, 24),
+    "2.71": (3, 6, 9, 12, 15, 18, 21, 24),
+}
+
+
 CR_CONSTANTS: dict[str, dict[int, int]] = {
+    "2.02": {0x00: 0x00, 0x08: 0x04, 0x0B: 0x02, 0x0C: 0x02},
     "2.06": {0x00: 0x00, 0x08: 0x05, 0x0B: 0x02, 0x0C: 0x06, 0x0D: 0x00, 0x0E: 0x21},
     "2.70": {0x00: 0x00, 0x08: 0x07, 0x0B: 0x02, 0x0C: 0x70, 0x0D: 0x00, 0x0E: 0x02},
     "2.71": {0x00: 0x00, 0x08: 0x07, 0x0B: 0x02, 0x0C: 0x71, 0x0D: 0x00, 0x0E: 0x00},
@@ -363,6 +440,14 @@ BUTTON_MUX_PATTERN = (
 )
 
 
+BUTTON_MUX_PATTERN_202 = (
+    0x3004, 0x0088, 0x1051, 0x1D88, 0x1451,
+    0x3024, 0x0088, 0x10D1, 0x1D88, 0x14D1,
+    0x3044, 0x0088, 0x1151, 0x1D88, 0x1551,
+    0x3064, 0x0088, 0x11D1, 0x1D88, 0x15D1,
+)
+
+
 SENSOR_MUX_PATTERN = (
     0x301F, 0x0588, 0x3080, 0x0788, 0x1051, 0x1988, 0x1451,
     0x3020, 0x0788, 0x10D1, 0x1988, 0x14D1,
@@ -370,7 +455,35 @@ SENSOR_MUX_PATTERN = (
 )
 
 
+SENSOR_MUX_PATTERN_202 = (
+    0x301F, 0x0588, 0x3080, 0x0788, 0x1050, 0x1988, 0x1450,
+    0x3020, 0x0788, 0x10D0, 0x1988, 0x14D0,
+    0x3020, 0x0788, 0x1150, 0x1988, 0x1550,
+)
+
+
+MUX_SCAN_PATTERNS = {
+    "2.02": {
+        "front_panel": BUTTON_MUX_PATTERN_202,
+        "external_sensors": SENSOR_MUX_PATTERN_202,
+    },
+    "2.06": {
+        "front_panel": BUTTON_MUX_PATTERN,
+        "external_sensors": SENSOR_MUX_PATTERN,
+    },
+    "2.70": {
+        "front_panel": BUTTON_MUX_PATTERN,
+        "external_sensors": SENSOR_MUX_PATTERN,
+    },
+    "2.71": {
+        "front_panel": BUTTON_MUX_PATTERN,
+        "external_sensors": SENSOR_MUX_PATTERN,
+    },
+}
+
+
 MUX_SCAN_EXPECTED = {
+    "2.02": {"front_panel": 0x0166, "external_sensors": 0x0F72},
     "2.06": {"front_panel": 0x0134, "external_sensors": 0x0F03},
     "2.70": {"front_panel": 0x0118, "external_sensors": 0x1004},
     "2.71": {"front_panel": 0x0118, "external_sensors": 0x0FBF},
@@ -413,7 +526,26 @@ SENSOR_PATH_PATTERNS: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 
+SENSOR_PATH_PATTERN_OVERRIDES = {
+    "2.02": {
+        "feeder_period_latch": (
+            (0x30F0, 0x3FFF), (0x05C3, 0x3FFF), (0x1003, 0x3FFF),
+            (0x0C47, 0x3FFF), (0x00C5, 0x3FFF),
+            (0x0C46, 0x3FFF), (0x00C4, 0x3FFF),
+        ),
+    },
+}
+
+
 SENSOR_PATH_EXPECTED = {
+    "2.02": {
+        "exhaust_t0cki_setup": 0x0264,
+        "external_tick_feed_counter": 0x01A4,
+        "exhaust_counter_latch": 0x01B0,
+        "feeder_rd0_cycle": 0x0B3A,
+        "feeder_period_latch": 0x0CD0,
+        "feeder_cr07_scale": 0x11E1,
+    },
     "2.06": {
         "exhaust_t0cki_setup": 0x0221,
         "external_tick_feed_counter": 0x0171,
@@ -474,14 +606,15 @@ for _version, _path in TELEMETRY_PATHS.items():
     )
 
 for _version, _handlers in STATE_FAMILY_HANDLERS.items():
+    _state_slot = "T0C" if _version == "2.02" else "T09"
     KNOWN_ANNOTATIONS[_version].setdefault(
         STATE_DISPATCH_PC[_version],
-        "Dispatch T09 controller-state family from bank-0 RAM 0x4C.",
+        f"Dispatch {_state_slot} controller-state family from bank-0 RAM 0x4C.",
     )
     for _family, _handler in enumerate(_handlers):
         KNOWN_ANNOTATIONS[_version].setdefault(
             _handler,
-            f"T09 state family 0x{_family:X}0: {STATE_FAMILY_NAMES[_family]}.",
+            f"{_state_slot} state family 0x{_family:X}0: {STATE_FAMILY_NAMES[_family]}.",
         )
 
 for _version, _stages in SENSOR_PATH_EXPECTED.items():
@@ -494,7 +627,13 @@ for _version, _stages in SENSOR_PATH_EXPECTED.items():
         "feeder_cr07_scale": "Scale the latched feeder interval right by four and return its low byte as CR07.",
     }
     for _stage, _address in _stages.items():
-        KNOWN_ANNOTATIONS[_version].setdefault(_address, _stage_notes[_stage])
+        _note = _stage_notes[_stage]
+        if _version == "2.02" and _stage == "feeder_period_latch":
+            _note = (
+                "Shift the feeder interval RAM 0x47:0x46 right once into "
+                "0x45:0x44 before CR07 applies its four-bit scale."
+            )
+        KNOWN_ANNOTATIONS[_version].setdefault(_address, _note)
 
 
 def sha256(data: bytes) -> str:
@@ -964,16 +1103,16 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
         json.dumps(region_comparison, indent=2) + "\n",
     )
 
+    application_versions = ("2.02", "2.06", "2.70", "2.71")
+
     with (output / "anchors.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")
-        writer.writerow(("anchor", "2.06", "2.70", "2.71", "confidence"))
+        writer.writerow(("anchor", *application_versions, "confidence"))
         for name, values in ANCHORS:
             confidence = "medium" if name == "uart_rx_isr" else "high"
             writer.writerow((
                 name,
-                f"0x{values['2.06']:04X}",
-                f"0x{values['2.70']:04X}",
-                f"0x{values['2.71']:04X}",
+                *(f"0x{values[version]:04X}" for version in application_versions),
                 confidence,
             ))
 
@@ -999,14 +1138,19 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
 
     with (output / "cr00-cr0e-handlers.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")
-        writer.writerow((
-            "register", "2.06_handler", "2.06_constant", "2.70_handler", "2.70_constant",
-            "2.71_handler", "2.71_constant",
-        ))
+        writer.writerow(("register", *(
+            field
+            for version in application_versions
+            for field in (f"{version}_handler", f"{version}_constant")
+        )))
         for register in range(0x0F):
             row: list[str] = [f"CR{register:02X}"]
-            for version in ("2.06", "2.70", "2.71"):
-                row.append(f"0x{CR_HANDLER_MATRIX[version][register]:04X}")
+            for version in application_versions:
+                handlers = CR_HANDLER_MATRIX[version]
+                row.append(
+                    "" if register >= len(handlers)
+                    else f"0x{handlers[register]:04X}"
+                )
                 constant = CR_CONSTANTS[version].get(register)
                 row.append("" if constant is None else f"0x{constant:02X}")
             writer.writerow(row)
@@ -1017,17 +1161,21 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow((
             "register", "name", "static_effect", "evidence",
-            "2.06_handler", "2.70_handler", "2.71_handler",
+            *(f"{version}_handler" for version in application_versions),
         ))
         for register, (name, effect, evidence) in enumerate(CW_SEMANTICS):
             writer.writerow((
                 f"CW{register:02X}", name, effect, evidence,
-                *(f"0x{CW_HANDLER_MATRIX[version][register]:04X}"
-                  for version in ("2.06", "2.70", "2.71")),
+                *(
+                    "" if register >= len(CW_HANDLER_MATRIX[version])
+                    else f"0x{CW_HANDLER_MATRIX[version][register]:04X}"
+                    for version in application_versions
+                ),
             ))
 
     telemetry_rows: list[tuple[str, ...]] = []
     application_labels = {
+        "2.02": "2.02-pickit",
         "2.06": "2.06-downloader",
         "2.70": "2.70-embedded",
         "2.71": "2.71-embedded",
@@ -1088,9 +1236,12 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
                 f"{version}: state dispatcher at 0x{dispatch:04X} does not read "
                 "RAM 0x4C and mask 0x70"
             )
-        branch_offsets = (3, 6, 9, 12, 15, 18, 21, 24)
         for family, (offset, expected) in enumerate(
-            zip(branch_offsets, STATE_FAMILY_HANDLERS[version], strict=True)
+            zip(
+                STATE_BRANCH_OFFSETS[version],
+                STATE_FAMILY_HANDLERS[version],
+                strict=True,
+            )
         ):
             word = image.words.get(dispatch + offset)
             if word is None or decode_pic14(word).mnemonic != "goto":
@@ -1160,9 +1311,13 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
             "CR07", "high static transform; wrap/fault semantics unresolved",
         ),
     }
-    for version, label in application_labels.items():
+    for version in SENSOR_PATH_EXPECTED:
+        label = application_labels[version]
         spec, image = parsed[label]
         for stage, pattern in SENSOR_PATH_PATTERNS.items():
+            pattern = SENSOR_PATH_PATTERN_OVERRIDES.get(version, {}).get(
+                stage, pattern
+            )
             expected = SENSOR_PATH_EXPECTED[version][stage]
             found = find_masked_word_sequence(image.words, pattern)
             if found != [expected]:
@@ -1171,6 +1326,11 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
                     f"found {[f'0x{item:04X}' for item in found]}"
                 )
             signal, stage_name, operation, protocol, confidence = sensor_stage_descriptions[stage]
+            if version == "2.02" and stage == "feeder_period_latch":
+                operation = (
+                    "on the completed RD0 cycle, shift RAM 0x47:0x46 right "
+                    "once into 0x45:0x44, bound it, then reset timer and flags"
+                )
             sensor_stage_rows.append((
                 version, spec.filename, signal, stage_name, f"0x{expected:04X}",
                 operation, protocol, confidence,
@@ -1207,15 +1367,13 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
             2, 0xC0, "10", "fuel-select switch",
             "CR02 bit 2; 1=Fuel A/corn, 0=Fuel B/wood",
             "firmware 0x30 EEPROM-bank offset, dormant BixCheck predicates, and motherboard diagram",
-            "high static; not live-validated on serial 5215",
+            "high static; polarity live-validated on serial 5215 running 2.02",
         ),
     )
-    for version, label in application_labels.items():
+    for version in MUX_SCAN_EXPECTED:
+        label = application_labels[version]
         spec, image = parsed[label]
-        patterns = {
-            "front_panel": BUTTON_MUX_PATTERN,
-            "external_sensors": SENSOR_MUX_PATTERN,
-        }
+        patterns = MUX_SCAN_PATTERNS[version]
         matches: dict[str, int] = {}
         for family, pattern in patterns.items():
             found = find_word_sequence(image.words, pattern)
@@ -1227,19 +1385,29 @@ def compare_images(root: Path, parsed: dict[str, tuple[ImageSpec, IHexImage]]) -
                 )
             matches[family] = expected
         for slot, selector, address, name, protocol in front_panel_slots:
+            destination = (
+                f"RAM 0x51 bit {slot}, debounced to RAM 0x52"
+                if version == "2.02"
+                else f"bank-1 RAM 0x52 bit {slot}, debounced to 0x53"
+            )
             mux_rows.append((
                 version, spec.filename, "front_panel", f"0x{matches['front_panel']:04X}",
                 f"0x{selector:02X}", "RD2=1, RD7=0", f"RD6:RD5={address}",
-                "RD3 active-low", f"bank-1 RAM 0x52 bit {slot}, debounced to 0x53",
+                "RD3 active-low", destination,
                 protocol, name, "firmware scan plus BixCheck button codes and board diagram",
                 "high static; connector pin not live-validated",
             ))
         for slot, selector, address, name, protocol, evidence, confidence in sensor_slots:
+            destination = (
+                f"RAM 0x50 bit {slot}"
+                if version == "2.02"
+                else f"bank-1 RAM 0x51 bit {slot}"
+            )
             mux_rows.append((
                 version, spec.filename, "external_sensors",
                 f"0x{matches['external_sensors']:04X}", f"0x{selector:02X}",
                 "RD7=1, RD2=0", f"RD6:RD5={address}", "RD3 active-high",
-                f"bank-1 RAM 0x51 bit {slot}", protocol, name, evidence, confidence,
+                destination, protocol, name, evidence, confidence,
             ))
     with (output / "multiplexed-inputs.csv").open(
         "w", encoding="utf-8", newline=""

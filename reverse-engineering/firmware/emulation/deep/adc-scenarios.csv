@@ -1,4 +1,36 @@
 version,channel,input_10bit,sample_events_during_boot,boot_steps,changed_registers,changed_count,baseline_errors,stimulus_errors
+2.02,AN0,0x100,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN0,0x200,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN0,0x300,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN0,0x3FF,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN1,0x100,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN1,0x200,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN1,0x300,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN1,0x3FF,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN2,0x100,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN2,0x200,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN2,0x300,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN2,0x3FF,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN3,0x100,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN3,0x200,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN3,0x300,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN3,0x3FF,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN4,0x100,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN4,0x200,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN4,0x300,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN4,0x3FF,1,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN5,0x100,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN5,0x200,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN5,0x300,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN5,0x3FF,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN6,0x100,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN6,0x200,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN6,0x300,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN6,0x3FF,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN7,0x100,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN7,0x200,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN7,0x300,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
+2.02,AN7,0x3FF,0,250000,CR09 CR0A,2,,CR09: no LF response within 500000 modeled instructions | CR0A: no LF response within 500000 modeled instructions
 2.06,AN0,0x100,0,250000,,0,,
 2.06,AN0,0x200,0,250000,,0,,
 2.06,AN0,0x300,0,250000,,0,,

@@ -59,15 +59,15 @@ work. Power must be disconnected before opening or servicing the stove.
 ## Static firmware and BixCheck correlation
 
 The diagram materially strengthens several mappings recovered independently
-from all three firmware generations and all three BixCheck executables:
+from all four firmware applications and all three BixCheck executables:
 
 | Diagram label | Firmware path | J3 protocol result | Confidence and boundary |
 | --- | --- | --- | --- |
-| ON/OFF/UP/DOWN panel buttons | RD2 selects the button bank; RD6:RD5 selects one of four buttons; RD3 is the active-low return; result is debounced into RAM `0x53` | `CR01`: none `00`, ON `02`, OFF `01`, UP `04`, DOWN `08` | OFF/UP/DOWN/none live-validated; ON intentionally excluded |
+| ON/OFF/UP/DOWN panel buttons | RD2 selects the button bank; RD6:RD5 selects one of four buttons; RD3 is the active-low return; result is debounced into RAM `0x52` on 2.02 and bank-1 RAM `0x53` later | `CR01`: none `00`, ON `02`, OFF `01`, UP `04`, DOWN `08` | OFF/UP/DOWN/none live-validated; ON intentionally excluded |
 | Burn Drive Motor Switch | External-input mux slot 0: RD7=1, RD6:RD5=`00`, RD3 active-high return | `CR02.0`; BixCheck plate-motor-off test also inspects `CR03.1` | High static signal assignment; physical polarity unverified |
 | Fuel Switch | External-input mux slot 2: RD7=1, RD6:RD5=`10`, RD3 active-high return | `CR02.2`; `1` selects Fuel A/corn and `0` selects Fuel B/wood | Live-validated on 9067-0604 |
-| J9 Feeder Wheel Sensor | RD0 edge input; RB1 feed-motor state gates a 16-bit RB0-tick counter; a high-then-low RD0 cycle latches RAM `0x45:0x44` | Current RD0 level is `CR02.4`; `CR07` is the low byte of the latched interval shifted right four | High static signal path in 2.06/2.70/2.71; polarity, time unit, and revision routing unverified |
-| J10 Exhaust Fan Sensor | RA4/T0CKI high-to-low pulses increment unprescaled TMR0; every 30 RB0 external-interrupt ticks the count is latched into RAM `0x34` | `CR05` raw pulse-count byte; overflow is `FF` | High static signal path in 2.06/2.70/2.71; conversion to RPM and revision routing unverified |
+| J9 Feeder Wheel Sensor | RD0 edge input; RB1 feed-motor state gates a 16-bit RB0-tick counter; a high-then-low RD0 cycle latches RAM `0x45:0x44` | Current RD0 level is `CR02.4`; `CR07` shifts the latch right four, after an additional pre-shift in 2.02 only | Four-version static path; live 2.02 `1E`→`1F` excludes initializer/clamp writers and proves cycle-latch execution; physical edge polarity and time unit unresolved |
+| J10 Exhaust Fan Sensor | RA4/T0CKI high-to-low pulses increment unprescaled TMR0; every 30 RB0 external-interrupt ticks the count is latched into RAM `0x34` | `CR05` raw pulse-count byte; overflow is `FF` | Four-version static path; live 2.02 blower correlation `00`→`0C`→`00`; conversion to RPM unverified |
 | Fire Door Safety Switch | Direct RD1 input | `CR02.5`; open `1`, closed `0` | Live-validated on 9067-0604 |
 | Ash Bin Door Switch | Direct RD4 input | `CR02.6`; open `1`, closed `0` | Live-validated on 9067-0604 |
 | Thermostat connection J6 | Direct RB4 input | `CR06.2`; `1`=open, `0`=closed | Live-validated on 9067-0604 |

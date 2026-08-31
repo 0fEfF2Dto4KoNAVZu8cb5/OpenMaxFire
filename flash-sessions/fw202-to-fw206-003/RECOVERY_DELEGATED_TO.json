@@ -1,0 +1,7 @@
+{
+  "created_utc": "2026-08-30T02:00:41.073587+00:00",
+  "image_sha256": "90a5289f273d79bf1ee0029777940d6d4cecfc15041d12f5b24a869ce9b30f0b",
+  "recovery_session": "/home/mcgrenoa/OpenMaxFire/flash-sessions/fw202-to-fw206-recovery-004",
+  "rule": "continue any unresolved recovery from the delegated session",
+  "schema": "openmaxfire.recovery-delegation.v1"
+}

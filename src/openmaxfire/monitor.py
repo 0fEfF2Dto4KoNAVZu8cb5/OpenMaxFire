@@ -105,6 +105,7 @@ class MonitorState:
         self.status_frame_count = 0
         self.last_monotonic_ns: int | None = None
         self.last_observed_utc: str | None = None
+        self._telemetry_observed_ns: dict[int, int] = {}
         self._t08_latest_sample_ns: int | None = None
         self._t08_bit_last_on_ns: list[int | None] = [None] * 8
 
@@ -135,6 +136,7 @@ class MonitorState:
                 address = frame.index + offset
                 if address <= 0xFF:
                     self.telemetry[address] = value
+                    self._telemetry_observed_ns[address] = observed_ns
                     if address == 0x08:
                         self._t08_latest_sample_ns = observed_ns
                         for bit in range(8):
@@ -146,6 +148,21 @@ class MonitorState:
             self.status[frame.kind] = frame.payload
             return
         raise TypeError(f"unsupported monitor frame: {type(frame).__name__}")
+
+    def telemetry_observed_monotonic_ns(self, index: int) -> int | None:
+        """Return when a specific telemetry byte was most recently observed.
+
+        Overall snapshot freshness can be advanced by an addressed response or
+        an unrelated telemetry field.  State-changing verification therefore
+        needs the timestamp for the exact T09/T0C state byte rather than the
+        timestamp of the newest frame of any kind.
+        """
+
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise TypeError("telemetry index must be an integer")
+        if not 0 <= index <= 0xFF:
+            raise ValueError("telemetry index must be between 0x00 and 0xFF")
+        return self._telemetry_observed_ns.get(index)
 
     def _effective_profile(self) -> ControllerProfile | None:
         if self.profile is not None:
@@ -288,8 +305,8 @@ class MonitorState:
                 "evidence": "BixCheck displays Alarm mode as raw hexadecimal",
             }
 
-        # These fields were correlated on serial 5215's format-04 controller.
-        # They remain explicitly nested under a format-specific key.
+        # Format-04 keeps its distinct telemetry layout. State decoding below
+        # is backed by the exact recovered 2.02 image as well as live captures.
         if data_format == 0x04:
             format04: dict[str, object] = {}
             names = {
@@ -301,12 +318,18 @@ class MonitorState:
                 if index in self.telemetry:
                     format04[name] = self.telemetry[index]
             if 0x0C in self.telemetry:
-                format04["thermostat_open"] = bool(self.telemetry[0x0C] & 0x08)
-                format04["thermostat_telemetry_raw"] = f"{self.telemetry[0x0C]:02X}"
+                state_raw = self.telemetry[0x0C]
+                decoded["operating_state"] = asdict(decode_operating_state(state_raw))
+                format04["state_source"] = "T0C"
+                format04["state_raw"] = f"{state_raw:02X}"
+                format04["thermostat_open"] = bool(state_raw & 0x08)
+                format04["thermostat_telemetry_raw"] = f"{state_raw:02X}"
             if 0x09 in self.telemetry:
+                format04["t09_nonstate_raw"] = self.telemetry[0x09]
+                # Retain the old key for saved-output consumers while making
+                # the exact non-state role explicit in new output.
                 format04["t09_meaning_unresolved_raw"] = self.telemetry[0x09]
-                if self.telemetry[0x09] == 0x07:
-                    format04["t09_discriminating"] = False
+                format04["t09_discriminating"] = False
             if (candidate := decode_format04_state_candidate(self.telemetry)) is not None:
                 decoded["format04_state_candidate"] = asdict(candidate)
             if 0x09 in self.controller:
@@ -377,9 +400,18 @@ class MonitorState:
             "decoded": decoded,
             "evidence_boundary": (
                 "Raw values are preserved. Named format-04 telemetry fields are limited to "
-                "live correlations from serial 5215. Fault lights 4, 5, and 8 are "
+                "live correlations from serial 5215. Fault lights 1, 4, 5, and 8 are "
                 "live-confirmed; other named fault patterns come from the factory manual "
                 "with serial bit positions inferred from the confirmed bitmap."
+                if data_format == 0x04
+                else (
+                    "Raw values are preserved. Named format-05/07 telemetry fields and "
+                    "conversions come from recovered BixCheck software and firmware paths; "
+                    "physical meanings remain bounded by explicit live correlations."
+                    if data_format in (0x05, 0x07)
+                    else "Raw values are preserved; telemetry meaning is unresolved until "
+                    "the controller data format is identified."
+                )
             ),
         }
 

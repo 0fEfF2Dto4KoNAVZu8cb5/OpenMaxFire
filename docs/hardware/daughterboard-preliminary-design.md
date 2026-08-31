@@ -20,16 +20,20 @@ Use two boards in the permanent assembly:
 
 The daughterboard connects to the Olimex UEXT header for signals and 3.3 V
 logic. It also takes a controller-side 5 V auxiliary feed from the Olimex
-extension header for the relay coil and integrated isolated-power converter.
+extension header for the relay coil. The stove-facing UART supply must follow
+the target power domain; it must not be an always-on isolated output driving an
+unpowered PIC.
 
-The design does not use or require a J3 power pin. Its proposed stove-facing
-serial boundary remains TX, RX, and isolated J3 ground only.
+J3-3 is unresolved. The PCB may reserve a disconnected, protected supply input
+for it, but may use it only if measurement proves that it safely tracks PIC VDD.
+Otherwise a separately identified stove-domain supply is required.
 
 ## Functional block diagram
 
 ```mermaid
 flowchart LR
-    ESP["Olimex ESP32-POE-ISO-IND"] -->|"TX / RX"| ISO["ISOW7721 isolated UART + power"]
+    ESP["Olimex ESP32-POE-ISO-IND"] -->|"TX / RX"| ISO["two-supply UART isolator"]
+    VDD["verified target VDD"] -->|"stove-side power"| ISO
     ISO -->|"TX / RX / GND_ISO"| J3["Stove J3"]
     ESP -->|"heartbeat"| DEAD["Hardware dead-man timer"]
     ESP -->|"relay request"| GATE["Safety AND gate"]
@@ -46,7 +50,7 @@ flowchart LR
 | --- | --- | --- |
 | J1 | UEXT 2x5 | ESP32 UART, GPIO, 3.3 V, and controller ground |
 | J2 | 2-pin auxiliary | Controller-side +5 V and ground from Olimex EXT1 |
-| J3 | 3-pin removable terminal | Stove UART TX, RX, and J3 ground |
+| J3 | 4-pin removable terminal | Stove UART TX, RX, ground, and a normally-disconnected target-supply provision |
 | J4 | 4-pin removable terminal | Stove thermostat A/B and backup thermostat A/B |
 | J5 | 3-pin removable terminal | Local wired DS18B20 temperature sensor |
 
@@ -71,13 +75,15 @@ strapping pins. GPIO36 is input-only, which is appropriate for UART RX.
 
 ## Isolated J3 serial interface
 
-Candidate U1: TI ISOW7721, normal/non-F default-output option.
+Candidate U1 direction: a two-supply, one-forward/one-reverse non-inverting
+isolator such as TI ISO6721B, subject to exact level/default review.
 
 - One forward channel carries ESP32 TX to stove RX.
 - One reverse channel carries stove TX to ESP32 RX.
-- The integrated DC/DC converter produces the isolated stove-side logic supply.
-- A solder-jumper or zero-ohm option selects 3.3 V or 5 V isolated output only
-  after J3 levels have been measured.
+- The stove-side supply comes only from verified target VDD and disappears when
+  the PIC is unpowered.
+- A protected assembly option selects 3.3 V or 5 V stove-side operation only
+  after J3 levels and the candidate supply are measured.
 - `GND_ISO` connects only to the verified J3 signal ground.
 - Controller ground and `GND_ISO` must not cross the isolation barrier.
 - Reserve at least the isolator datasheet's required creepage and clearance;
@@ -85,11 +91,16 @@ Candidate U1: TI ISOW7721, normal/non-F default-output option.
 - Place 100-ohm series-resistor footprints and low-capacitance TVS footprints
   beside the J3 connector. Their final values and parts remain measurement-
   dependent.
-- Place all required converter, input-side, and isolated-side decoupling exactly
+- Place all required input-side and isolated-side decoupling exactly
   as specified by the final isolator datasheet and PCB layout guidance.
 
+An ISOW7721-style integrated converter is acceptable only with an independently
+verified target-VDD-controlled output-enable/high-impedance stage. Galvanic
+isolation alone does not prevent its still-powered secondary output from
+feeding an unpowered PIC input.
+
 If measurement shows true bipolar RS-232, an inverted physical layer, or levels
-outside the selected ISOW7721 supply, this block must be redesigned. The
+outside the selected isolator supplies, this block must be redesigned. The
 isolator must not be connected merely because three wires are present.
 
 ## Hardware dead-man and relay driver
@@ -168,7 +179,7 @@ Assistant temperature entity.
 
 | Reference | Candidate | Function | Locked? |
 | --- | --- | --- | --- |
-| U1 | TI ISOW7721, non-F | Bidirectional UART isolation and isolated power | No; depends on J3 measurement and availability |
+| U1 | TI ISO6721B-class two-supply isolator | Bidirectional UART isolation; stove side follows target VDD | No; depends on J3 supply/level measurement and availability |
 | U2 | TI SN74LVC1G123 | Retriggerable hardware dead-man | No; timing values unselected |
 | U3 | TI SN74LVC1G08 | Relay request/heartbeat AND gate | No |
 | Q1 | AO3400A-class logic NMOS | Low-side relay-coil driver | No |
@@ -203,10 +214,11 @@ The Olimex board documents a 5 V/400 mA isolated PoE converter, but no remaining
 current margin is assumed. Measure the complete assembly with Ethernet, Wi-Fi,
 UART traffic, isolated converter, relay, and sensor simultaneously active.
 
-The TQ2-5V candidate has a nominal 140 mW coil, approximately 28 mA at 5 V. U1's
-input and available isolated output depend on its selected 3.3/5 V configuration
-and load. Final power-budget acceptance requires actual board measurements and
-the current production datasheets.
+The TQ2-5V candidate has a nominal 140 mW coil, approximately 28 mA at 5 V.
+Final controller-side and target-side power-budget acceptance requires actual
+board measurements and the current production datasheets. The target-side
+isolator load must fit the verified stove-domain supply without disturbing PIC
+VDD or startup.
 
 ## Validation gates before schematic lock
 
@@ -215,6 +227,10 @@ the current production datasheets.
   preserved 9067-0404 diagram matches board 9067-0604.
 - Measure J3 idle/active voltage, polarity, direction, source impedance, baud,
   and physical-layer type through a protected interface.
+- Measure J3-3 unpowered continuity and powered voltage/source impedance before
+  deciding whether it can supply the target-side isolator.
+- Prove both partial-power states: host power must not lift target VDD and
+  target power must not lift the controller/host rail.
 - Measure thermostat open-circuit voltage and closed-circuit current.
 - Verify thermostat open/closed behavior in OFF, startup, running, shutdown,
   fault, and power-restoration states.

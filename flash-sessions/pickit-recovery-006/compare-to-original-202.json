@@ -1,0 +1,73 @@
+{
+  "authenticated": false,
+  "blockers": [
+    "program memory differs between dumps"
+  ],
+  "dump_count": 2,
+  "dumps": [
+    {
+      "blockers": [],
+      "configuration_word": "0x3F32",
+      "coverage": {
+        "eeprom_bytes_present": 256,
+        "eeprom_bytes_total": 256,
+        "program_words_present": 8192,
+        "program_words_total": 8192,
+        "user_id_words_present": 4,
+        "user_id_words_total": 4
+      },
+      "device_id_matches_pic16f877a": null,
+      "device_id_word": null,
+      "eeprom_code_protection": "disabled",
+      "file_sha256": "272b12f6f1b42a934e8bb6dab79aa4e9c08748124f1a74ba1d5425b84decccab",
+      "filename": "Bixby_0202_260827_PICkit.hex",
+      "normalized_sections": {
+        "configuration_sha256": "5e0591b396d73072aee78029553c9a0d1bbe067400d35ff47a117225bb3e8f01",
+        "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+        "preservation_sha256": "dae0fe5f4828af41f6bb52720adb714f988aa46805ec78887f220a411e165964",
+        "program_sha256": "dc2cb1453beb989017335af9c71e1ace8143e91249793c0e37f09f65f9cc7fa7",
+        "user_ids_sha256": "f4b00be966113b53640abe29c492144fd5e017f83155fe1707ab2e97f69e5bc8"
+      },
+      "program_code_protection": "disabled",
+      "safe_read": true
+    },
+    {
+      "blockers": [],
+      "configuration_word": "0x3F32",
+      "coverage": {
+        "eeprom_bytes_present": 256,
+        "eeprom_bytes_total": 256,
+        "program_words_present": 8192,
+        "program_words_total": 8192,
+        "user_id_words_present": 4,
+        "user_id_words_total": 4
+      },
+      "device_id_matches_pic16f877a": null,
+      "device_id_word": null,
+      "eeprom_code_protection": "disabled",
+      "file_sha256": "b281357f6b38db046361de3be1cdd455999b9b8b65d098d0b9d329d8fb789fca",
+      "filename": "pre-recovery-read.hex",
+      "normalized_sections": {
+        "configuration_sha256": "5e0591b396d73072aee78029553c9a0d1bbe067400d35ff47a117225bb3e8f01",
+        "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+        "preservation_sha256": "b4ac87add9a112384f9123ca829c149d9eb6001151293a3e39433b38688bf42e",
+        "program_sha256": "0dea35495079a6b760db2af2d2083ec4a3ba27728f2e9008fc0159f01924987c",
+        "user_ids_sha256": "f4b00be966113b53640abe29c492144fd5e017f83155fe1707ab2e97f69e5bc8"
+      },
+      "program_code_protection": "disabled",
+      "safe_read": true
+    }
+  ],
+  "purpose": "clone-compare",
+  "safe_to_continue": false,
+  "safety_boundary": "offline HEX inspection only; this report cannot read, erase, or program a device",
+  "schema": "openmaxfire.pickit-preservation.v1",
+  "sections_match": {
+    "complete_preservation_set": false,
+    "configuration": true,
+    "eeprom": true,
+    "program": false,
+    "raw_files_identical": false,
+    "user_ids": true
+  }
+}

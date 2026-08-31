@@ -2,27 +2,31 @@
 
 Status: BixCheck display records and the complete periodic firmware producer
 have been statically reconstructed; every periodic slot has also executed
-through the real producer and UART sender in offline emulation. Values remain
-unvalidated on a physical stove for the preserved 2.06/2.70/2.71 images.
+through the real producer and UART sender in offline emulation. A read-only
+physical 2.06 session has now validated the Cooldown/Off state transition,
+fan command/target/feedback fields, and flashing-light event described below;
+other later-format values remain unvalidated on a physical stove.
 
-> **Format boundary:** the live controller in serial 5215 identified as firmware
+> **Format boundary:** serial 5215's original controller identified as firmware
 > 2.02/data format 04. Its shorter `T00`-`T15` stream does not match this later
-> format-05/07 logical table position-for-position. Live format-04 correlations
-> are documented separately in
+> format-05/07 logical table position-for-position. A separately programmed
+> controller was subsequently live-validated as 2.06/format 05. Original-chip
+> format-04 correlations are documented separately in
 > [the firmware-2.02 report](../reverse-engineering/live-fw202-format04.md).
 > Its profile-specific flashing-light and fault behavior is documented in
 > [fault and flashing-indicator protocol](faults.md).
 
-The preserved 2.02 control capture also proves that format-04 `T09=07` is not
-the later operating-state field: it remained constant before ON, during
-physically observed UP/DOWN startup activity, and after OFF. OpenMaxFire exposes
-only provisional format-04 T0C/T15 composite candidates, never the later T09
-decoder or a control-verification state.
+The preserved 2.02 control capture proves that format-04 `T09=07` is not the
+later operating-state field. Exact recovered code resolves the format boundary:
+2.02 T0C reads state RAM 0x4C, while its T09 reads unrelated RAM 0x2D and T15
+has no state assignment. OpenMaxFire applies the shared family decoder to T0C
+for format 04 and to T09 for later formats. Live `T0C=20`/Off and
+`T0C=30`/Prefill match those exact paths.
 
 ## Wire framing
 
-The 2.06, 2.70, and 2.71 firmware sends exactly one telemetry byte per physical
-line:
+All four recovered application generations send exactly one telemetry byte per
+physical line:
 
 ```text
 T<index:02x><value:02x>\n
@@ -49,12 +53,13 @@ addresses are preserved in `telemetry-slot-matrix.csv`.
 
 | Firmware | Periodic producer | Index RAM | Value RAM | Aux RAM | Sender | Last periodic T slot |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2.02 | `0DA3` | `0A0` | `0CA` | `0CB` | `0D8A` | `15` |
 | 2.06 | `0CF2` | `0A1` | `0CA` | `0CB` | `0783` | `1D` |
 | 2.70 | `0DBD` | `0A0` | `0C8` | `0C9` | `0771` | `1D` |
 | 2.71 | `0DA6` | `0A0` | `0C8` | `0C9` | `0771` | `1E` |
 
-The normal scheduler calls these producers at `0E5D`, `0F4F`, and `0F1A`,
-respectively. The emulator enters each slot directly so it can prove producer
+The normal scheduler calls these producers at `0ECC`, `0E5D`, `0F4F`, and
+`0F1A`, respectively. The emulator enters each slot directly so it can prove producer
 and UART behavior without claiming to reproduce the scheduler's real cadence
 or gates.
 
@@ -95,7 +100,7 @@ T frames. A two-byte row names both physical T slots.
 | T1E | 1 | LB drop limit (2.71) | raw thermocouple-point threshold |
 | V1B / V1C | computed | Time to ash dump | hours:minutes; V1B in 5.0.21/5.5.00, V1C in 5.5.01 |
 | C00 | computed | Telemetry mode | UI state |
-| C20 | computed | LED no-log/event path | UI state; related 2.71 event T20 described below |
+| C20 | computed | LED no-log/event path | UI state; related 2.06/2.70/2.71 event T20 described below |
 
 The RPM and phase formulas above reproduce BixCheck's display math; they do
 not make those values calibrated measurements. The vendor manual explicitly
@@ -156,18 +161,22 @@ protocol unit spaces.
 | T0E | B0 `45` | T1E | computed/scaled 2.71 path |
 | T0F | B0 `44` |  |  |
 
-All 91 version/slot combinations (30 + 30 + 31) reach their real firmware
-sender in the synthetic harness. The complete access dependency sets and exact
+All 113 version/slot combinations (22 + 30 + 30 + 31) reach their real firmware
+sender in the synthetic harness. The table immediately above is the later
+layout; format-04 source rows remain in the generated matrices. The complete
+access dependency sets and exact
 write PCs are generated as `telemetry-producer-access-summary.csv` and
 `telemetry-slot-matrix.csv` under
 `reverse-engineering/firmware/emulation/deep/`.
 
-## Exact T09 display decoder
+## Exact state-family decoder (later T09; 2.02 T0C)
 
 BixCheck 5.5.01 masks T09 with `0x7F` before decoding, and the firmware
-dispatcher independently masks with `0x70`. Bit 7 therefore does not create a
-new operating family. The low three bits carry a startup substate or
-zero-based heat level; bit 3 is the thermostat flag in operating family 4.
+dispatchers independently mask the shared state byte with `0x70`. Firmware
+2.02 emits that byte at T0C; later versions emit it at T09. Bit 7 therefore
+does not create a new operating family. The low three bits carry a startup
+substate or zero-based heat level; bit 3 is the thermostat flag in operating
+family 4.
 
 | Normalized pattern | BixCheck display |
 | --- | --- |
@@ -190,8 +199,14 @@ firmware state topology and transition sites are documented in
 
 ## Non-periodic and table-only indexes
 
-Firmware 2.71 contains a separate event path at `07E9` that sends T20. It is
-not a 32nd member of the periodic T00-T1E walk. BixCheck has a related C20
+Firmware 2.06, 2.70, and 2.71 contain a separate event path that sends T20.
+The 2.06 path begins at `086A`; the later pair begins at `07E2`. T20 is not a
+member of the periodic telemetry walk. During the first live 2.06 session,
+T20 alternated `02` and `00` in step with the operator-observed flashing second
+panel light. Periodic T07 sampled the same alternating `02`/`00` display state,
+while alarm T13 remained `02`. Both display paths continued after T09 changed
+to Off and the fan command/target fell to zero, showing that the light-2 fault
+was latched independently of active cooldown. BixCheck has a related C20
 `LED no-log` computed record.
 
 BixCheck 5.5.01's data table also names TFD `Low temp count`, TFE `Sample

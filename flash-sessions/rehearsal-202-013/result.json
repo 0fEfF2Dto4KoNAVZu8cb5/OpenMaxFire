@@ -1,0 +1,43 @@
+{
+  "application_unchanged": {
+    "eeprom_confirmation_reads": 2,
+    "eeprom_sha256": "5ceb73151c785a4561f37abe5f379bd1f94d3b6833fc83636453d82124174f0e",
+    "eeprom_unchanged": true,
+    "identity": {
+      "data_format": "04",
+      "firmware_version": "2.02",
+      "probe_ok": true,
+      "profile_key": "fw202-format04",
+      "recognized_static_pairing": true,
+      "registers": {
+        "CR00": "00",
+        "CR08": "04",
+        "CR0B": "02",
+        "CR0C": "02",
+        "CR0D": "00",
+        "CR0E": "00"
+      }
+    },
+    "identity_confirmations": 3,
+    "identity_unchanged": true,
+    "schema": "openmaxfire.application-unchanged-verification.v1",
+    "successful": true
+  },
+  "message": "non-writing loader rehearsal verified; firmware was not changed",
+  "programming_performed": false,
+  "recovery_required": false,
+  "rehearsal": {
+    "completion_acknowledged": true,
+    "completion_sent": true,
+    "flash_write_commands_sent": 0,
+    "identify_attempts": 224,
+    "loader_identified": true,
+    "message": "non-writing EA/EB and ED/E4 rehearsal completed",
+    "program_blocks_sent": 0,
+    "protocol": "EA/EB then ED/E4; no E3 frame",
+    "schema": "openmaxfire.loader-rehearsal-result.v1",
+    "successful": true
+  },
+  "schema": "openmaxfire.flash-result.v2",
+  "successful": true
+}

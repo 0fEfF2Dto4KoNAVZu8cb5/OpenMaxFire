@@ -96,7 +96,7 @@ class LoaderPlan:
     firmware_version: str | None
     compatibility: FirmwareCompatibility
     blocks: tuple[ProgramBlock, ...]
-    live_executable: bool = False
+    authenticated_simulator_plan: bool = False
 
     @property
     def simulator_executable(self) -> bool:
@@ -130,7 +130,7 @@ class LoaderPlan:
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "schema": "openmaxfire.loader-plan.v2",
+            "schema": "openmaxfire.loader-plan.v3",
             "profile_key": self.profile_key,
             "image_filename": self.image_filename,
             "image_sha256": self.image_sha256,
@@ -141,14 +141,16 @@ class LoaderPlan:
             "relocated_word_count": self.relocated_word_count,
             "protected_skipped_word_count": self.protected_skipped_word_count,
             "simulator_executable": self.simulator_executable,
-            "live_executable": self.live_executable,
+            "authenticated_simulator_plan": self.authenticated_simulator_plan,
+            "physical_e3_enabled": False,
             "compatibility": self.compatibility.to_dict(),
             "blocks": [block.to_dict() for block in self.blocks],
             "safety_boundary": (
-                "physical use additionally requires the flashing module's exact wire "
-                "authentication, manual power cycle, safety interlocks, and pre/post checks"
-                if self.live_executable
-                else "offline plan only; use the separately gated flashing workflow for physical execution"
+                "authenticated simulator plan only; all physical loader traffic "
+                "is hard-disabled"
+                if self.authenticated_simulator_plan
+                else "offline planning and simulator execution only; all physical "
+                "loader traffic is hard-disabled"
             ),
         }
 
@@ -253,10 +255,10 @@ def build_loader_plan(
     profile: ControllerProfile,
     *,
     max_words: int = 16,
-    live_executable: bool = False,
+    authenticated_simulator_plan: bool = False,
 ) -> LoaderPlan:
-    if not isinstance(live_executable, bool):
-        raise TypeError("live_executable must be a boolean")
+    if not isinstance(authenticated_simulator_plan, bool):
+        raise TypeError("authenticated_simulator_plan must be a boolean")
     compatibility = assess_firmware_compatibility(image, profile)
     return LoaderPlan(
         profile_key=profile.key,
@@ -265,8 +267,9 @@ def build_loader_plan(
         firmware_version=image.firmware_version,
         compatibility=compatibility,
         blocks=build_program_blocks(image, max_words=max_words),
-        live_executable=(
-            live_executable and compatibility.valid_for_offline_planning
+        authenticated_simulator_plan=(
+            authenticated_simulator_plan
+            and compatibility.valid_for_offline_planning
         ),
     )
 
@@ -384,9 +387,10 @@ def execute_loader_plan(
 
     if not authorize:
         raise PermissionError("simulated firmware programming was not authorized")
-    if not isinstance(transport, SimulatedLoaderTransport):
+    if type(transport) is not SimulatedLoaderTransport:
         raise CapabilityUnavailableError(
-            "physical firmware-loader execution is unvalidated and blocked"
+            "firmware-loader execution accepts only the exact built-in simulator "
+            "transport; physical and subclass transports are blocked"
         )
     selected_policy = policy or LoaderPolicy()
     checkpoint = audit.checkpoint() if audit is not None else 0
@@ -551,7 +555,7 @@ def _words_from_blocks(blocks: tuple[ProgramBlock, ...]) -> dict[int, int]:
     for block in blocks:
         for offset in range(0, len(block.data), 2):
             words[block.word_address + offset // 2] = (
-                block.data[offset] | (block.data[offset + 1] << 8)
+                (block.data[offset] << 8) | block.data[offset + 1]
             )
     return words
 
@@ -601,7 +605,7 @@ def loader_simulation_supported() -> bool:
 
 
 def live_loader_supported() -> bool:
-    """Return whether the separate guarded experimental live executor exists."""
+    """Return whether physical E3 execution is currently enabled."""
 
     from .flashing import live_flashing_supported
 

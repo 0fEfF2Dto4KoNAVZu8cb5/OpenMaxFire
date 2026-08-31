@@ -20,6 +20,13 @@ class Format04FaultDecoderTests(unittest.TestCase):
         self.assertEqual(fault.code, "feeder_wheel_failure")
         self.assertIn("live-confirmed", fault.evidence)
 
+    def test_light1_position_is_live_but_meaning_remains_factory_documented(self):
+        fault = decode_format04_indicator_mask(0x01)
+        self.assertEqual(fault.lights, (1,))
+        self.assertEqual(fault.code, "power_interruption")
+        self.assertIn("light position live-confirmed", fault.evidence)
+        self.assertIn("meaning factory-documented", fault.evidence)
+
     def test_factory_documented_combination_is_lossless(self):
         fault = decode_format04_indicator_mask(0x06)
         self.assertEqual(fault.lights, (2, 3))

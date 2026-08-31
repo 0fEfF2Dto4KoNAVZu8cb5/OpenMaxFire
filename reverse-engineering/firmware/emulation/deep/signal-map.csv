@@ -8,5 +8,5 @@ firebox door,CR02 bit 5,"open=1, closed=0",RD1,BixCheck checkout mask cross-refe
 ash drawer,CR02 bit 6,"open=1, closed=0",RD4,BixCheck checkout mask cross-referenced to firmware/GPIO trace,high offline mapping; not live-validated
 thermostat,CR06 bit 2,open/closed are opposite states,RB4,BixCheck checkout mask cross-referenced to firmware/GPIO trace,high pin/bit mapping; polarity awaits live validation
 fuel-select switch,CR02 bit 2,"1=Fuel A/corn, 0=Fuel B/wood",RD3 active-high external-input mux return; slot 2 selected by RD7=1 and RD6:RD5=10,"firmware mux scanner and 0x30 Fuel A/B configuration-bank offset, opposite BixCheck predicates, and 9067-0404 board diagram label",high static mapping and polarity; not live-validated
-fan potentiometer,CR09,"low<=03, detent=79..86, high>FB in BixCheck checkout",AN3,BixCheck thresholds plus synthetic ADC differential,high register mapping; ADC channel depends on modeled result
-feed potentiometer,CR0A,"low<=03, detent=79..86, high>FB in BixCheck checkout",AN4,BixCheck thresholds plus synthetic ADC differential,high register mapping; ADC channel depends on modeled result
+fan potentiometer,CR09,"low<=03, detent=79..86, high>FB in BixCheck checkout",AN0 AN1 AN2 AN3 AN4 AN5 AN6 AN7,BixCheck thresholds plus synthetic ADC differential,high register mapping; ADC channel depends on modeled result
+feed potentiometer,CR0A,"low<=03, detent=79..86, high>FB in BixCheck checkout",AN0 AN1 AN2 AN3 AN4 AN5 AN6 AN7,BixCheck thresholds plus synthetic ADC differential,high register mapping; ADC channel depends on modeled result

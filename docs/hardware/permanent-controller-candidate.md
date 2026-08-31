@@ -48,7 +48,8 @@ The daughterboard should plug into the Olimex expansion/UEXT signals and contain
 all stove-facing and fail-safe circuitry:
 
 - one UART transmit channel and one UART receive channel;
-- signal and power isolation for the J3 side;
+- signal isolation with a stove-facing side that is target-powered or
+  explicitly gated high-impedance whenever target VDD is absent;
 - configurable 3.3 V or 5 V stove-side logic, selected only after measurement;
 - J3 series-current limiting and appropriate transient/ESD protection;
 - a non-latching transfer relay with a transistor driver, flyback diode, and
@@ -61,19 +62,19 @@ A circuit-level starting point, signal allocation, fail-safe logic, preliminary
 parts list, and layout constraints are recorded in
 [Preliminary stove-interface daughterboard design](daughterboard-preliminary-design.md).
 
-Candidate integrated UART isolation parts:
+Candidate UART isolation direction:
 
-- [TI ISOW7721](https://www.ti.com/product/ISOW7721): one forward and one reverse
-  digital channel with integrated isolated DC/DC power. The normal, non-F
-  fail-state output is high, which is appropriate for UART idle.
-- [Analog Devices ADuM5211](https://www.analog.com/en/products/adum5211.html):
-  established one-forward/one-reverse alternative with integrated isolated
-  DC/DC power.
+- [TI ISO6721](https://www.ti.com/product/ISO6721), non-inverting/default-high
+  `B` behavior as applicable after full datasheet review: one forward and one
+  reverse digital channel, with the stove side powered from verified stove VDD.
+- A basic ADuM1201-class part is another one-forward/one-reverse candidate when
+  its exact channel directions, levels, defaults, and both supplies are known.
 
-Either candidate can supply the isolated stove-facing logic from the controller
-side, so the proposed J3 serial boundary needs only TX, RX, and J3 ground. This
-does not assert physical pin positions or prove that the fourth J3 connector
-cavity is unused.
+An integrated-power part such as ISOW7721 or ADuM5211 is **not sufficient by
+itself** for this power boundary. If its stove-side output remains powered while
+the PIC is off, it can recreate the backfeed condition despite galvanic
+isolation. Such a part needs a target-VDD-controlled output gate, or its stove
+side must instead be powered only while target VDD is present.
 
 Candidate transfer relay:
 
@@ -100,9 +101,9 @@ Candidate fail-safe gate:
 - The relay-control GPIO must default low/high-impedance so reset, boot, and
   power loss release the relay.
 
-## Three-wire J3 boundary
+## Conditional J3 boundary
 
-The candidate isolated interface exposes only:
+The signal boundary always exposes:
 
 | Connection | Purpose |
 | --- | --- |
@@ -113,8 +114,13 @@ The candidate isolated interface exposes only:
 The controller-side ground and J3 ground must remain separated across the
 isolation barrier. The earlier small purple ADuM1201-class breakout remains
 useful for bench experiments, but a basic ADuM1201 requires power on both sides.
-It should not be treated as a complete three-wire isolated interface unless its
-specific board includes an isolated power converter.
+It must not be externally powered on the stove side in a way that drives an
+unpowered controller.
+
+If J3-3 is eventually proved to be a safe stove supply, a fourth conductor may
+power the target side and make it follow the PIC power domain. Its historical
+red wire and nearby R10/C5 network are clues, not proof. Until voltage,
+continuity, and source impedance are established, J3-3 remains disconnected.
 
 ## Thermostat transfer behavior
 
@@ -169,7 +175,8 @@ balance.
 For initial protected bench work, separate modules remain appropriate:
 
 1. Olimex ESP32-POE-ISO-IND
-2. ADuM1201-class UART isolator plus a genuinely isolated secondary supply
+2. ADuM1201/ISO6721-class UART isolator with the stove side powered from a
+   verified target-domain supply, or a two-buffer `Ioff` fixture
 3. non-latching relay module used only after the thermostat circuit is measured
 
 For the permanent installation, consolidate items 2 and 3, the watchdog, and the
@@ -180,8 +187,11 @@ connectors onto the OpenMaxFire daughterboard.
 - Identify J3 ground, TX, RX, any supply, and the physical cavity order.
 - Measure idle voltage, active voltage, polarity, and whether the link is
   TTL/CMOS, inverted logic, or true RS-232.
-- Do not connect J3 VCC, if present, to the controller.
+- Leave J3-3 disconnected until its continuity, voltage, and source impedance
+  are characterized; use it only as a protected stove-side supply if proven.
 - Confirm whether 3.3 V or 5 V isolated-side logic is required.
+- With either side powered alone, prove that no UART output lifts the other
+  side's supply and that the stove RX drive is high-impedance at target VDD=0.
 - Measure thermostat-terminal open-circuit voltage and closed-circuit current.
 - Verify closed/open thermostat behavior in every relevant stove state.
 - Validate J3 ON/OFF/UP/DOWN with the thermostat path closed.
@@ -191,3 +201,6 @@ connectors onto the OpenMaxFire daughterboard.
   temperature sensor, network loss, and Home Assistant loss.
 - Do not rely on this candidate design for unattended freeze protection until
   the complete failure matrix has passed live validation.
+
+Loader servicing adds an optional isolated, open-drain MCLR channel and stricter
+power-state tests. See [deterministic loader-entry fixture](j3-loader-entry-fixture.md).

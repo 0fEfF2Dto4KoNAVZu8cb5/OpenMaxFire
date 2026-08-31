@@ -61,7 +61,10 @@ Do not replace the thermocouple solely because someone on a forum had a similar 
 
 ## Light 6 appears even though the exhaust fan spins
 
-The controller is not satisfied merely by visible fan motion. In firmware 2.06, 2.70, and 2.71, it counts speed-sensor pulses received through **J10**. A spinning fan can still produce light 6 if the sensor signal is absent or too slow.
+The controller is not satisfied merely by visible fan motion. Firmware 2.02,
+2.06, 2.70, and 2.71 count speed-sensor pulses associated with **J10**. A
+spinning fan can still produce light 6 if the sensor signal is absent or too
+slow.
 
 With the stove cool and unplugged, inspect:
 
@@ -131,6 +134,13 @@ Light 7 is the factory fire-pot mechanical-malfunction indication.
 ## Fans continue running after Off
 
 This is usually normal. The factory manual says the convection blower and exhaust fan continue to run for approximately **30 minutes** while the stove cools. The exhaust fan may also run for roughly 30 minutes when the stove is first plugged in to clear possible combustion gases after a power interruption.
+
+Firmware 2.06 is now measured more precisely: its exact CCP1/Timer1 setup and
+cooldown threshold produce about **14 minutes 38 seconds** at the controller's
+10 MHz clock. A live power-up capture matched that interval and showed the fan
+command, target, and measured speed all return to zero as the state changed to
+Off. The manual's 30-minute statement should still be treated as the general
+cross-version/operator expectation.
 
 Investigate if the fans never stop, run abnormally, or are accompanied by a fault light or overheating.
 

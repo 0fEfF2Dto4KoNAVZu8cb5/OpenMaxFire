@@ -4,9 +4,11 @@ from pathlib import Path
 from tools.firmware_pipeline import CW_EXIT_PC, CW_HANDLER_MATRIX, parse_ihex
 from tools.pic14_emulator import (
     PIC16F877A,
+    execute_request,
     execute_silent_write,
     execute_telemetry_slot,
     probe_image,
+    requested_telemetry_line,
     synthetic_controller_eeprom,
 )
 
@@ -98,6 +100,76 @@ class WriteAndTelemetryExperimentTests(unittest.TestCase):
                 )
                 self.assertIsNone(summary["error"])
                 self.assertEqual(summary["tx_ascii"], "CR0000\\x0A")
+
+
+class Firmware202CompatibilityTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.image = parse_ihex(
+            (
+                ROOT
+                / "reverse-engineering/firmware/2.02/extracted/"
+                "Bixby_0202_260827_PICkit.hex"
+            ).read_bytes()
+        )
+        cls.booted = PIC16F877A(
+            cls.image, data_eeprom=synthetic_controller_eeprom(4)
+        )
+        for _ in range(250_000):
+            if cls.booted.pc == 0x191F:
+                cls.booted.ram[0x04C] = 0x20
+                break
+            cls.booted.step()
+        else:
+            raise AssertionError("2.02 did not reach its first state dispatch")
+
+    def test_cr_constants_and_generic_high_register_responses(self):
+        expected = {
+            0x00: b"CR0000\n",
+            0x08: b"CR0804\n",
+            0x0C: b"CR0c02\n",
+            0x0D: b"CR0d00\n",
+            0x0E: b"CR0e00\n",
+        }
+        for register, response in expected.items():
+            with self.subTest(register=register):
+                result = execute_request(
+                    self.booted.clone(),
+                    f"CR{register:02X}".encode("ascii"),
+                    step_limit=20_000,
+                )
+                self.assertIsNone(result.error)
+                self.assertEqual(result.response, response)
+
+    def test_cw0e_remote_button_reaches_format04_handler(self):
+        result = execute_silent_write(
+            self.booted.clone(),
+            b"CW0E14",
+            step_limit=20_000,
+            handler_pc=CW_HANDLER_MATRIX["2.02"][0x0E],
+            exit_pc=CW_EXIT_PC["2.02"],
+        )
+        self.assertTrue(result.handler_seen)
+        self.assertTrue(result.exit_seen)
+        self.assertIsNone(result.error)
+        self.assertIn((0x051, 0x00, 0x14), result.net_changes)
+
+    def test_format04_has_no_cw0f_dispatch_entry(self):
+        handlers = CW_HANDLER_MATRIX["2.02"]
+        self.assertEqual(len(handlers), 0x0F)
+        self.assertEqual(self.image.words[0x12E5 + 4 + 0x0F], 0x0000)
+
+    def test_format04_state_and_last_telemetry_slots_complete(self):
+        state = execute_telemetry_slot(self.booted.clone(), "2.02", 0x0C)
+        last = execute_telemetry_slot(self.booted.clone(), "2.02", 0x15)
+        self.assertIsNone(state.error)
+        self.assertIn(b"T0c20\n", state.response)
+        self.assertIsNone(last.error)
+        self.assertRegex(last.response, rb"T15[0-9a-fA-F]{2}\n$")
+        self.assertEqual(
+            requested_telemetry_line(last.response, 0x15),
+            last.response.splitlines()[-1],
+        )
 
 
 if __name__ == "__main__":

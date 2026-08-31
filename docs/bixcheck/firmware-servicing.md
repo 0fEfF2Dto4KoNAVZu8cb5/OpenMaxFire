@@ -54,7 +54,8 @@ All three recovered BixCheck Downloader implementations are semantically
 identical. They:
 
 1. Read `CR08` and `CR0B` through `CR0E`.
-2. Optionally issue the state-changing reset request `CW0FC4`.
+2. Optionally issue the state-changing reset request `CW0FC4` when the installed
+   application supports it. Exact original 2.02 does not; 2.06/2.70/2.71 do.
 3. Repeatedly send `EA` until the reset-time loader answers `EB`.
 4. Transfer binary `E3` program blocks containing a PIC word address, byte
    count, additive data checksum, and no more than 32 data bytes.
@@ -126,12 +127,15 @@ programming must match before they are promoted to verified recovery images.
 
 ## OpenMaxFire policy
 
-Version 0.9 implements a separate guarded host, but it remains
-emulator/fault-injection validated rather than physical evidence. No production
-firmware write will be attempted on serial 5215 until:
+Version 0.9 provides offline planning plus simulator-only rehearsal and complete
+write executors. Its historical physical zero-write research path is now
+retired. Failed physical first-block attempts
+provided adverse evidence, not a validated updater; the corrected frame has
+never been sent. The CLI and public executors reject all physical loader
+traffic before its first byte. New fixture-specific paths will not be added until:
 
-- the preserved first 2.02 program/EEPROM/configuration/User-ID read is matched
-  against the remaining independent exports;
+- the sole pre-write 2.02 program/EEPROM/configuration/User-ID read is preserved
+  immutably and a spare readback is matched against it;
 - a 2.02 clone is proven on a spare PIC;
 - full external-programmer recovery is proven on expendable hardware;
 - the loader exchange is first captured and validated on expendable hardware;
@@ -145,8 +149,8 @@ firmware write will be attempted on serial 5215 until:
 The original-chip preparation and offline dump-authentication commands are in
 the [PICkit 3 read-only preservation guide](../guides/pickit3-firmware-preservation.md).
 That workflow stops rather than erases if code protection is enabled or
-unknown. The dedicated host, its stronger pre/post checks, and the exact bench
-procedure are documented in the
+unknown. The retained offline planner and simulator host, its stronger checks, and
+the bench qualification procedure are documented in the
 [guarded J3 flashing guide](../guides/safe-j3-firmware-flashing.md). Physical
 release requires every case in the
 [J3 flasher qualification plan](../guides/j3-flasher-qualification.md).
