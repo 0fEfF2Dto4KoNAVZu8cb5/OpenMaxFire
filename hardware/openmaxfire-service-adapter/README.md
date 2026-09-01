@@ -9,7 +9,7 @@ The OpenMaxFire portable service adapter is a small, low-cost technician interfa
 - isolated 5 V TTL UART access to the main-board J3 computer port using the existing FTDI `TTL-232R-5V-WE`; and
 - a short, direct PICkit ICSP pass-through to the five-contact J5 on the `9067-0604` main controller.
 
-The external FTDI cable remains the USB-to-UART device. The external PICkit remains the programmer. The adapter does not recreate either tool and never permits both service paths to be used at once.
+The external FTDI cable remains the USB-to-UART device. The external PICkit remains the programmer. The adapter does not recreate either tool. Rev A is intentionally specified for only one service path at a time, using physical UART-power and reset-arm jumpers plus a mandatory cable-disconnection procedure rather than an expensive multi-pole interlock.
 
 > [!DANGER]
 > A separate connector also called **J5** exists on the auxiliary igniter board and is associated with 120 VAC in the preserved factory-family drawing. This adapter is intended only for the five-contact **`9067-0604 MAIN-BOARD J5 ICSP`** beside the PIC16F877A. The PCB number, controller identity, contact count, pin 1, and continuity map must all be verified before connection.
@@ -60,7 +60,7 @@ A physical three-pin target-power jumper replaces the full controller's active l
 
 - live-validated physical mapping for controller `9067-0604`, serial 5215;
 - non-inverted 5 V TTL UART, currently validated at 9600 8N1;
-- full `maxfirectl` identify, capture, monitor, backup, normal-control, and future qualified loader traffic;
+- an electrical path for `maxfirectl` identify, capture, monitor, backup, separately qualified normal control, and future qualified loader traffic;
 - galvanic separation between FTDI/computer ground and the stove target domain;
 - target-derived secondary power and target-power-good output gating;
 - no electrical connection to J3 pin 3; and
@@ -89,7 +89,7 @@ The adapter is not designed for hot-plugging, simultaneous FTDI/PICkit use, ener
 
 - two-layer, 1.6 mm FR-4;
 - target outline no larger than 60 mm x 40 mm, hard maximum 65 mm x 45 mm;
-- one small inline enclosure or heat-shrinkable pod;
+- one small inline enclosure;
 - through-hole edge connectors and jumpers, SMD protection and logic;
 - preliminary assembled-electronics target of **USD 8-12 in small quantity**, excluding PCB, enclosure, FTDI cable, PICkit, and stove-end mating connectors; and
 - no onboard USB bridge, microcontroller, isolated DC/DC converter, display, relay, or expansion connector.
