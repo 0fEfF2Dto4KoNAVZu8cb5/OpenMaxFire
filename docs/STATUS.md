@@ -1,6 +1,6 @@
 # Research status
 
-Snapshot date: 2026-08-30
+Snapshot date: 2026-09-01
 
 OpenMaxFire separates evidence into five levels:
 
@@ -56,6 +56,7 @@ OpenMaxFire separates evidence into five levels:
 | Factory wiring | Owner-manual page 31 independently labels J3 and the major switches/sensors but gives no J3 pin functions or electrical levels | Vendor-documented; not a J3 electrical pinout |
 | Input mux | CR01 button mux recovered; burn-drive switch=CR02.0; fuel selector=CR02.2 (`1`=Fuel A/corn, `0`=Fuel B/wood) | Equivalent 2.02/2.06/2.70/2.71 scanners with version-specific RAM staging, configuration-bank flow, BixCheck predicates, diagram labels |
 | Python API | Version 0.10 retains passive post-handoff readiness and deterministic complete-PICkit composition. The first physical `E3` exposed a shared host/simulator byte-order defect after `E7`; the corrected encoding is anchored to BixCheck assembly and strict simulation but remains physically untested. The CLI allows offline planning only, and public executors hard-reject every physical loader byte until a deterministic fixture is separately implemented and qualified | Portable tests, BixCheck assembly, exact J3 audit, full-image loader emulation, factory 2.06 golden reconstruction, session analyzer, hashes, and safety-lock regressions |
+| Full-controller hardware | A fresh four-layer tscircuit Rev A implements ESP32-S3, complete J3/FTDI and provisional main-board J5/PICkit service paths, hardware watchdog/latch, released-state thermostat fail-back, protected power, USB, and disconnected-when-off expansion I/O. The corrected post-fix export has 250 components, 792 verified physical pad shapes, 77 verified explicit nets, and an 8 mm all-layer isolation keepout, with zero export coordinate or membership errors. It is not fabrication-ready and has no accepted final route | Source/netlist/placement checks, custom DSN boundary audit, and dated engineering checkpoint; physical qualification remains open |
 | EEPROM | Three independent A00-AFF reads agree; checksum EFCE matches; format 04, model `Bixby Model 115`, stored serial `2060`, date string `01102007` | Live-validated backup and two raw traffic logs |
 | 2.06 EEPROM | Two independent A00-AFF reads agree; format 05 and all vendor calibration/fuel bytes match, but modified identity bytes (`Unknown`, `08282026`) leave stored checksum `D168` unequal to calculated `576B`. `D168` exactly matches the intermediate serial-only edit, proving the date changed after checksum persistence | Live backups, checksum variants, vendor-byte comparison, and real-firmware checksum-path emulation |
 | 2.06 checksum repair | One audited `CW0100` changed only A00/A01 `D168`→`576B`; two immediate full reads and one after AC-off/USB-out cold boot were byte-identical and valid. Identity/calibration remained unchanged and monitors had zero timeouts | Exact TX capture, three complete post-write backups, raw-byte diff, and cold-boot validation |
@@ -79,6 +80,7 @@ OpenMaxFire separates evidence into five levels:
 | EEPROM semantics | Live format-04 backup/checksum/identity are preserved; stored serial/date differ from the appliance nameplate and many calibration meanings rely on labels | Compare another format-04 unit or recovered 2.02 BixCheck/firmware |
 | Checkout thresholds | Buttons, pots, doors, thermostat, exhaust CR05, feeder CR07, and igniter result bits are mapped; several engineering units/state meanings remain unresolved | Trace remaining manual/no-op cases and conversions |
 | Downloader | First physical block returned `E7` then no `E4`; PICkit readback proved byte-swapped words. Original 2.02 has been restored and boots normally. The corrected frame has never been transmitted physically because later runs missed entry | Build a target-power-safe UART/hardware-reset fixture, prove 100/100 zero-write entries, then perform one corrected update and PICkit readback on expendable hardware |
+| Full-controller Rev A | The last corrected route reached two airwires with zero multi-net pins and zero cross-net clearance findings, but it predates the connector-side 1-Wire pull-up and three-condition expansion-enable correction and is obsolete. Exact footprints, native KiCad DRC, J5 mapping, harnesses, enclosure, and first-article tests remain open | Route the post-fix 250-component input through the audited handoff, require zero airwires and clean native KiCad DRC, then execute the staged validation plan before any board order |
 
 ## Current boundary
 
@@ -105,3 +107,9 @@ entry workflow is retired for every physical loader exchange; loader-entry hardw
 first satisfy the documented no-backpower and repeatability gates. A matching
 register readback verifies a byte only, not physical actuator behavior or
 overall controller safety.
+
+The new full-controller PCB is a source-level engineering checkpoint only. Its
+[dated status](../hardware/openmaxfire-controller/CURRENT_STATUS.md) records the
+verified CAD boundary, rejected route history, BOM reconciliation, and open
+release gates. No current Gerber set is released, and nothing in the PCB source
+authorizes an installed-stove connection or physical firmware operation.

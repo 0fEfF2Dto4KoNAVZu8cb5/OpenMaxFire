@@ -1,0 +1,22 @@
+{
+  "name": "openmaxfire-controller-hardware",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OpenMaxFire full controller reference hardware",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && tsci check netlist index.circuit.tsx && tsci check schematic-placement index.circuit.tsx && tsci check placement index.circuit.tsx",
+    "check:routing-difficulty": "tsci check routing-difficulty index.circuit.tsx",
+    "export:circuit-json": "tsci export index.circuit.tsx --format circuit-json --output dist/index/circuit.json",
+    "export:verified-dsn": "bun run export:circuit-json && bun scripts/export-freerouting-dsn.ts dist/index/circuit.json dist/index/openmaxfire-controller-rev-a-pinverified.dsn",
+    "build:preview": "tsci build index.circuit.tsx --all-images --kicad-project --autorouter-timeout 5m",
+    "snapshot": "tsci snapshot index.circuit.tsx --update --3d"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/react": "19.2.18",
+    "circuit-json-to-kicad": "0.0.198",
+    "dsn-converter": "0.0.92",
+    "tscircuit": "0.0.2461"
+  }
+}

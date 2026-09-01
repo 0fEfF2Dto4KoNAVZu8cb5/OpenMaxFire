@@ -12,6 +12,7 @@ files remain under `preservation/original/`; raw live evidence remains under
 | [Research status](STATUS.md) | Established facts, evidence levels, unresolved questions, and current safety boundary |
 | [Project roadmap](ROADMAP.md) | Preservation, bench validation, software, firmware, and permanent-controller work |
 | [Research log](RESEARCH_LOG.md) | Chronological record of findings and implementation milestones |
+| [Full-controller hardware checkpoint](../hardware/openmaxfire-controller/CURRENT_STATUS.md) | Rev A scope, corrected routing metrics, export safeguards, and remaining fabrication gates |
 | [Safety policy](../SAFETY.md) | Non-negotiable electrical, combustion, actuator, and firmware boundaries |
 | [Guarded J3 flashing](guides/safe-j3-firmware-flashing.md) | Offline authenticated planning, all-physical-loader lock, historical evidence, and future qualification gates |
 | [J3 flasher qualification](guides/j3-flasher-qualification.md) | Sacrificial-hardware fault matrix and consumer-release gate |
@@ -62,6 +63,7 @@ layers. Controller semantics and safety rules belong in the API.
 
 | Topic | Entry point |
 | --- | --- |
+| Full OpenMaxFire controller | [Current Rev A checkpoint](../hardware/openmaxfire-controller/CURRENT_STATUS.md) and [hardware source guide](../hardware/openmaxfire-controller/README.md) |
 | BixCheck generations | [BixCheck comparison](reverse-engineering/bixcheck-comparison.md) |
 | BixCheck workflows | [Runtime workflows](reverse-engineering/bixcheck-runtime-workflows.md) |
 | Firmware generations | [Firmware comparison](reverse-engineering/firmware-comparison.md) |

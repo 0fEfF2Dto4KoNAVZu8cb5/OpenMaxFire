@@ -1,0 +1,16 @@
+# Dependencies and generated outputs
+node_modules/
+dist/
+build/
+.tscircuit/
+checks/
+*.circuit.json
+package-lock.json
+
+# Local environment and editor files
+.env
+.env.*
+.vscode/
+.idea/
+*.swp
+*.swo

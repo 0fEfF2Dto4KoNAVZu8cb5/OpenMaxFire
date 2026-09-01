@@ -217,6 +217,21 @@ protocol or controller logic.
 
 - [x] Document the candidate Olimex ESP32-POE-ISO-IND plus consolidated
   stove-interface daughterboard architecture.
+- [x] Split the product plan into a full controller and a later separate,
+  low-cost portable service cable; keep complete J3 and provisional main-board
+  J5/PICkit capability in the full controller.
+- [x] Implement the fresh four-layer Rev A in tscircuit with ESP32-S3, native
+  USB, FTDI service, isolated target interface, hardware watchdog/latch,
+  released-state thermostat fail-back, protected power, test points, and
+  powered-off-isolating expansion I/O.
+- [x] Add a verified Specctra export/session-import/KiCad handoff that checks
+  physical pad coordinates and net membership, preserves four-layer vias, and
+  enforces the 8 mm isolation keepout in both Freerouting and KiCad.
+- [x] Correct the expansion interface so its 1-Wire pull-up is connector-side
+  and signal OE requires firmware enable, delayed rail-good, and inactive
+  current-limit fault in hardware.
+- [x] Reconcile the engineering BOM to the corrected 250-reference source and
+  document every unresolved purchasing and footprint gate.
 - [ ] Complete J3-3 powered-voltage/source-limit, UART idle-level/noise-margin,
   and thermostat-contact measurements required to select isolation,
   protection, and relay ratings.
@@ -227,9 +242,17 @@ protocol or controller logic.
 - [x] Document a preliminary consolidated daughterboard circuit with integrated
   isolated UART power, heartbeat-qualified relay driver, protection footprints,
   connectors, signal allocation, parts list, and layout constraints.
-- [ ] Convert the preliminary design into a reviewed KiCad schematic and PCB
-  after J3 and thermostat measurements lock voltage, polarity, protection, and
-  contact requirements.
+- [ ] Route the post-safety-fix Rev A input to zero airwires, import it through
+  the checked handoff, refill zones, and close native KiCad DRC with zero
+  unexplained violations before generating any fabrication archive.
+- [ ] Independently verify every exact footprint, polarity, pin-one convention,
+  connector orientation, relay pinout, mode-switch truth table, and provisional
+  main-board J5 mapping against drawings and received parts.
+- [ ] Design the enclosure, antenna mounting, cable strain relief, harnesses,
+  labels, passive thermostat bypass, and force-backup loop as controlled
+  manufacturing artifacts.
+- [ ] Build current-limited offline first articles and complete the full
+  validation/bring-up matrix before any installed-stove evaluation.
 - [ ] Limit the permanent controller to telemetry, faults, start/stop, heat level,
   command verification, and local temperature control.
 - [ ] Preserve factory front-panel operation and transfer to the physical backup
@@ -238,4 +261,14 @@ protocol or controller logic.
   complete failure matrix are proven reliable.
 
 See [Candidate permanent-controller hardware](hardware/permanent-controller-candidate.md)
+
+## Phase 8 - portable service cable
+
+- [ ] Begin only after the full controller's J3/J5 service interface and
+  partial-power behavior are electrically qualified.
+- [ ] Derive a separate small, low-cost board without the ESP32, permanent
+  supply, thermostat relay, or expansion circuitry.
+- [ ] Preserve the same target-safe J3 behavior, provisional main-board J5
+  identification boundary, FTDI support, keying, labeling, and serialized cable
+  continuity tests established by the full controller.
 and [Preliminary stove-interface daughterboard design](hardware/daughterboard-preliminary-design.md).

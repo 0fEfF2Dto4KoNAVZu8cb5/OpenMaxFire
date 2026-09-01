@@ -2,6 +2,16 @@
 
 OpenMaxFire is a preservation and reverse-engineering project for the discontinued Bixby MaxFire 110/115 biomass stove ecosystem. It archives the factory BixCheck service software and firmware, documents the J3 computer interface, and is building a modern cross-platform Windows/Linux/macOS service tool plus a deliberately limited ESP32/Home Assistant controller.
 
+> [!WARNING]
+> **The new full-controller PCB is an engineering checkpoint, not a released
+> board.** Its last corrected route came close but is obsolete after two
+> safety fixes; final routing, KiCad, footprint, electrical, and first-article
+> gates remain open. Do not fabricate
+> or install it. Read the dated
+> [full-controller hardware checkpoint](hardware/openmaxfire-controller/CURRENT_STATUS.md)
+> for the design scope, exact routing status, corrected export pipeline, and
+> remaining work.
+
 ## Current status
 
 The repository contains the recovered vendor packages, the BixCheck service
